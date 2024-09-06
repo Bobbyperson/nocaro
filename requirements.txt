@@ -12,5 +12,5 @@ matplotlib==3.7.1
 pydub==0.25.1
 emoji==2.12.1
 yfinance==0.2.43
-pandas==1.5.3
+pandas==2.2.2
 pandas_market_calendars==4.4.1
