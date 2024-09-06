@@ -1,8 +1,7 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import time
 import math
 import random as rd
-import discord
 import aiosqlite
 
 
@@ -14,14 +13,14 @@ if __name__ == "__main__":
 bank = "./data/database.sqlite"
 
 
-def findMean(arr, l, r):
+def findMean(arr, left, right):
     # Both sum and count are
     # initialize to 0
     sum, count = 0, 0
 
     # To calculate sum and number
     # of elements in range l to r
-    for i in range(l, r + 1):
+    for i in range(left, right + 1):
         sum += arr[i]
         count += 1
     # Calculate floor value of mean
@@ -80,10 +79,10 @@ async def send_webhook(ctx, name, avatar, message):
                 name="Nocaro_NPC", reason="npc event"
             )
         msg = await webhook.send(content=message, avatar_url=avatar, username=name)
-    except:
+    except:  # noqa: E722
         try:
             msg = await ctx.send(f"{name}: {message}")
-        except:
+        except:  # noqa: E722
             msg = await ctx.channel.send(f"{name}: {message}")
     return msg
 
@@ -126,12 +125,15 @@ def draw_rotated_text(image, angle, xy, text, fill, *args, **kwargs):
     color_image = Image.new("RGBA", image.size, fill)
     image.paste(color_image, mask)
 
+
 async def is_blacklisted(*args):
     db = await aiosqlite.connect(bank, timeout=10)
     cursor = await db.cursor()
     current_time = get_unix()
     for user_id in args:
-        await cursor.execute(f"SELECT * FROM blacklist WHERE user_id={user_id} AND (timestamp > {current_time} OR timestamp = 0)")
+        await cursor.execute(
+            f"SELECT * FROM blacklist WHERE user_id={user_id} AND (timestamp > {current_time} OR timestamp = 0)"
+        )
         result = await cursor.fetchone()
         if result:
             await cursor.close()
@@ -141,10 +143,13 @@ async def is_blacklisted(*args):
     await db.close()
     return False, 0
 
+
 async def blacklist_user(user_id, timestamp):
     db = await aiosqlite.connect(bank, timeout=10)
     cursor = await db.cursor()
-    await cursor.execute(f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})")
+    await cursor.execute(
+        f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})"
+    )
     await db.commit()
     await cursor.close()
     await db.close()

@@ -334,7 +334,6 @@ async def update_winloss(user, wl):
 async def formatted_winloss(user):
     current = await get_winloss(user)
     formatted = []
-    funny = rd.randint(1, 100)
     for i in range(len(current)):
         if current[i] == "w":
             formatted.append(":green_square:")
@@ -362,7 +361,7 @@ async def get_random_item():
 
 # get specific map
 async def get_item(item):
-    file_path = f"maps/maps.txt"
+    file_path = "maps/maps.txt"
     if os.path.exists(file_path):
         with open(file_path, encoding="utf-8") as f:
             maps = [line.rstrip() for line in f.readlines()]
