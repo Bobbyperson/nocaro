@@ -108,8 +108,8 @@ class osu(commands.Cog):
     async def refresh_token(self):  # token lasts for one day
         url = "https://osu.ppy.sh/oauth/token"
         myjson = {
-            "client_id": 15694,
-            "client_secret": "wz5u5Q5Ks9ATDLOrQoxjmAo7fPtAtFB94yJcXnRx",
+            "client_id": (...),
+            "client_secret": "(...)",
             "grant_type": "client_credentials",
             "scope": "public",
         }  # client_id and client_secret should absolutely fucking not be hard coded: too bad!
