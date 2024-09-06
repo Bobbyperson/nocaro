@@ -222,7 +222,7 @@ class Caption(commands.Cog):
                         f"giffers/{ctx.message.author.id}/out/{ctx.message.author.id}a.png"
                     )
                     os.remove(f"{ctx.message.author.id}.gif")
-            elif "tenor.com" in original.content:
+            elif original.content.startswith("https://tenor.com/"):
                 await ctx.reply(
                     "ok im workin on it, if this fails you will NOT be alerted. this does NOT mean spam the command."
                 )
