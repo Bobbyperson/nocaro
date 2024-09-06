@@ -3,7 +3,7 @@ Pillow==10.4.0
 aiosqlite==0.20.0
 discord-pretty-help==2.0.7
 discord.py==2.4.0
-requests==2.32.2
+requests==2.32.3
 ffmpy==0.4.0
 pyquery==2.0.0
 asyncio==3.4.3
