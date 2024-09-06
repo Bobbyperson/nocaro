@@ -11,6 +11,6 @@ asyncpg==0.27.0
 matplotlib==3.7.1
 pydub==0.25.1
 emoji==2.12.1
-yfinance==0.2.40
+yfinance==0.2.43
 pandas==1.5.3
 pandas_market_calendars==4.4.1
