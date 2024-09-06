@@ -7,7 +7,7 @@ requests==2.32.2
 ffmpy==0.4.0
 pyquery==2.0.0
 asyncio==3.4.3
-asyncpg==0.27.0
+asyncpg==0.29.0
 matplotlib==3.7.1
 pydub==0.25.1
 emoji==2.12.1
