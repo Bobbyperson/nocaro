@@ -1,0 +1,16 @@
+aiosqlite==0.18.0
+Pillow==9.5.0
+aiosqlite==0.18.0
+discord-pretty-help==2.0.7
+discord.py==2.4.0
+requests==2.31.0
+ffmpy==0.3.0
+pyquery==2.0.0
+asyncio==3.4.3
+asyncpg==0.27.0
+matplotlib==3.7.1
+pydub==0.25.1
+emoji==2.12.1
+yfinance==0.2.40
+pandas==1.5.3
+pandas_market_calendars==4.4.1
