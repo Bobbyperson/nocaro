@@ -5,7 +5,7 @@ discord-pretty-help==2.0.7
 discord.py==2.4.0
 requests==2.32.2
 ffmpy==0.4.0
-pyquery==2.0.0
+pyquery==2.0.1
 asyncio==3.4.3
 asyncpg==0.29.0
 matplotlib==3.9.2
