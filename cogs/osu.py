@@ -7,6 +7,7 @@ import math
 import aiosqlite
 import cogs.utils.econfuncs as ef
 import cogs.utils.miscfuncs as mf
+import config
 
 bank = "./data/database.sqlite"
 
@@ -108,11 +109,11 @@ class osu(commands.Cog):
     async def refresh_token(self):  # token lasts for one day
         url = "https://osu.ppy.sh/oauth/token"
         myjson = {
-            "client_id": (...),
-            "client_secret": "(...)",
+            "client_id": config.osu_client_id,
+            "client_secret": config.osu_client_secret,
             "grant_type": "client_credentials",
             "scope": "public",
-        }  # client_id and client_secret should absolutely fucking not be hard coded: too bad!
+        }
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         x = requests.post(url, json=myjson, headers=headers)
         data = x.json()
@@ -449,7 +450,7 @@ class osu(commands.Cog):
     #             if int(current[str(user)][str(map)]["time"]) < get_unix():
     #                 bet_plays = int(current[str(user)][str(map)]["plays"])
     #                 amount = int(current[str(user)][str(map)]["amount"])
-    #                 bet_time = int(current[str(user)][str(map)]["time"])
+    #                 bet_time = int(current[str(use # client_id and client_secret should absolutely fucking not be hard coded: too bad!r)][str(map)]["time"])
     #                 og_time = int(current[str(user)][str(map)]["ogtime"])
     #                 actual_plays = data["play_count"]
     #                 if actual_plays > bet_plays:
