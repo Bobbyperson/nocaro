@@ -91,7 +91,7 @@ class database(commands.Cog):
     async def privacypolicy(self, ctx):
         """Short privacy policy."""
         await ctx.reply(
-            "Nocaro stores **Message IDs** in a database. Not actual messages. This means that if you delete your message or remove Nocaro from your server, Nocaro will no longer be able to access said messages. Otherwise, Nocaro does not store any information related to you. Nocaro also does not contain any LLMs. Nocaro is not responsible for any messages it regurgitates. When Nocaro regurgitates messages, it only picks from messages in the channel its currently in. Your messages will not leave whatever server you are in.\nIf you do not agree to any of these terms, please remove Nocaro from your server."
+            "Nocaro stores **Message IDs** in a database. Not actual messages. This means that if you delete your message or remove Nocaro from your server, Nocaro will no longer be able to access said messages. Otherwise, Nocaro does not store any information related to you. Nocaro also does not contain any LLMs. Nocaro is not responsible for any messages it regurgitates. When Nocaro regurgitates messages, it only picks from messages in the channel its currently in. Your messages will not leave whatever server you are in.\nIf you do not agree to any of these terms, please remove Nocaro from your server.\n\nNocaro is open source: <https://github.com/Bobbyperson/nocaro>"
         )
 
     @commands.Cog.listener()

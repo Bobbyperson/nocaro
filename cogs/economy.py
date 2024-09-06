@@ -1378,7 +1378,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.command()
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def info(self, ctx, id: str = None):
+    async def mapinfo(self, ctx, id: str = None):
         """Check a map's info."""
         if not id:
             await ctx.send("Please specify an ID.")
