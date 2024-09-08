@@ -55,6 +55,8 @@ class Fun(commands.Cog):
 
     @commands.command(aliases=["8ball", "ask"], hidden=True)
     async def _8ball(self, ctx, *, question):
+        if not question:
+            return await ctx.send("Please ask a question.")
         responses = [
             "It is certain.",
             "It is decidedly so.",
