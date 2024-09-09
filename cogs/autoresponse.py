@@ -30,7 +30,6 @@ class Autoresponse(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         reactto = str.lower(message.content)
-        andy = rd.randint(1, 57)
         if message.author == self.client.user:
             return
         elif message.author.bot:
@@ -69,18 +68,6 @@ class Autoresponse(commands.Cog):
         elif "jackbox" in reactto:
             jackbox = "<:GO:893517923472277536>"
             await message.add_reaction(jackbox)
-        elif andy <= 55:
-            if "send andy pics" in reactto:
-                await message.channel.send(
-                    "Andy image get!",
-                    file=discord.File("./andy/" + f"{andy}" + ".jpg", "Andy.jpg"),
-                )
-        elif andy >= 55:
-            if "send andy pics" in reactto:
-                await message.channel.send(
-                    "Andy video get!",
-                    file=discord.File("./andy/" + f"{andy}" + ".mp4", "Andy.mp4"),
-                )
         elif "pick it up" in reactto:
             await message.channel.send("SKAAAAAAAAAA!")
 
