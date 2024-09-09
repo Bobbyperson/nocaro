@@ -15,3 +15,8 @@ This is not the version of Nocaro currently running on the public bot. This is b
 Feel free to make a PR for __anything you like__. All bug fixes, refactors, and features are more than welcome.
 
 Additionally, if you find any bugs or would like to request a feature, please open an issue.
+
+## Legal Information
+
+- [Privacy Policy](./PRIVACY_POLICY.md)
+- [Terms of Service](./TERMS_OF_SERVICE.md)
