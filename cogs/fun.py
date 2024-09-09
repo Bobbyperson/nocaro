@@ -1,5 +1,6 @@
 import discord
 import random
+import config
 
 # import asyncio
 from discord.ext import commands
@@ -20,16 +21,15 @@ class Fun(commands.Cog):
             return
         if message.content.startswith(","):
             return
-        if message.content.lower() in ["share", "steal", "yes", "no"]:
+        if message.content.lower() in ["share", "steal"]:
             return
         if isinstance(message.channel, discord.channel.DMChannel):
-            blacklisted = [691685357498138635, 677830735754952726]
-            if message.author.id in blacklisted:
+            if message.author.id in config.blacklisted_dms:
                 await message.channel.send(
                     "You've been blacklisted from all DMs. There is no chance for appeal."
                 )
                 return
-            me = await self.client.fetch_user(248984895940984832)
+            me = await self.client.fetch_user(config.owner_id)
             await me.send(
                 f"DM from {message.author.name} ({message.author.id})\n{message.content}\n`,dm {message.author.id}`"
             )

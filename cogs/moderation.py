@@ -3,6 +3,7 @@ from discord.ext import commands
 from datetime import timedelta
 import json
 import asyncio
+import config
 
 # import re
 # import random
@@ -38,9 +39,6 @@ async def send_webhook(ctx, name, avatar, message):
     return msg
 
 
-blacklisted_servers = [460990989360824320]
-
-
 class Moderation(commands.Cog):
     """Basic Moderation commands."""
 
@@ -52,10 +50,17 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         print("Moderation loaded.")
         for guild in self.client.guilds:
-            if guild.id in blacklisted_servers:
+            if guild.id in config.blacklisted_servers:
                 await guild.leave()
-                me = await self.client.fetch_user(248984895940984832)
+                me = await self.client.fetch_user(config.owner_id)
                 await me.send(f"Left blacklisted server: {guild.name}: `{guild.id}`")
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild):
+        if guild.id in config.blacklisted_servers:
+            await guild.leave()
+            me = await self.client.fetch_user(config.owner_id)
+            await me.send(f"Left blacklisted server: {guild.name}: `{guild.id}`")
 
     @commands.command()
     @commands.has_permissions(moderate_members=True)
