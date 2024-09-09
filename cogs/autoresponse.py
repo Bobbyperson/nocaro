@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import random as rd
 import aiosqlite
 
 bank = "./data/database.sqlite"
