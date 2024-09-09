@@ -331,12 +331,13 @@ class Economy(commands.Cog):
                 plt.xlabel("Days")
                 plt.ylabel("Amount")
                 plt.xticks(x_axis)
-                fig.savefig(f"{ctx.author.id}.jpg", bbox_inches="tight", dpi=150)
-                await ctx.send(
-                    file=discord.File(f"{ctx.author.id}.jpg", f"{ctx.author.id}.jpg"),
-                    content="",
-                )
-            os.remove(f"{ctx.author.id}.jpg")
+                with io.BytesIO() as image:
+                    fig.savefig(image, bbox_inches="tight", dpi=150, format="png")
+                    image.seek(0)
+                    await ctx.send(
+                        file=discord.File(image, "history.png"),
+                        content="",
+                    )
 
     @commands.command(hidden=True)
     async def moneytest(self, ctx, amount):
@@ -1545,10 +1546,12 @@ Example command: `,bougegram normal 100`"""
         w, h = my_font.getbbox(msg)[2:4]
         wid, hig = (500, 500)
         draw.text(((wid - w) / 2, (hig - h) / 2 + 150), msg, fill="white", font=my_font)
-        img.save("level.png", "PNG")
-        await ctx.send(
-            file=discord.File("level.png", "level.png"), content=f"{member}'s level"
-        )
+        with io.BytesIO() as image_binary:
+            img.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await ctx.send(
+                file=discord.File(image_binary, "level.png"), content=f"{member}'s level"
+            )
 
     @commands.command()
     @commands.cooldown(1, 86400, commands.BucketType.user)
@@ -1611,10 +1614,12 @@ Example command: `,bougegram normal 100`"""
             fill="white",
             font=small_font,
         )
-        img.save("banana.png", "PNG")
-        await ctx.send(
-            file=discord.File("banana.png", "banana.png"), content=f"{member}'s bananas"
-        )
+        with io.BytesIO() as image_binary:
+            img.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await ctx.send(
+                file=discord.File(image_binary, "banana.png"), content=f"{member}'s bananas"
+            )
 
     # It sends a message with an image of the user's balance.
     @commands.command(
