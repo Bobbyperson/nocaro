@@ -1550,7 +1550,8 @@ Example command: `,bougegram normal 100`"""
             img.save(image_binary, "PNG")
             image_binary.seek(0)
             await ctx.send(
-                file=discord.File(image_binary, "level.png"), content=f"{member}'s level"
+                file=discord.File(image_binary, "level.png"),
+                content=f"{member}'s level",
             )
 
     @commands.command()
@@ -1618,7 +1619,8 @@ Example command: `,bougegram normal 100`"""
             img.save(image_binary, "PNG")
             image_binary.seek(0)
             await ctx.send(
-                file=discord.File(image_binary, "banana.png"), content=f"{member}'s bananas"
+                file=discord.File(image_binary, "banana.png"),
+                content=f"{member}'s bananas",
             )
 
     # It sends a message with an image of the user's balance.
@@ -1641,7 +1643,7 @@ Example command: `,bougegram normal 100`"""
             return
         amount = await econ.get_bal(member)
         img = Image.open("templates/balance.png")
-        if member.id == 263126803780993024: # ralkinson
+        if member.id == 263126803780993024:  # ralkinson
             if amount == 1:
                 await ctx.send(
                     file=discord.File(fp="templates/ralkinson.png", filename="bal.png"),
@@ -1653,7 +1655,7 @@ Example command: `,bougegram normal 100`"""
                     content=f"{member} has {misc.commafy(amount)} bouge bucks",
                 )
             return
-        if member.id == 819235084917276682: # ned
+        if member.id == 819235084917276682:  # ned
             if amount == 1:
                 await ctx.send(
                     file=discord.File(fp="templates/ned.gif", filename="bal.gif"),
@@ -1665,7 +1667,7 @@ Example command: `,bougegram normal 100`"""
                     content=f"{member} has {misc.commafy(amount)} bouge bucks",
                 )
             return
-        if member.id == 201553786974502912: # karma
+        if member.id == 201553786974502912:  # karma
             img = Image.open("clue.jpg")
         wid, hig = (500, 500)
         if amount == 1:
