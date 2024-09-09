@@ -1493,7 +1493,7 @@ Example command: `,bougegram normal 100`"""
         bmsg = f"{bananas} banana{'s' if bananas != 1 else ''}"
         lmsg = f"{level} level"
 
-        img = Image.open("templates/blankke.png")
+        img = Image.open("templates/profile.png")
         draw = ImageDraw.Draw(img)
         my_font = ImageFont.truetype("fonts/monbaiti.ttf", 48)
         if amount > 9_999_999_999:  # 9.9 billion
@@ -1587,7 +1587,7 @@ Example command: `,bougegram normal 100`"""
             msg = f"{amount} banana"
         else:
             msg = f"{amount} bananas"
-        img = Image.open("templates/banblank.png")
+        img = Image.open("templates/banana.png")
         draw = ImageDraw.Draw(img)
         my_font = ImageFont.truetype("fonts/monbaiti.ttf", 48)
         w, h = my_font.getbbox(msg)[2:4]
@@ -1640,32 +1640,32 @@ Example command: `,bougegram normal 100`"""
             )
             return
         amount = await econ.get_bal(member)
-        img = Image.open("templates/blankk.png")
-        if member.id == 263126803780993024:
+        img = Image.open("templates/balance.png")
+        if member.id == 263126803780993024: # ralkinson
             if amount == 1:
                 await ctx.send(
-                    file=discord.File(fp="sillybal/ralkinson.png", filename="bal.png"),
+                    file=discord.File(fp="templates/ralkinson.png", filename="bal.png"),
                     content=f"{member} has {misc.commafy(amount)} bogue buck",
                 )
             else:
                 await ctx.send(
-                    file=discord.File(fp="sillybal/ralkinson.png", filename="bal.png"),
+                    file=discord.File(fp="templates/ralkinson.png", filename="bal.png"),
                     content=f"{member} has {misc.commafy(amount)} bouge bucks",
                 )
             return
-        if member.id == 819235084917276682:
+        if member.id == 819235084917276682: # ned
             if amount == 1:
                 await ctx.send(
-                    file=discord.File(fp="sillybal/ned.gif", filename="bal.gif"),
+                    file=discord.File(fp="templates/ned.gif", filename="bal.gif"),
                     content=f"{member} has {misc.commafy(amount)} bogue buck",
                 )
             else:
                 await ctx.send(
-                    file=discord.File(fp="sillybal/ned.gif", filename="bal.gif"),
+                    file=discord.File(fp="templates/ned.gif", filename="bal.gif"),
                     content=f"{member} has {misc.commafy(amount)} bouge bucks",
                 )
             return
-        if member.id == 201553786974502912:
+        if member.id == 201553786974502912: # karma
             img = Image.open("clue.jpg")
         wid, hig = (500, 500)
         if amount == 1:
