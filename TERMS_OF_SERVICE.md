@@ -6,8 +6,8 @@ By inviting or using Nocaro ("the bot") in your Discord server, you agree to com
 ### 2. Use of the Service
 Nocaro is designed to enhance user interaction within your Discord server by performing various automated tasks. By using Nocaro, you understand and accept the following conditions:
 
-    Age Requirement: You must be at least 13 years old to use Discord and Nocaro in compliance with Discord's own Terms of Service.
-    Compliance with Laws: You agree to use Nocaro in a manner that complies with all applicable laws and regulations, including but not limited to those related to privacy, data collection, and user content.
+- Age Requirement: You must be at least 13 years old to use Discord and Nocaro in compliance with Discord's own Terms of Service.
+- Compliance with Laws: You agree to use Nocaro in a manner that complies with all applicable laws and regulations, including but not limited to those related to privacy, data collection, and user content.
 
 ### 3. Data Collection and Privacy
 Nocaro does not store or process actual message content. The only data stored are Message IDs for the purpose of bot functionality. For more details, please refer to our Privacy Policy.
@@ -18,18 +18,18 @@ Nocaro is not responsible for the content of any messages it regurgitates. Nocar
 ### 5. Content and User Conduct
 By using Nocaro, you agree that:
 
-    You will not use the bot for unlawful or malicious purposes.
-    You will not exploit Nocaro to distribute harmful, offensive, or illegal content.
-    You are responsible for the messages and content shared within your server, including those that Nocaro interacts with or regurgitates.
+- You will not use the bot for unlawful or malicious purposes.
+- You will not exploit Nocaro to distribute harmful, offensive, or illegal content.
+- You are responsible for the messages and content shared within your server, including those that Nocaro interacts with or regurgitates.
 
 Nocaro’s developers reserve the right to block or disable access to the bot for users or servers that engage in behavior that violates these terms or Discord’s guidelines.
 
 ### 6. Limitations of Liability
 The Nocaro team is not responsible for:
 
-    Any errors, bugs, or downtime experienced by the bot.
-    Loss of data or other damages incurred through the use of the bot.
-    Any misuse or inappropriate use of the bot by its users.
+- Any errors, bugs, or downtime experienced by the bot.
+- Loss of data or other damages incurred through the use of the bot.
+- Any misuse or inappropriate use of the bot by its users.
 
 Nocaro is provided "as-is" without any warranties, whether express or implied.
 
