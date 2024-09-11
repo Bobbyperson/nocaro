@@ -21,17 +21,27 @@ class database(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        db = await aiosqlite.connect(bank, timeout=10)
-        cursor = await db.cursor()
-        await cursor.execute(
-            "CREATE TABLE IF NOT EXISTS messages("
-            "num INTEGER NOT NULL PRIMARY KEY,"
-            ""
-            "messageID INTEGER NOT NULL,"
-            "channelID INTEGER NOT NULL,"
-            "guildID INTEGER NOT NULL"
-            ")"
-        )
+        async with aiosqlite.connect(bank) as db:
+            cursor = await db.cursor()
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS messages("
+                "num INTEGER NOT NULL PRIMARY KEY,"
+                ""
+                "messageID INTEGER NOT NULL,"
+                "channelID INTEGER NOT NULL,"
+                "guildID INTEGER NOT NULL"
+                ")"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS ignore("
+                "num INTEGER NOT NULL PRIMARY KEY,"
+                ""
+                "channelID INTEGER NOT NULL,"
+                "guildID INTEGER NOT NULL"
+                ")"
+            )
+            await db.commit()
+
         print("Database ready")
 
     async def check_ignored(self, channel):

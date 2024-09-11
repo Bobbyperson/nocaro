@@ -18,11 +18,18 @@ async def main():
 
 
 intents = discord.Intents().all()
-client = commands.Bot(command_prefix=",", intents=intents, help_command=PrettyHelp())
+client = commands.Bot(
+    command_prefix=config.prefix, intents=intents, help_command=PrettyHelp()
+)
 
 
 @tasks.loop(seconds=30)
-async def change_status(statuses):
+async def change_status():
+    statuses = [
+        ",help | ,invite",
+        f"Currently in {len(client.guilds)} guilds",
+        f"I can see {len(client.users)} users",
+    ]
     await client.change_presence(activity=discord.Game(random.choice(statuses)))
 
 
@@ -67,18 +74,16 @@ async def users():
 @client.event
 async def on_ready():
     print("I am ready.")
-    statuses = [
-        ",help | ,invite",
-        f"Currently in {str(len(await guilds()))} guilds",
-        f"I can see {str(len(await users()))} users",
-    ]
-    change_status.start(statuses)
+    change_status.start()
     try:
         synced = await client.tree.sync()
         print(f"Sycned {len(synced)} commands!")
     except Exception as e:
         print(e)
 
+
+if not os.path.exists("data/database.sqlite"):
+    open("data/database.sqlite", "w").close()
 
 discord.utils.setup_logging()
 asyncio.run(main())

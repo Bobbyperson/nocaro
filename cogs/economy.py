@@ -11,6 +11,8 @@ import traceback
 import os
 import os.path
 import asyncpg
+import pyttsx3
+import config
 import matplotlib.pyplot as plt
 import cogs.utils.econfuncs as econ
 import cogs.utils.miscfuncs as misc
@@ -241,21 +243,64 @@ class Economy(commands.Cog):
     # create database if none exists
     @commands.Cog.listener()
     async def on_ready(self):
-        db = await aiosqlite.connect(bank, timeout=10)
-        cursor = await db.cursor()
-        await cursor.execute(
-            "CREATE TABLE IF NOT EXISTS main("
-            "num INTEGER NOT NULL PRIMARY KEY,"
-            ""
-            "balance INTEGER NOT NULL,"
-            "bananas INTEGER NOT NULL,"
-            "user_ID INTEGER NOT NULL,"
-            "immunity INTEGER NOT NULL,"
-            "level INTEGER NOT NULL,"
-            "inventory TEXT,"
-            "winloss TEXT"
-            ")"
-        )
+        async with aiosqlite.connect(bank, timeout=10) as db:
+            cursor = await db.cursor()
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS main("
+                ""
+                "num INTEGER NOT NULL PRIMARY KEY,"
+                "balance TEXT NOT NULL DEFAULT 0,"
+                "bananas INT NOT NULL DEFAULT 0,"
+                "user_ID INTEGER NOT NULL,"
+                "immunity INT NOT NULL DEFAULT 0,"
+                "level INT NOT NULL DEFAULT 0,"
+                "inventory TEXT,"
+                "winloss TEXT,"
+                "invested INT NOT NULL DEFAULT 0)"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS blacklist(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, timestamp INTEGER NOT NULL)"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS prestiege("
+                ""
+                "num INT PRIMARY KEY,"
+                "user_id INT,"
+                "pres1 INT DEFAULT 0,"
+                "pres2 INT DEFAULT 0,"
+                "pres3 INT DEFAULT 0,"
+                "pres4 INT DEFAULT 0,"
+                "pres5 INT DEFAULT 0)"
+            )
+            await db.commit()
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old1' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old2' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old3' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old4' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old5' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old6' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old7' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old8' AS SELECT * FROM main"
+            )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS 'old9' AS SELECT * FROM main"
+            )
+            await db.commit()
         print("Economy ready")
 
     @tasks.loop(seconds=60)
@@ -266,6 +311,15 @@ class Economy(commands.Cog):
         await cursor.execute("SELECT data FROM misc WHERE pointer='history'")
         result = await cursor.fetchone()
         await cursor.close()
+        if not result:
+            async with aiosqlite.connect(bank, timeout=10) as db:
+                cursor = await db.cursor()
+                await cursor.execute(
+                    f"UPDATE misc SET data = {current + 86400} WHERE pointer='history'"
+                )
+                await db.commit()
+                await cursor.close()
+                return
         last = int(result[0])
         await cursor.close()
         await db.close()
@@ -420,15 +474,14 @@ Example command: `,bougegram normal 100`"""
                 ):
                     player_pass.append(message.author)  # add to win list
 
-            def cool(list1, list2):
-                return list(
-                    filter(lambda element: element not in list2, list1)
-                )  # https://stackoverflow.com/a/65289081
+            def remove_duplicates_from_lists(list1, list2):
+                return list(filter(lambda element: element not in list2, list1))
+                # https://stackoverflow.com/a/65289081
 
             if len(players) > len(player_pass):
-                playerstomsg = cool(players, player_pass)
+                playerstomsg = remove_duplicates_from_lists(players, player_pass)
             else:
-                playerstomsg = cool(player_pass, players)
+                playerstomsg = remove_duplicates_from_lists(player_pass, players)
             msg_to_send = ""
             if len(players) == len(playerstomsg):
                 await ctx.send(
@@ -480,14 +533,17 @@ Example command: `,bougegram normal 100`"""
         )
         voice_channel = user.voice.channel
         vc = await voice_channel.connect()
-        os.system(
-            f'balcon.exe -w "{voice_channel.id}.wav" -t "A bouge gram game is starting in {ctx.channel.name}! The difficulty is {difficulty} and the bet is {bet} bouge bucks! Go there and type join to join!"'
+        engine = pyttsx3.init()
+        engine.save_to_file(
+            f"A bouge gram game is starting in {ctx.channel.name}! The difficulty is {difficulty} and the bet is {bet} bouge bucks! Go there and type join to join!",
+            f"{ctx.channel.id}.mp3",
         )
-        sound1 = AudioSegment.from_file(f"{voice_channel.id}.wav", format="wav")
+        engine.runAndWait()
+        sound1 = AudioSegment.from_file(f"{ctx.channel.id}.mp3", format="mp3")
         sound2 = AudioSegment.from_file("audio/madibanocaro.mp3", format="mp3")
         combined = sound1 + sound2
-        combined.export(f"delete_me_{voice_channel.id}.mp3", format="mp3")
-        vc.play(FFmpegPCMAudio(f"delete_me_{voice_channel.id}.mp3"))
+        combined.export(f"{voice_channel.id}.mp3", format="mp3")
+        vc.play(FFmpegPCMAudio(f"{voice_channel.id}.mp3"))
         while misc.get_unix() < end_check:
             try:
                 join_msg = await self.client.wait_for(
@@ -701,9 +757,9 @@ Example command: `,bougegram normal 100`"""
             vc.play(FFmpegPCMAudio("audio/end.mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.1)
-            os.remove(f"{voice_channel.id}.wav")
+            os.remove(f"{ctx.channel.id}.mp3")
+            os.remove(f"{voice_channel.id}.mp3")
             await vc.disconnect()
-            # os.remove(f"delete_me_{voice_channel.id}.mp3")
 
     @commands.command(aliases=["wl"])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -1701,7 +1757,7 @@ Example command: `,bougegram normal 100`"""
                 fill="white",
                 font=small_font,
             )
-        if member.id == 201553786974502912:
+        if member.id == 201553786974502912:  # karma
             karma_font = ImageFont.truetype("fonts/monbaiti.ttf", 20)
             w3, h3 = karma_font.getbbox(
                 "I broke the game and Austin is the worst bot developer ever"
@@ -1817,9 +1873,8 @@ Example command: `,bougegram normal 100`"""
         victim = member
         victimbucks = await econ.get_bal(victim)
         if victimbucks < 500:
-            await ctx.reply(
-                "lmaooooo they're poor don't bother"
-            )  # omg nooooo i got misgendered by the bot change this to they :WAAH:
+            await ctx.reply("lmaooooo they're poor don't bother")
+            ctx.command.reset_cooldown(ctx)
             return
         stealamnt = rd.randint(0, 500)
         fail = rd.randint(1, 10)
@@ -1899,9 +1954,7 @@ Example command: `,bougegram normal 100`"""
             )
             return
         if amount < 0:
-            await ctx.reply(
-                "nice try bro"
-            )  # inb4 waaaaah bro is not gender neutral waaaah
+            await ctx.reply("nice try bro")
             return
 
         def check(moosage):
@@ -3365,18 +3418,6 @@ Example command: `,bougegram normal 100`"""
             return
 
     @commands.command(hidden=True)
-    @commands.is_owner()
-    async def hudge(self, ctx):
-        user = ctx.author
-        voice_channel = user.voice.channel
-        if voice_channel is not None:
-            vc = await voice_channel.connect()
-            vc.play(FFmpegPCMAudio("test.mp3"))
-            while vc.is_playing():
-                await asyncio.sleep(0.1)
-            await vc.disconnect()
-
-    @commands.command(hidden=True)
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def amp(self, ctx):
         amount = await econ.get_bal(ctx.author)
@@ -3406,11 +3447,6 @@ Example command: `,bougegram normal 100`"""
                 "For typing `,daily` incorrectly you are penalized 1 banana."
             )
             await econ.update_banana(ctx.author, -1)
-
-    @commands.command(hidden=True)
-    async def memberlookup(self, ctx, member):
-        member = commands.converter.MemberConverter(member).convert(member)
-        ctx.send(member)
 
     @commands.command(aliases=["dnd"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
@@ -5279,7 +5315,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             )
         else:
             ctx.command.reset_cooldown(ctx)
-            channel = await self.client.fetch_channel(963109814119038976)
+            channel = await self.client.fetch_channel(config.error_reporting_channel)
             embed = discord.Embed(
                 title="An Error has occurred",
                 description=f"Error: \n `{error}`\nCommand: `{ctx.command}`",

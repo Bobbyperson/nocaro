@@ -171,6 +171,12 @@ class Fire(commands.Cog):
             "timestamp INTEGER NOT NULL"
             ")"
         )
+        await cursor.execute(
+            "CREATE TABLE IF NOT EXISTS misc("
+            "num INTEGER NOT NULL PRIMARY KEY,"
+            "pointer TEXT NOT NULL,"
+            "data INTEGER NOT NULL)"
+        )
         await cursor.close()
         await db.commit()
         await db.close()
@@ -353,6 +359,8 @@ class Fire(commands.Cog):
                 old = None
             await cursor.close()
             await db.close()
+            if not old:
+                await setfuckingdata(0)
             return old
 
         async def setfuckingdata(old):
