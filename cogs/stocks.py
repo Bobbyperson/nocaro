@@ -115,7 +115,7 @@ class Stocks(commands.Cog):
         except ValueError:
             return False
 
-    @commands.command(aliases=["buystocks"])
+    @commands.hybrid_command(aliases=["buystocks"])
     async def buystock(self, ctx, stock: str = None, amount: str = None):
         """Purchase stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
@@ -152,7 +152,7 @@ class Stocks(commands.Cog):
                 f"You have successfully bought {amount} stocks of {stock} for {math.ceil(stock_price * amount)} bouge bucks!"
             )
 
-    @commands.command(aliases=["sellstocks"])
+    @commands.hybrid_command(aliases=["sellstocks"])
     async def sellstock(self, ctx, stock: str = None, amount: str = None):
         """Sell stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
@@ -196,7 +196,7 @@ class Stocks(commands.Cog):
                 f"You have successfully sold {amount} stocks of {stock} for {math.floor(stock_price * amount)} bouge bucks!"
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     async def stockprice(self, ctx, stock: str = None):
         """Find the price of a REAL LIFE stock"""
         if not stock:
@@ -215,7 +215,7 @@ class Stocks(commands.Cog):
                     f"The current price of {stock} is {await self.fetch_stock_price(stock)}"
                 )
 
-    @commands.command()
+    @commands.hybrid_command()
     async def portfolio(self, ctx, user: discord.Member = None):
         """List all currently owned stocks"""
         async with ctx.typing():

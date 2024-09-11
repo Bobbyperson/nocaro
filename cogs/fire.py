@@ -181,7 +181,7 @@ class Fire(commands.Cog):
         await db.commit()
         await db.close()
 
-    @commands.command()
+    @commands.hybrid_command()
     async def howtofire(self, ctx):
         await ctx.send(
             "Create a channel named #fireboard, give me permission to talk there, and then I will automatically post messages with 5 :fire: reactions. Also, once a week I'll list the most fired messages."
@@ -341,7 +341,7 @@ class Fire(commands.Cog):
                 if exists:
                     await delete_element("message_id", added_msg.id)
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def unix(self, ctx):
         await ctx.send("The current unix time is `" + (str(int(t.time()))) + "`")
 
@@ -424,7 +424,7 @@ class Fire(commands.Cog):
 
             await setfuckingdata(old)
 
-    @commands.command()
+    @commands.hybrid_command()
     async def highestfire(self, ctx, channel: discord.TextChannel = None):
         if not channel:
             db = await aiosqlite.connect(bank, timeout=10)
@@ -461,7 +461,7 @@ class Fire(commands.Cog):
                 f"https://discord.com/channels/{result[4]}/{result[2]}/{result[3]}"
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     async def highestunfire(self, ctx, channel: discord.TextChannel = None):
         if not channel:
             db = await aiosqlite.connect(bank, timeout=10)
@@ -498,7 +498,7 @@ class Fire(commands.Cog):
                 f"https://discord.com/channels/{result[4]}/{result[2]}/{result[3]}"
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     async def fireleaderboard(self, ctx, fire: str = None):
         # get users, count fire for each, display on leaderboard
         if not fire:

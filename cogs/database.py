@@ -56,7 +56,7 @@ class database(commands.Cog):
             else:
                 return False
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
     async def ignore(self, ctx, channel: discord.TextChannel):
         """Make Nocaro ignore a channel"""
@@ -69,7 +69,7 @@ class database(commands.Cog):
 
         await ctx.reply(f"Ignored {channel.mention}.")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
     async def unignore(self, ctx, channel: discord.TextChannel):
         """Make Nocaro not ignore a channel"""
@@ -97,11 +97,11 @@ class database(commands.Cog):
             )
             await db.commit()
 
-    @commands.command(aliases=["privacy", "policy", "pp", "dinfo"])
+    @commands.hybrid_command(aliases=["privacy", "policy", "pp", "dinfo"])
     async def privacypolicy(self, ctx):
         """Short privacy policy."""
         await ctx.reply(
-            "Nocaro stores **Message IDs** in a database. Not actual messages. This means that if you delete your message or remove Nocaro from your server, Nocaro will no longer be able to access said messages. Otherwise, Nocaro does not store any information related to you. Nocaro also does not contain any LLMs. Nocaro is not responsible for any messages it regurgitates. When Nocaro regurgitates messages, it only picks from messages in the channel its currently in. Your messages will not leave whatever server you are in.\nIf you do not agree to any of these terms, please remove Nocaro from your server.\n\nNocaro is open source: <https://github.com/Bobbyperson/nocaro>"
+            "https://github.com/Bobbyperson/nocaro/blob/main/PRIVACY_POLICY.md"
         )
 
     @commands.Cog.listener()
@@ -226,7 +226,7 @@ class database(commands.Cog):
                     os.remove("data/" + filename)
         await ctx.send("Done")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
     async def rmessage(self, ctx):
@@ -264,7 +264,7 @@ class database(commands.Cog):
             message=discord.utils.escape_mentions(message_to_send.content),
         )  # send that bitch
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def conversation(self, ctx, number: int = 5):
         """Generate a whole conversation between random users."""

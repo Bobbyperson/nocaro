@@ -348,7 +348,7 @@ class Economy(commands.Cog):
             await cursor.close()
             await db.close()
 
-    @commands.command(aliases=["graph", "timeline"])
+    @commands.hybrid_command(aliases=["graph", "timeline"])
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def history(self, ctx, user: discord.Member = None):
         """Check your bouge buck history/trends."""
@@ -397,7 +397,7 @@ class Economy(commands.Cog):
     async def moneytest(self, ctx, amount):
         await ctx.send(misc.commafy(econ.moneyfy(amount)))
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
     async def bougegram(self, ctx, difficulty: str = None, bet: str = None):
         """Typing game. VC required."""
@@ -761,7 +761,7 @@ Example command: `,bougegram normal 100`"""
             os.remove(f"{voice_channel.id}.mp3")
             await vc.disconnect()
 
-    @commands.command(aliases=["wl"])
+    @commands.hybrid_command(aliases=["wl"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def winloss(self, ctx, member: discord.Member = None):
         """Check the amount of games you've won and lost."""
@@ -1082,7 +1082,7 @@ Example command: `,bougegram normal 100`"""
     async def rig(self, ctx, game, onoff):
         await ctx.send(f"Rigging {game} set to {onoff}")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unbox(self, ctx, amount: int = 1):
         """Use a banana to unbox a map."""
@@ -1114,7 +1114,7 @@ Example command: `,bougegram normal 100`"""
         await asyncio.sleep(3)
         await unbox_msg.edit(content=full_message)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tradein(
         self,
@@ -1151,7 +1151,7 @@ Example command: `,bougegram normal 100`"""
         await ctx.send("Tradein successful.")
         await econ.update_banana(ctx.author, 1)
 
-    @commands.command(aliases=["levelup", "prestiege"])
+    @commands.hybrid_command(aliases=["levelup", "prestiege"])
     @commands.cooldown(1, 43200, commands.BucketType.user)
     async def bbtobananapipeline(self, ctx):
         """Prestiege to earn bouge bananas."""
@@ -1227,7 +1227,7 @@ Example command: `,bougegram normal 100`"""
             f.write(f"{item}\n")
             await ctx.send(f"Added {item} to the list!")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
     async def trade(self, ctx, member: discord.Member = None):
@@ -1394,7 +1394,7 @@ Example command: `,bougegram normal 100`"""
                 await econ.add_item(ctx.author, map)
         await ctx.send("Trade successful!")
 
-    @commands.command(aliases=["inv"])
+    @commands.hybrid_command(aliases=["inv"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def inventory(self, ctx, member: discord.Member = None):
         """Check your inventory."""
@@ -1433,7 +1433,7 @@ Example command: `,bougegram normal 100`"""
         )
         await pages.start(ctx)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def mapinfo(self, ctx, id: str = None):
         """Check a map's info."""
@@ -1494,7 +1494,7 @@ Example command: `,bougegram normal 100`"""
 
         # Note: With the use of context managers, we don't need to manually close the db and cursor anymore.
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def delete(self, ctx, item: int = None):
         """Delete a map from your inventory."""
@@ -1509,7 +1509,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("You don't have that item")
 
     # meh, this is a bit of a mess, but it works
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def profile(self, ctx, member: discord.Member = None):
         """Check all of your stats."""
@@ -1575,7 +1575,7 @@ Example command: `,bougegram normal 100`"""
         y = (hig - h) / 2 + y_offset
         draw.text((x, y), text, fill="white", font=font)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def level(self, ctx, member: discord.Member = None):
         """Check your level."""
@@ -1610,7 +1610,7 @@ Example command: `,bougegram normal 100`"""
                 content=f"{member}'s level",
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 86400, commands.BucketType.user)
     async def daily(self, ctx):
         """Get bananas."""
@@ -1624,7 +1624,7 @@ Example command: `,bougegram normal 100`"""
         await econ.update_banana(ctx.author, bananas)
         await ctx.reply(f"You just got {bananas} bananas! Come back in 24 hours!")
 
-    @commands.command(aliases=["bananas"])
+    @commands.hybrid_command(aliases=["bananas"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def banana(self, ctx, member: discord.Member = None):
         """Check how many bananas you have."""
@@ -1680,7 +1680,7 @@ Example command: `,bougegram normal 100`"""
             )
 
     # It sends a message with an image of the user's balance.
-    @commands.command(
+    @commands.hybrid_command(
         name="balance", aliases=["bal", "bank", "money", "bucks", "dosh", "wonga"]
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -1780,7 +1780,7 @@ Example command: `,bougegram normal 100`"""
                 ),
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 72.7, commands.BucketType.user)
     async def map(self, ctx):
         """Map for bouge bucks"""
@@ -1821,7 +1821,7 @@ Example command: `,bougegram normal 100`"""
         await econ.update_amount(user, earnings)
 
     # uhhhh i fwuckwed up the ocmmand for hte billionth time... :WAAH: could you pwweettyyywww pweaseewewe fix the cooldown????
-    @commands.command(aliases=["rob"])
+    @commands.hybrid_command(aliases=["rob"])
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def steal(self, ctx, member: discord.Member = None):
         """Steal up to 500 bouge bucks from someone."""
@@ -1902,7 +1902,7 @@ Example command: `,bougegram normal 100`"""
             except discord.Forbidden:
                 await ctx.send(f"could not dm {victim}")
 
-    @commands.command()
+    @commands.hybrid_command()
     async def checkimmunity(self, ctx, member: discord.Member = None):
         """Check if someone has immunity."""
         if isinstance(ctx.channel, discord.channel.DMChannel):
@@ -1926,7 +1926,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.reply(f"{member} is not immune.")
 
     # look i did the rewrite
-    @commands.command(aliases=["bj", "b", "blowjob", "bjrw"])
+    @commands.hybrid_command(aliases=["bj", "b", "blowjob", "bjrw"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     async def blackjack(self, ctx, amountstr: str = None):
         """Blackjack with some special rules"""
@@ -2427,7 +2427,7 @@ Example command: `,bougegram normal 100`"""
         view.add_item(hbutton)
         await main_msg.edit(view=view)
 
-    @commands.command(aliases=["pay", "give", "g"])
+    @commands.hybrid_command(aliases=["pay", "give", "g"])
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def gift(self, ctx, member: discord.Member = None, amount: str = None):
         """Gift someone bouge bucks"""
@@ -2496,7 +2496,7 @@ Example command: `,bougegram normal 100`"""
         await econ.update_amount(user, -1 * amount, False)
         await ctx.send(f"{ctx.author} just gifted {amount} bouge bucks to {giftee}!!!")
 
-    @commands.command(aliases=["lb", "baltop"])
+    @commands.hybrid_command(aliases=["lb", "baltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def leaderboard(self, ctx):
         """View the leaderboard."""
@@ -2525,7 +2525,7 @@ Example command: `,bougegram normal 100`"""
                 em.add_field(name=f"{index}. {username}", value=f"{bal}", inline=False)
         await ctx.send(embed=em)
 
-    @commands.command(aliases=["slb", "sbaltop"])
+    @commands.hybrid_command(aliases=["slb", "sbaltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def serverleaderboard(self, ctx):
         """View the leaderboard."""
@@ -2584,7 +2584,7 @@ Example command: `,bougegram normal 100`"""
     #             index -= 1
     #     await ctx.send(embed=em)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def immunity(self, ctx):
         """Buy immunity from being stolen from."""
@@ -2674,7 +2674,7 @@ Example command: `,bougegram normal 100`"""
         await econ.update_banana(member, amount)
         await ctx.reply(f"you gave {member} {amount} bananas")
 
-    @commands.command(aliases=["don"])
+    @commands.hybrid_command(aliases=["don"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     async def doubleornothing(self, ctx, amount: str = None):
         """Play a chance game to win bouge bucks."""
@@ -2990,7 +2990,7 @@ Example command: `,bougegram normal 100`"""
             )  # easiest to read code 2012
             return
 
-    @commands.command(aliases=["qd"])
+    @commands.hybrid_command(aliases=["qd"])
     @commands.max_concurrency(1, per=commands.BucketType.channel, wait=False)
     async def quickdraw(self, ctx, member: discord.Member = None, amount: str = "0"):
         """Play a reaction based game against someone."""
@@ -3161,7 +3161,7 @@ Example command: `,bougegram normal 100`"""
                     await econ.update_amount(msg2.author, amount * 2)
                     return
 
-    @commands.command(aliases=["s"])
+    @commands.hybrid_command(aliases=["s"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     async def slots(self, ctx, amount: str = None):
         """Play a slot machine."""
@@ -3256,7 +3256,7 @@ Example command: `,bougegram normal 100`"""
         await econ.update_amount(ctx.author, -1 * amount)
 
     # delete this honestly. unused, not that good.
-    @commands.command(aliases=["sos", "sus"])
+    @commands.hybrid_command(aliases=["sos", "sus"])
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def shareorsteal(
         self, ctx, member: discord.Member = None, amount: str = None
@@ -3448,7 +3448,7 @@ Example command: `,bougegram normal 100`"""
             )
             await econ.update_banana(ctx.author, -1)
 
-    @commands.command(aliases=["dnd"])
+    @commands.hybrid_command(aliases=["dnd"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     async def dealornodeal(self, ctx, bet: str = None):
         """Play Deal or No Deal just like the gameshow!"""
@@ -3671,7 +3671,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         else:
             await econ.update_winloss(ctx.author, "l")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def debtrelief(self, ctx):
         """Get out of negative bouge bucks."""
@@ -3838,7 +3838,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     #         board = update_board()
     #         await ctx.send(board)
 
-    @commands.command(aliases=["p"])
+    @commands.hybrid_command(aliases=["p"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def poker(self, ctx, bet: str = None):
@@ -4255,7 +4255,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             )
             await econ.update_winloss(ctx.author, "t")
 
-    @commands.command(aliases=["hr", "horcerace", "horcerase", "horserase"])
+    @commands.hybrid_command(aliases=["hr", "horcerace", "horcerase", "horserase"])
     @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     async def horserace(self, ctx, bet: str = None, horse: int = 0):

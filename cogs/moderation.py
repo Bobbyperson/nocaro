@@ -62,7 +62,7 @@ class Moderation(commands.Cog):
             me = await self.client.fetch_user(config.owner_id)
             await me.send(f"Left blacklisted server: {guild.name}: `{guild.id}`")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(moderate_members=True)
     async def timeout(self, ctx, member: discord.Member, length: int = 5):
         """Timeout someone."""
@@ -77,13 +77,13 @@ class Moderation(commands.Cog):
         )
 
     # commands
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
     async def clear(self, ctx, amount=5 + 1):
         """Clean messages."""
         await ctx.channel.purge(limit=amount)
 
-    @commands.command()
+    @commands.hybrid_command()
     async def blacklistme(self, ctx, length: int = 0):
         if length < 0:
             await ctx.send(
@@ -132,14 +132,14 @@ class Moderation(commands.Cog):
         await mf.blacklist_user(member.id, int(time.time()) + length)
         await ctx.send("User successfully blacklisted.")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason=None):
         """Ban someone."""
         await member.ban(reason=reason)
         await ctx.send("User has been banned")
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
         """Kick someone."""

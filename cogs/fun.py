@@ -39,7 +39,7 @@ class Fun(commands.Cog):
 
     # commands
 
-    @commands.command()
+    @commands.hybrid_command()
     async def ip(self, ctx, user: discord.Member = None):
         ip1 = random.randint(1, 255)
         ip2 = random.randint(0, 255)
@@ -87,22 +87,6 @@ class Fun(commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def dmid(self, ctx, member: int = 0, content=None):
-        if not member:
-            return
-        try:
-            member = await self.client.fetch_user(member)
-        except discord.NotFound:
-            try:
-                member = await self.client.get_user(member)
-            except discord.NotFound:
-                await ctx.send("Fucked up bro")
-                return
-        await member.send(content)  # type: ignore
-        await ctx.add_reaction("✅")
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
     async def dm(self, ctx, user: discord.Member, *, message: str):
         """DM the user of your choice"""
         if not f"{user}":
@@ -117,6 +101,7 @@ class Fun(commands.Cog):
             )
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def createpoll(self, ctx, amount: int = 0):
         """Make a poll"""
         if amount > 10 or amount < 1:
