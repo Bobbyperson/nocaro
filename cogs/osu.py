@@ -194,11 +194,11 @@ class osu(commands.Cog):
     async def getrank(self, ctx, id):
         await ctx.send(await self.get_user_rank(id))
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def invest(self, ctx, id: int = 0, amount: str = None):
+    async def invest(self, ctx, osu_id: int = 0, amount: str = None):
         """Invest in an osu player."""
-        if id == 0:
+        if osu_id == 0:
             return await ctx.send("Please enter a valid user id.")
         amount = ef.moneyfy(amount)
         if amount == 0:
@@ -213,22 +213,22 @@ class osu(commands.Cog):
                 # first check if user already has entry for osu user
                 await cursor.execute(
                     "SELECT * FROM osu WHERE osu_user = ? AND user_id = ?",
-                    (id, ctx.author.id),
+                    (osu_id, ctx.author.id),
                 )
                 if await cursor.fetchone():
                     await ctx.send(
                         "You already invested in that user! Please sell first."
                     )
                 else:
-                    osu_score = await self.get_user_rank(id)
+                    osu_score = await self.get_user_rank(osu_id)
                     if not osu_score:
                         return await ctx.send(
                             "That user doesn't exist! Please go to osu.ppy.sh and find a valid user id!"
                         )
-                    osu_name = await self.get_user_name(id)
+                    osu_name = await self.get_user_name(osu_id)
                     await cursor.execute(
                         "INSERT INTO osu(user_id, score, timestamp, amount, osu_user) VALUES(?, ?, ?, ?, ?)",
-                        (ctx.author.id, osu_score, int(time.time()), amount, id),
+                        (ctx.author.id, osu_score, int(time.time()), amount, osu_id),
                     )
                     await db.commit()
                     await ctx.send(
@@ -236,7 +236,7 @@ class osu(commands.Cog):
                     )
                     await ef.update_amount(ctx.author, amount)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def sell(self, ctx, id):
         """Sell your investment on an osu player."""
@@ -270,7 +270,7 @@ class osu(commands.Cog):
                         reward,
                     )
 
-    @commands.command(aliases=["investments", "checkinvestment"])
+    @commands.hybrid_command(aliases=["investments", "checkinvestment"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def checkinvestments(self, ctx, user: discord.User = None):
         """Check your investments on osu players."""
