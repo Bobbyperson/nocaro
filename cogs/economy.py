@@ -318,7 +318,7 @@ class Economy(commands.Cog):
                 return
             last = int(result[0])
         if current > int(last):
-            async with aiosqlite.connect(bank, timeout=10) as db:            
+            async with aiosqlite.connect(bank, timeout=10) as db:
                 cursor = await db.cursor()
                 await cursor.execute(
                     f"UPDATE misc SET data = {last + 86400} WHERE pointer='history'"
@@ -4232,9 +4232,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await econ.update_amount(ctx.author, amount)
             await econ.update_winloss(ctx.author, "w")
         elif score_lookup[score(player)[0]] < score_lookup[score(dealer)[0]]:
-            await ctx.send(
-                f"You lose {econ.unmoneyfy(amount)} bouge bucks!"
-            )
+            await ctx.send(f"You lose {econ.unmoneyfy(amount)} bouge bucks!")
             await econ.update_amount(ctx.author, -1 * amount)
             await econ.update_winloss(ctx.author, "l")
         else:
