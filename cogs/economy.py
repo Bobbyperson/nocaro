@@ -1584,7 +1584,7 @@ Example command: `,bougegram normal 100`"""
             else 0
         )
         msg = f"level {level}"
-        img = Image.open("levelblank.png")
+        img = Image.open("level.png")
         draw = ImageDraw.Draw(img)
         my_font = ImageFont.truetype("fonts/monbaiti.ttf", 48)
         w, h = my_font.getbbox(msg)[2:4]
@@ -1712,7 +1712,7 @@ Example command: `,bougegram normal 100`"""
                 )
             return
         if member.id == 201553786974502912:  # karma
-            img = Image.open("clue.jpg")
+            img = Image.open("karma.jpg")
         wid, hig = (500, 500)
         if amount == 1:
             msg = f"{amount} bouge buck"
