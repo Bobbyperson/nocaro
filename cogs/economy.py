@@ -2601,12 +2601,11 @@ Example command: `,bougegram normal 100`"""
             return
         totalmoney = await econ.get_bal(user)
         current = await econ.get_immunity(user)
-        if totalmoney > 1_000_000_000:
-            await ctx.reply(
-                f"Huh, what's that, you have {totalmoney} bouge bucks and you want to buy immunity? "
-                f"Really. Do you really need that? Yeah sorry I don't think so pal."
-            )
-            return
+        user_prestieges = await econ.get_prestiege(ctx.author)
+        if user_prestieges:
+            if user_prestieges[3]:
+                await ctx.reply("I pity the fool.")
+                return
         if current > unix + 86400:
             await ctx.reply("You have immunity for over a day bruh")
             return
