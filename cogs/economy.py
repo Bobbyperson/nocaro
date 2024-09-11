@@ -306,47 +306,35 @@ class Economy(commands.Cog):
     @tasks.loop(seconds=60)
     async def update_tables(self):
         current = misc.get_unix()
-        db = await aiosqlite.connect(bank, timeout=10)
-        cursor = await db.cursor()
-        await cursor.execute("SELECT data FROM misc WHERE pointer='history'")
-        result = await cursor.fetchone()
-        await cursor.close()
-        if not result:
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
+        async with aiosqlite.connect(bank, timeout=10) as db:
+            cursor = await db.cursor()
+            await cursor.execute("SELECT data FROM misc WHERE pointer='history'")
+            result = await cursor.fetchone()
+            if not result:
                 await cursor.execute(
                     f"UPDATE misc SET data = {current + 86400} WHERE pointer='history'"
                 )
                 await db.commit()
-                await cursor.close()
                 return
-        last = int(result[0])
-        await cursor.close()
-        await db.close()
+            last = int(result[0])
         if current > int(last):
-            db = await aiosqlite.connect(bank, timeout=10)
-            cursor = await db.cursor()
-            await cursor.execute(
-                f"UPDATE misc SET data = {last + 86400} WHERE pointer='history'"
-            )
-            await db.commit()
-            await cursor.close()
-            await db.close()
-            db = await aiosqlite.connect(bank, timeout=10)
-            cursor = await db.cursor()
-            await cursor.execute("drop table old9")
-            await cursor.execute("ALTER TABLE `old8` RENAME TO `old9`")
-            await cursor.execute("ALTER TABLE `old7` RENAME TO `old8`")
-            await cursor.execute("ALTER TABLE `old6` RENAME TO `old7`")
-            await cursor.execute("ALTER TABLE `old5` RENAME TO `old6`")
-            await cursor.execute("ALTER TABLE `old4` RENAME TO `old5`")
-            await cursor.execute("ALTER TABLE `old3` RENAME TO `old4`")
-            await cursor.execute("ALTER TABLE `old2` RENAME TO `old3`")
-            await cursor.execute("ALTER TABLE `old1` RENAME TO `old2`")
-            await cursor.execute("CREATE TABLE 'old1' AS SELECT * FROM main")
-            await db.commit()
-            await cursor.close()
-            await db.close()
+            async with aiosqlite.connect(bank, timeout=10) as db:            
+                cursor = await db.cursor()
+                await cursor.execute(
+                    f"UPDATE misc SET data = {last + 86400} WHERE pointer='history'"
+                )
+                await db.commit()
+                await cursor.execute("drop table old9")
+                await cursor.execute("ALTER TABLE `old8` RENAME TO `old9`")
+                await cursor.execute("ALTER TABLE `old7` RENAME TO `old8`")
+                await cursor.execute("ALTER TABLE `old6` RENAME TO `old7`")
+                await cursor.execute("ALTER TABLE `old5` RENAME TO `old6`")
+                await cursor.execute("ALTER TABLE `old4` RENAME TO `old5`")
+                await cursor.execute("ALTER TABLE `old3` RENAME TO `old4`")
+                await cursor.execute("ALTER TABLE `old2` RENAME TO `old3`")
+                await cursor.execute("ALTER TABLE `old1` RENAME TO `old2`")
+                await cursor.execute("CREATE TABLE 'old1' AS SELECT * FROM main")
+                await db.commit()
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
     @commands.cooldown(1, 60, commands.BucketType.user)
@@ -2533,12 +2521,12 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("Command may not be used in a DM.")
             return
         amount = 10
-        db = await aiosqlite.connect(bank, timeout=10)
-        cursor = await db.cursor()
-        await cursor.execute(
-            "SELECT * FROM main ORDER BY CAST(balance AS INTEGER) DESC"
-        )
-        users = await cursor.fetchall()
+        async with aiosqlite.connect(bank, timeout=10) as db:
+            cursor = await db.cursor()
+            await cursor.execute(
+                "SELECT * FROM main ORDER BY CAST(balance AS INTEGER) DESC"
+            )
+            users = await cursor.fetchall()
         em = discord.Embed(
             title=f"Top {amount} Bouge Buck Owners", color=discord.Color(0xFA43EE)
         )

@@ -127,29 +127,23 @@ def draw_rotated_text(image, angle, xy, text, fill, *args, **kwargs):
 
 
 async def is_blacklisted(*args):
-    db = await aiosqlite.connect(bank, timeout=10)
-    cursor = await db.cursor()
-    current_time = get_unix()
-    for user_id in args:
-        await cursor.execute(
-            f"SELECT * FROM blacklist WHERE user_id={user_id} AND (timestamp > {current_time} OR timestamp = 0)"
-        )
-        result = await cursor.fetchone()
-        if result:
-            await cursor.close()
-            await db.close()
-            return True, result[1]
-    await cursor.close()
-    await db.close()
+    async with aiosqlite.connect(bank, timeout=10) as db:
+        cursor = await db.cursor()
+        current_time = get_unix()
+        for user_id in args:
+            await cursor.execute(
+                f"SELECT * FROM blacklist WHERE user_id={user_id} AND (timestamp > {current_time} OR timestamp = 0)"
+            )
+            result = await cursor.fetchone()
+            if result:
+                return True, result[1]
     return False, 0
 
 
 async def blacklist_user(user_id, timestamp):
-    db = await aiosqlite.connect(bank, timeout=10)
-    cursor = await db.cursor()
-    await cursor.execute(
-        f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})"
-    )
-    await db.commit()
-    await cursor.close()
-    await db.close()
+    async with aiosqlite.connect(bank, timeout=10) as db:
+        cursor = await db.cursor()
+        await cursor.execute(
+            f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})"
+        )
+        await db.commit()
