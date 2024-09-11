@@ -412,24 +412,17 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
     if isinstance(amount, str):
         amount = amount.strip(",")
         amount = int(amount)
-    if (amount % 1000000000000000) == 0:
-        return f"{int(amount/1000000000000000)}q"
-    if (amount % 1000000000000) == 0:
-        return f"{int(amount/1000000000000)}t"
-    if (amount % 1000000000) == 0:
-        return f"{int(amount/1000000000)}b"
-    if (amount % 1000000) == 0:
-        return f"{int(amount/1000000)}m"
-    if (amount % 1000) == 0:
-        return f"{int(amount/1000)}k"
+    if (amount > 1_000_000_000_000_000) == 0:
+        return f"{amount/1_000_000_000_000_000:.2f}q"
+    if (amount > 1_000_000_000_000) == 0:
+        return f"{amount/1_000_000_000_000:.2f}t"
+    if (amount > 1_000_000_000) == 0:
+        return f"{amount/1_000_000_000:.2f}b"
+    if (amount > 1_000_000) == 0:
+        return f"{amount/1_000_000:.2f}m"
+    if (amount > 1_000) == 0:
+        return f"{amount/1_000:.2f}k"
     return amount
-
-
-def formatMoneyForEndUser(amount):
-    if type(unmoneyfy(amount)) is int:
-        return mf.commafy(amount)
-    else:
-        return unmoneyfy(amount)
 
 
 async def get_investment(user):

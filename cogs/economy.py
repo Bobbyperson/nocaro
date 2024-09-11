@@ -2125,7 +2125,7 @@ Example command: `,bougegram normal 100`"""
                 message += "\n"
             return rewards, message
 
-        betmsg = f"Bet: **{econ.formatMoneyForEndUser(amount)}** $BB"
+        betmsg = f"Bet: **{econ.unmoneyfy(amount)}** $BB"
         dealer_hand = f"Dealer: **{dealer_show_card.name}{dealer_show_card.suit}**"
         player_hand = get_player_hands()
         extra_info = ""
@@ -4167,26 +4167,26 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         if score_lookup[score(player)[0]] == score_lookup[score(dealer)[0]]:
             if score(player)[2] > score(dealer)[2]:
                 await ctx.send(
-                    f"You win {econ.formatMoneyForEndUser(amount)} bouge bucks! You won due to higher valued cards."
+                    f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
                 )
                 await econ.update_amount(ctx.author, amount)
                 await econ.update_winloss(ctx.author, "w")
             elif score(player)[2] < score(dealer)[2]:
                 await ctx.send(
-                    f"You lose {econ.formatMoneyForEndUser(amount)} bouge bucks! The dealer won due to higher valued cards."
+                    f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
                 )
                 await econ.update_amount(ctx.author, -1 * amount)
                 await econ.update_winloss(ctx.author, "l")
             else:
                 if score(player)[1] > score(dealer)[1]:
                     await ctx.send(
-                        f"You win {econ.formatMoneyForEndUser(amount)} bouge bucks! You won due to higher valued cards."
+                        f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
                     )
                     await econ.update_amount(ctx.author, amount)
                     await econ.update_winloss(ctx.author, "w")
                 elif score(player)[1] < score(dealer)[1]:
                     await ctx.send(
-                        f"You lose {econ.formatMoneyForEndUser(amount)} bouge bucks! The dealer won due to higher valued cards."
+                        f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
                     )
                     await econ.update_amount(ctx.author, -1 * amount)
                     await econ.update_winloss(ctx.author, "l")
@@ -4194,14 +4194,14 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     for i in range(4, -1, -1):  # reversed loop, lol
                         if score(player)[3][i] > score(dealer)[3][i]:
                             await ctx.send(
-                                f"You win {econ.formatMoneyForEndUser(amount)} bouge bucks! You won due to higher valued cards."
+                                f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
                             )
                             await econ.update_amount(ctx.author, amount)
                             await econ.update_winloss(ctx.author, "w")
                             break
                         elif score(player)[3][i] < score(dealer)[3][i]:
                             await ctx.send(
-                                f"You lose {econ.formatMoneyForEndUser(amount)} bouge bucks! The dealer won due to higher valued cards."
+                                f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
                             )
                             await econ.update_amount(ctx.author, -1 * amount)
                             await econ.update_winloss(ctx.author, "l")
@@ -4212,7 +4212,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         elif score_lookup[score(player)[0]] > score_lookup[score(dealer)[0]]:
             if score(player)[0] == "royal flush":
                 pinme = await ctx.send(
-                    f"YOU JUST GOT A ROYAL FLUSH!!!!!!! YOU GET 1,000,000,000x PAYOUT!!!!!! YOU JUST WON {econ.formatMoneyForEndUser(amount * 1_000_000_000)} BOUGE BUCKS!!!!!!!!!!!"
+                    f"YOU JUST GOT A ROYAL FLUSH!!!!!!! YOU GET 1,000,000,000x PAYOUT!!!!!! YOU JUST WON {econ.unmoneyfy(amount * 1_000_000_000)} BOUGE BUCKS!!!!!!!!!!!"
                 )
                 await econ.update_amount(ctx.author, amount * 1_000_000_000)
                 await econ.update_winloss(ctx.author, "b")
@@ -4228,12 +4228,12 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     while vc.is_playing():
                         await asyncio.sleep(0.1)
                     await vc.disconnect()
-            await ctx.send(f"You win {econ.formatMoneyForEndUser(amount)} bouge bucks!")
+            await ctx.send(f"You win {econ.unmoneyfy(amount)} bouge bucks!")
             await econ.update_amount(ctx.author, amount)
             await econ.update_winloss(ctx.author, "w")
         elif score_lookup[score(player)[0]] < score_lookup[score(dealer)[0]]:
             await ctx.send(
-                f"You lose {econ.formatMoneyForEndUser(amount)} bouge bucks!"
+                f"You lose {econ.unmoneyfy(amount)} bouge bucks!"
             )
             await econ.update_amount(ctx.author, -1 * amount)
             await econ.update_winloss(ctx.author, "l")
