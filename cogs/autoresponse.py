@@ -28,7 +28,6 @@ class Autoresponse(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        reactto = str.lower(message.content)
         if message.author == self.client.user:
             return
         elif message.author.bot:
@@ -37,38 +36,39 @@ class Autoresponse(commands.Cog):
             return
         elif self.client.user.mentioned_in(message):
             await message.channel.send(message.author.mention)
-        elif "the dark knight" in reactto:
-            await message.channel.send(
-                'Did you know in the batman movie "The Dark Knight Rises" there is a split second scene where you can see a cameraman?',
-                file=discord.File("camera.jpg", "camera.jpg"),
-            )
-        elif "etterna" in reactto:
-            await message.channel.send("OSU!!!")
-        elif "touhou" in reactto:
-            await message.channel.send("toe hoe")
-        elif "owo" == reactto:
-            await message.channel.send("uwu")
-        elif "uwu" == reactto:
-            await message.channel.send("owo")
-        elif "pandavert" in reactto:
-            await message.channel.send(":panda_face:")
-        elif "sponsor" in reactto:
-            await message.channel.send(
-                "today's annoying auto response message is sponsored by RAID: Shadow Legends."
-            )
-        elif "min min" in reactto:
-            await message.channel.send("i fucking hate min min")
-        elif "hate these autoresponses" in reactto:
-            await message.channel.send("oh yeah? i don't like you either buster")
-        elif "quack" in reactto:
-            await message.channel.send("quack")
-        elif "ryan gosling" in reactto:
-            await message.channel.send("he's literally me")
-        elif "jackbox" in reactto:
-            jackbox = "<:GO:893517923472277536>"
-            await message.add_reaction(jackbox)
-        elif "pick it up" in reactto:
-            await message.channel.send("SKAAAAAAAAAA!")
+        match str.lower(message.content):
+            case "the dark knight":
+                await message.channel.send(
+                    'Did you know in the batman movie "The Dark Knight Rises" there is a split second scene where you can see a cameraman?',
+                    file=discord.File("camera.jpg", "camera.jpg"),
+                )
+            case "etterna":
+                await message.channel.send("OSU!!!")
+            case "touhou":
+                await message.channel.send("toe hoe")
+            case "owo":
+                await message.channel.send("uwu")
+            case "uwu":
+                await message.channel.send("owo")
+            case "pandavert":
+                await message.channel.send(":panda_face:")
+            case "sponsor":
+                await message.channel.send(
+                    "today's annoying auto response message is sponsored by RAID: Shadow Legends."
+                )
+            case "min min":
+                await message.channel.send("i fucking hate min min")
+            case "hate these autoresponses":
+                await message.channel.send("oh yeah? i don't like you either buster")
+            case "quack":
+                await message.channel.send("quack")
+            case "ryan gosling":
+                await message.channel.send("he's literally me")
+            case "jackbox":
+                jackbox = "<:GO:893517923472277536>"
+                await message.add_reaction(jackbox)
+            case "pick it up":
+                await message.channel.send("SKAAAAAAAAAA!")
 
 
 async def setup(client):
