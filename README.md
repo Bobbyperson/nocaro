@@ -6,9 +6,7 @@ Nocaro is a multi-purpose discord bot. It's main appeal is it's wide selection o
 
 Nocaro was essentially my introducion to programming, and therefore contains a LOT of really dumb code. You should be careful if you decide to use this project as example code for anything.
 
-## Issues
-
-This is not the version of Nocaro currently running on the public bot. This is because the current version is held together with gum and chicken wire. I'm currently working on cleaning a lot of the code to make easier to work on Nocaro in the future. If you decide to run this bot locally you will likely run into a LOT of issues.
+A lot of the economy commands have osu jokes. To get started use `,map` to get Bouge Bucks ($BB). Afterwards, you can gamble your $BB via blackjack, slots, or other games. You can also invest in the stock market. Use `,help` to see all commands.
 
 ## Contributing
 
