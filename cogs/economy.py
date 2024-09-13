@@ -1712,7 +1712,7 @@ Example command: `,bougegram normal 100`"""
                 )
             return
         if member.id == 201553786974502912:  # karma
-            img = Image.open("karma.jpg")
+            img = Image.open("templates/karma.jpg")
         wid, hig = (500, 500)
         if amount == 1:
             msg = f"{amount} bouge buck"
