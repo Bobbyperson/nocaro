@@ -1197,26 +1197,6 @@ Example command: `,bougegram normal 100`"""
             ctx.command.reset_cooldown(ctx)
             return
 
-    @commands.command(hidden=True)
-    async def addmap(self, ctx, item: str = None):
-        """ralknson"""
-        allowed_users = [
-            "114415634808307720",
-            "263126803780993024",
-            "248984895940984832",
-        ]
-        if str(ctx.author.id) not in allowed_users:
-            await ctx.send("You are not allowed to use this command!")
-            return
-        if not item:
-            await ctx.send(
-                'Ok this is easy ALL you have to do if provide an id, plus some info. There is NO FUCKING UNDO command so DON\'T MESS IT UP. ADD IT IN THIS FORMAT:\n `,addmap "1234|<artist> - <title> by <mapper>"`'
-            )
-            return
-        with open("maps/maps.txt", "a+") as f:
-            f.write(f"{item}\n")
-            await ctx.send(f"Added {item} to the list!")
-
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)

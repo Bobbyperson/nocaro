@@ -1,4 +1,3 @@
-import math
 import random as rd
 import time
 
@@ -11,23 +10,6 @@ if __name__ == "__main__":
     )
 
 bank = "./data/database.sqlite"
-
-
-def findMean(arr, left, right):
-    # Both sum and count are
-    # initialize to 0
-    sum, count = 0, 0
-
-    # To calculate sum and number
-    # of elements in range l to r
-    for i in range(left, right + 1):
-        sum += arr[i]
-        count += 1
-    # Calculate floor value of mean
-    mean = math.floor(sum / count)
-    # Returns mean of array
-    # in range l to r
-    return mean
 
 
 def clean_username(name):  # fuck you ralkinson!!!!!!!!!
