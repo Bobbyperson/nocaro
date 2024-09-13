@@ -115,6 +115,10 @@ class database(commands.Cog):
             return
         if msg[0] == ",":  # make sure its not a command
             return
+        if await self.check_ignored(message.channel):
+            return
+        if not message.guild:
+            return
         if msg in [
             "hit",
             "stand",
