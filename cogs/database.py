@@ -1,11 +1,13 @@
-import discord
+import asyncio
 import os
 import random
 import time
+
 import aiosqlite
-import asyncio
-from discord.ext import commands
+import discord
 import discord.ext
+from discord.ext import commands
+
 import cogs.utils.miscfuncs as mf
 
 bank = "./data/database.sqlite"

@@ -1,5 +1,6 @@
-import requests
 import random as rd
+
+import requests
 from discord.ext import commands
 
 

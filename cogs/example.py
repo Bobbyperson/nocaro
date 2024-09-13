@@ -1,11 +1,12 @@
-import discord
-import time
 import asyncio
 import random
-from discord.ext import commands
-from discord import ButtonStyle, Interaction
-from discord.ui import Button, View
+import time
+
+import discord
 import emoji
+from discord import ButtonStyle, Interaction
+from discord.ext import commands
+from discord.ui import Button, View
 
 
 class MyButtonView(View):

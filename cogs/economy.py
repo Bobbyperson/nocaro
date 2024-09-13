@@ -1,28 +1,30 @@
 # top 10 ancient texts undecipherable by humans
+import asyncio
 import io
 import math
-import discord
-import random as rd
-import asyncio
-import time
-import aiosqlite
-import sys
-import traceback
 import os
 import os.path
+import random as rd
+import sys
+import time
+import traceback
+from collections import Counter
+from typing import Tuple
+
+import aiosqlite
 import asyncpg
-import pyttsx3
-import config
+import discord
 import matplotlib.pyplot as plt
+import pyttsx3
+from discord import FFmpegPCMAudio
+from discord.ext import commands, menus, tasks
+from discord.ui import Button, View
+from PIL import Image, ImageDraw, ImageFont
+from pydub import AudioSegment
+
 import cogs.utils.econfuncs as econ
 import cogs.utils.miscfuncs as misc
-from pydub import AudioSegment
-from PIL import Image, ImageDraw, ImageFont
-from discord import FFmpegPCMAudio
-from discord.ui import Button, View
-from discord.ext import commands, tasks, menus
-from typing import Tuple
-from collections import Counter
+import config
 
 # main bank file
 bank = "./data/database.sqlite"

@@ -1,9 +1,9 @@
-from PIL import Image, ImageDraw
-import time
 import math
 import random as rd
-import aiosqlite
+import time
 
+import aiosqlite
+from PIL import Image, ImageDraw
 
 if __name__ == "__main__":
     print(

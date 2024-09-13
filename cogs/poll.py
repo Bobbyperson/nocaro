@@ -1,8 +1,9 @@
+import asyncio
+from collections import Counter
+
+import aiosqlite
 import discord
 from discord.ext import commands, tasks
-from collections import Counter
-import aiosqlite
-import asyncio
 
 bank = "./data/database.sqlite"
 

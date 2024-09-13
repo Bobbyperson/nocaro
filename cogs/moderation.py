@@ -1,14 +1,13 @@
+import asyncio
+import json
+import time
+from datetime import timedelta
+
 import discord
 from discord.ext import commands
-from datetime import timedelta
-import json
-import asyncio
-import config
 
-# import re
-# import random
-import time
 import cogs.utils.miscfuncs as mf
+import config
 
 
 def array_to_string(arr):
