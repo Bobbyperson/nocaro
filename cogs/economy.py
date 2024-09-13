@@ -745,9 +745,9 @@ Example command: `,bougegram normal 100`"""
             vc.play(FFmpegPCMAudio("audio/end.mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.1)
+            await vc.disconnect()
             os.remove(f"{ctx.channel.id}.mp3")
             os.remove(f"{voice_channel.id}.mp3")
-            await vc.disconnect()
 
     @commands.hybrid_command(aliases=["wl"])
     @commands.cooldown(1, 5, commands.BucketType.user)
