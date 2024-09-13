@@ -1,6 +1,6 @@
-# import discord
-from discord.ext import commands
 import random as rd
+
+from discord.ext import commands
 
 
 class GM(commands.Cog):

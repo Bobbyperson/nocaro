@@ -1,10 +1,11 @@
-import discord
-import random
-import os
 import asyncio
-from discord.ext import commands
-from discord.ext import tasks
+import os
+import random
+
+import discord
+from discord.ext import commands, tasks
 from pretty_help import PrettyHelp
+
 import config
 
 

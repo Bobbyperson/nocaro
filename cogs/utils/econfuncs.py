@@ -1,9 +1,10 @@
-import aiosqlite
 import os
-import re
 import random as rd
-import cogs.utils.miscfuncs as mf
+import re
 
+import aiosqlite
+
+import cogs.utils.miscfuncs as mf
 
 if __name__ == "__main__":
     print(

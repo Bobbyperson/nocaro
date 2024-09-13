@@ -1,10 +1,10 @@
-import discord
-import aiosqlite
-import time as t
 import csv
+import time as t
+
+import aiosqlite
 import asyncpg
-from discord.ext import commands
-from discord.ext import tasks
+import discord
+from discord.ext import commands, tasks
 
 bank = "./data/database.sqlite"
 

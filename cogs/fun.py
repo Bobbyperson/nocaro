@@ -1,9 +1,9 @@
-import discord
 import random
-import config
 
-# import asyncio
+import discord
 from discord.ext import commands
+
+import config
 
 
 class Fun(commands.Cog):
