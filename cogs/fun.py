@@ -126,6 +126,11 @@ class Fun(commands.Cog):
         else:
             await ctx.send("reply to a message and try again")
 
+    @commands.command()
+    async def howtosay(self, ctx):
+        """How do you pronounce Nocaro?"""
+        await ctx.send("Nocaro: `/noʊ-kə-roʊ/` (noh-cuh-row)\nBouge: `/buːʒ/` (booj)")
+
 
 async def setup(client):
     await client.add_cog(Fun(client))
