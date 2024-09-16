@@ -413,15 +413,15 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
     if isinstance(amount, str):
         amount = amount.strip(",")
         amount = int(amount)
-    if amount > 1_000_000_000_000_000:
+    if amount >= 1_000_000_000_000_000:
         return f"{amount/1_000_000_000_000_000:.2f}q"
-    if amount > 1_000_000_000_000:
+    if amount >= 1_000_000_000_000:
         return f"{amount/1_000_000_000_000:.2f}t"
-    if amount > 1_000_000_000:
+    if amount >= 1_000_000_000:
         return f"{amount/1_000_000_000:.2f}b"
-    if amount > 1_000_000:
+    if amount >= 1_000_000:
         return f"{amount/1_000_000:.2f}m"
-    if amount > 1_000:
+    if amount >= 1_000:
         return f"{amount/1_000:.2f}k"
     return amount
 
