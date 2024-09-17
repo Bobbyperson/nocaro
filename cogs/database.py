@@ -195,6 +195,7 @@ class database(commands.Cog):
                 await db.commit()
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
             "fixupx.com" not in msg
+            and "fixvx.com" not in msg
             and "fxtwitter.com" not in msg
             and "vxtwitter.com" not in msg
         ):
@@ -202,8 +203,8 @@ class database(commands.Cog):
                 await message.delete()
             except discord.Forbidden:
                 return
-            newmsg = msg.replace("x.com", "fixupx.com")
-            newmsg = newmsg.replace("twitter.com", "fxtwitter.com")
+            newmsg = msg.replace("x.com", "fixvx.com")
+            newmsg = newmsg.replace("twitter.com", "vxtwitter.com")
             await mf.send_webhook(
                 ctx=message,
                 name=message.author.display_name,
