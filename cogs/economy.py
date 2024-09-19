@@ -1566,7 +1566,7 @@ Example command: `,bougegram normal 100`"""
             else 0
         )
         msg = f"level {level}"
-        img = Image.open("level.png")
+        img = Image.open("templates/level.png")
         draw = ImageDraw.Draw(img)
         my_font = ImageFont.truetype("fonts/monbaiti.ttf", 48)
         w, h = my_font.getbbox(msg)[2:4]
