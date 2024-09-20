@@ -12,6 +12,6 @@ matplotlib==3.9.2
 pydub==0.25.1
 emoji==2.13.0
 yfinance==0.2.43
-pandas==2.2.2
+pandas==2.2.3
 pandas_market_calendars==4.4.1
 git+https://github.com/Rapptz/discord-ext-menus
