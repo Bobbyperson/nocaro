@@ -1,5 +1,6 @@
 import aiosqlite
 from discord.ext import commands
+from utils.miscfuncs import is_blacklisted
 
 bank = "./data/database.sqlite"
 
@@ -36,6 +37,8 @@ class Autoresponse(commands.Cog):
         if self.client.user.mentioned_in(message):
             await message.channel.send(message.author.mention)
         if not message.content:
+            return
+        if is_blacklisted(message.author.id):
             return
 
         if "touhou" in str.lower(message.content):
