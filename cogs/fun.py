@@ -3,6 +3,7 @@ import random
 import discord
 from discord.ext import commands
 
+from utils import miscfuncs as mf
 import config
 
 
@@ -23,11 +24,10 @@ class Fun(commands.Cog):
             return
         if message.content.lower() in ["share", "steal"]:
             return
+        if mf.is_blacklisted(message.author.id):
+            return
         if isinstance(message.channel, discord.channel.DMChannel):
             if message.author.id in config.blacklisted_dms:
-                await message.channel.send(
-                    "You've been blacklisted from all DMs. There is no chance for appeal."
-                )
                 return
             me = await self.client.fetch_user(config.owner_id)
             await me.send(
