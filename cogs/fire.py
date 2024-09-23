@@ -25,9 +25,9 @@ async def add_msg(reacts, msg, fb_msg_id, fbid, emoji):
 
         query = """
             INSERT INTO fire(
-                reacts, channel_id, message_id, guild_id, user_id, fb_id, 
+                reacts, channel_id, message_id, guild_id, user_id, fb_id,
                 message, attachments, timestamp, fb_msg_id, emoji
-            ) 
+            )
             values(?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)
         """
         parameters = (
