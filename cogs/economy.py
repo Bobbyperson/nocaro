@@ -3431,11 +3431,11 @@ Example command: `,bougegram normal 100`"""
         if not bet:
             await ctx.reply(
                 """**Welcome to Deal or No Deal!**
-This game is played with 26 cases, each containing a different amount of money. 
-You choose one case to keep, and then proceeds to open the remaining cases, one by one. 
-After a couple of cases are opened, the banker gives an offer to you. You can choose **Deal** or **No Deal**. 
-If you decide to take the deal, you will receive the amount of money that the dealer offered and the game ends. 
-If you decide no deal, you can continue to open cases. 
+This game is played with 26 cases, each containing a different amount of money.
+You choose one case to keep, and then proceeds to open the remaining cases, one by one.
+After a couple of cases are opened, the banker gives an offer to you. You can choose **Deal** or **No Deal**.
+If you decide to take the deal, you will receive the amount of money that the dealer offered and the game ends.
+If you decide no deal, you can continue to open cases.
 The game ends when you either decide to deal, or when all cases have been opened.
 To begin, retype this command with a bet, minimum 500 bouge bucks."""
             )
