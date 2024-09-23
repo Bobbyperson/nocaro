@@ -19,8 +19,9 @@ Nocaro is not responsible for any messages it regurgitates. The messages Nocaro 
 Nocaro is open-source software, and its source code is available at the [Nocaro GitHub Repository](https://github.com/Bobbyperson/nocaro).
 
 ### 7. Acceptance of Terms
-By using Nocaro, you agree to the terms outlined in this privacy policy. If you do not agree with any part of this policy, you are advised to remove Nocaro from your server.
+By using Nocaro, you agree to the terms outlined in this privacy policy. If you do not agree with any part of this policy, you are advised to remove Nocaro from your server. If you are not the server owner, and do not want Nocaro to interact with you, you can use the `,blacklistme` command. If Nocaro holds any message ids from you that you would like deleted, please DM the bot asking for all of or specific message ids to be removed.
 
 **Effective Date:** Sep 9th, 2024
+**Last updated:** Sep 23rd, 2024
 
 This policy may be updated periodically, and changes will be reflected in the latest version available in the GitHub repository.
