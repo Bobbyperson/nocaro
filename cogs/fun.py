@@ -3,7 +3,7 @@ import random
 import discord
 from discord.ext import commands
 
-from utils import miscfuncs as mf
+import cogs.utils.miscfuncs as mf
 import config
 
 
