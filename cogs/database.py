@@ -117,7 +117,7 @@ class database(commands.Cog):
             return
         if await self.check_ignored(message.channel):
             return
-        if mf.is_blacklisted(message.author.id):
+        if await mf.is_blacklisted(message.author.id):
             return
         if not message.guild:
             return
