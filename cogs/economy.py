@@ -475,7 +475,7 @@ Example command: `,bougegram normal 100`"""
             msg_to_send = ""
             if len(players) == len(playerstomsg):
                 await ctx.send(
-                    f"Everyone got out on the same word! You each get {int(bet/len(players))} bouge bucks!"
+                    f"Everyone got out on the same word! You each get {int(bet / len(players))} bouge bucks!"
                 )
                 for player in players:
                     await econ.update_amount(player, int(bet / len(players)), False)
@@ -562,7 +562,7 @@ Example command: `,bougegram normal 100`"""
                         players.append(join_msg.author)
                         await join_msg.add_reaction("✅")
                         await start_msg.edit(
-                            content=f"Starting a game of Bouge Gram on {difficulty} mode!!!! Type `join` to join! There are currently {len(players)} in the game. The current pot is {bet*len(players)}! Starting <t:{end_check}:R>..."
+                            content=f"Starting a game of Bouge Gram on {difficulty} mode!!!! Type `join` to join! There are currently {len(players)} in the game. The current pot is {bet * len(players)}! Starting <t:{end_check}:R>..."
                         )
         await start_msg.edit(
             content="This game is very simple. Type the word before you hear this sound. The time to answer will shorten when you hear this sound. Last one standing wins. On your mark, get ready, go!"
@@ -733,7 +733,7 @@ Example command: `,bougegram normal 100`"""
             elif players == []:
                 await ctx.send("Everyone got out on the same word. Too bad!")
             elif players != []:
-                win_msg = f"The following players have won the game! The total reward will be split evenly between them! Each player gets {int(round(bet/len(players), 0))}\n"
+                win_msg = f"The following players have won the game! The total reward will be split evenly between them! Each player gets {int(round(bet / len(players), 0))}\n"
                 for player in players:
                     await econ.update_amount(
                         player, int(round((bet * initial_players) / len(players), 0))
@@ -905,7 +905,7 @@ Example command: `,bougegram normal 100`"""
                 await asyncio.sleep(rd.randint(120, 180))
                 if rd.randint(1, 2) == 1:
                     await webhook.send(
-                        content=f"Hey {ctx.author.mention} is that you? The Division of Returning Cash Holdings (DORCH) said you turned in my wallet. When I got it back I bet it all on slots and got the jackpot! I wanted to come and reward your honesty, because if it weren't for you I wouldn't have won. Here's **{misc.commafy(int(amnt*2.25))}** bouge bucks.",
+                        content=f"Hey {ctx.author.mention} is that you? The Division of Returning Cash Holdings (DORCH) said you turned in my wallet. When I got it back I bet it all on slots and got the jackpot! I wanted to come and reward your honesty, because if it weren't for you I wouldn't have won. Here's **{misc.commafy(int(amnt * 2.25))}** bouge bucks.",
                         username="Mrekk",
                         avatar_url="https://wolf.girlsare.life/4jVQKJZ.png",
                     )
@@ -1994,7 +1994,7 @@ Example command: `,bougegram normal 100`"""
             else:
                 hands = ""
                 for i, hand in enumerate(player.hands):
-                    hands += f"{i+1} -> **{hand.show()}** | **{hand.get_formatted_value()}**\n"
+                    hands += f"{i + 1} -> **{hand.show()}** | **{hand.get_formatted_value()}**\n"
                 return hands
 
         async def score(hand: Hand, dealer: Dealer, double):
@@ -2004,7 +2004,7 @@ Example command: `,bougegram normal 100`"""
                 reward += amount * 100
                 return (
                     reward,
-                    f"You got 7 cards and didn't bust!!!! YOU GET 100X PAYOUT!!!! YOU JUST WON **{misc.commafy(amount*100)}** BOUGE BUCKS!!!",
+                    f"You got 7 cards and didn't bust!!!! YOU GET 100X PAYOUT!!!! YOU JUST WON **{misc.commafy(amount * 100)}** BOUGE BUCKS!!!",
                 )
             elif len(hand.cards) >= 5 and hand.get_value() <= 21:
                 await econ.update_winloss(ctx.author, "w")
@@ -2012,13 +2012,13 @@ Example command: `,bougegram normal 100`"""
                     reward += amount * 2 * double
                     return (
                         reward,
-                        f"You got 5 cards and didn't bust! You also got blackjack! You win due to 5 card charlie! You just won **{misc.commafy(amount*2*double)}** bouge bucks!",
+                        f"You got 5 cards and didn't bust! You also got blackjack! You win due to 5 card charlie! You just won **{misc.commafy(amount * 2 * double)}** bouge bucks!",
                     )
                 else:
                     reward += amount * double
                     return (
                         reward,
-                        f"You got 5 cards and didn't bust! You win due to 5 card charlie! You just won **{misc.commafy(amount*double)}** bouge bucks!",
+                        f"You got 5 cards and didn't bust! You win due to 5 card charlie! You just won **{misc.commafy(amount * double)}** bouge bucks!",
                     )
             elif hand.get_value() == 21:
                 if hand.get_value() == 21 == dealer.get_value():
@@ -2291,7 +2291,7 @@ Example command: `,bougegram normal 100`"""
                     and player.hands[current_hand] != player.hands[-1]
                 ):
                     current_hand += 1
-                extra_info = f"Hand {current_hand+1}"
+                extra_info = f"Hand {current_hand + 1}"
 
             await update_game()
             try:
@@ -2588,14 +2588,15 @@ Example command: `,bougegram normal 100`"""
             if user_prestieges[3]:
                 await ctx.reply("I pity the fool.")
                 return
-        if current > unix + 86400:
-            await ctx.reply("You have immunity for over a day bruh")
+        if current > unix + 43200:
+            await ctx.reply("You have immunity for over 12 hours bruh")
             return
         if totalmoney < 1000:
-            await ctx.reply("You need 1000 bouge bucks to buy immunity")
+            await ctx.reply("You need at least 1000 bouge bucks to buy immunity")
             return
+        cost = math.ceil(totalmoney * 0.1)
         await ctx.reply(
-            "Are you sure you want to spend 1000 bouge bucks for immunity from stealing for 6 hours? "
+            f"Are you sure you want to spend 10% of your bouge bucks ({econ.unmoneyfy(cost)}) for immunity from stealing for 24 hours? "
             "Repond **Yes** or **No**"
         )
         try:
@@ -2606,19 +2607,16 @@ Example command: `,bougegram normal 100`"""
             return
         if msg.content.lower() == "yes":
             if current > unix:
-                await econ.update_amount(user, -1000)
-                await econ.update_immunity(user, current + 21600)
+                await econ.update_amount(user, -1 * cost)
+                await econ.update_immunity(user, current + 86400)
                 current = await econ.get_immunity(user)
                 await ctx.reply(
                     f"You are now protected from theft for {await misc.human_time_duration(current - unix)}"
-                    f" run this command again to get more"
                 )
             if current <= unix:
-                await econ.update_amount(user, -1000)
-                await econ.update_immunity(user, unix + 21600)
-                await ctx.reply(
-                    "You are now protected from theft for 6 hours, run this command again to get more"
-                )
+                await econ.update_amount(user, -1 * cost)
+                await econ.update_immunity(user, unix + 86400)
+                await ctx.reply("You are now protected from theft for 24 hours")
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -3574,7 +3572,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         async def choosing(times=1):
             x = 0
             await main_msg.edit(
-                content=f"Current prizes: {misc.array_to_string([econ.unmoneyfy(x) for x in rewards])}\nCurrent cases: {misc.array_to_string(cases)}\nYour chosen case: {chosen_case}\nChoose {times-x} more cases:"
+                content=f"Current prizes: {misc.array_to_string([econ.unmoneyfy(x) for x in rewards])}\nCurrent cases: {misc.array_to_string(cases)}\nYour chosen case: {chosen_case}\nChoose {times - x} more cases:"
             )
             for i in range(times):
                 x += 1
@@ -3600,7 +3598,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 killed = rewards.pop(rd.randint(0, len(rewards) - 1))
                 killed_msg = f"Case {kill_case} had ${econ.unmoneyfy(killed)} in it."
                 await main_msg.edit(
-                    content=f"Current prizes: {misc.array_to_string([econ.unmoneyfy(x) for x in rewards])}\nCurrent cases: {misc.array_to_string(cases)}\nYour chosen case: {chosen_case}\nChoose {times-x} more cases:\n{killed_msg}"
+                    content=f"Current prizes: {misc.array_to_string([econ.unmoneyfy(x) for x in rewards])}\nCurrent cases: {misc.array_to_string(cases)}\nYour chosen case: {chosen_case}\nChoose {times - x} more cases:\n{killed_msg}"
                 )
 
         rounds = [7, 6, 5, 3, 2, 1]
@@ -4111,7 +4109,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     else:
                         await pippi_say(
                             ctx,
-                            message=f"I would redraw these cards: {''.join([str(x+1) for x in recommendation])}.",
+                            message=f"I would redraw these cards: {''.join([str(x + 1) for x in recommendation])}.",
                         )
                 else:
                     await pippi_say(ctx, message="Ok nevermind.")
@@ -4281,14 +4279,14 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             new_msg = ""
             for i in range(6):
                 if len(win_order) > 0 and win_order[0] == i:
-                    new_msg += f"{'-' * math.ceil(horse_progress[i]/2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i])/2))}:checkered_flag::trophy:\n"
+                    new_msg += f"{'-' * math.ceil(horse_progress[i] / 2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i]) / 2))}:checkered_flag::trophy:\n"
                 # elif len(win_order) > 0:
                 #     if i in win_order:
                 #         for j in range(6):
                 #             if win_order[j] == i:
                 #                 new_msg += f"{'-' * math.ceil(horse_progress[i]/2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i])/2))}:checkered_flag::{numbersdict[j]}:\n"
                 else:
-                    new_msg += f"{'-' * math.ceil(horse_progress[i]/2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i])/2))}:checkered_flag:\n"
+                    new_msg += f"{'-' * math.ceil(horse_progress[i] / 2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i]) / 2))}:checkered_flag:\n"
             await main_msg.edit(content=new_msg)
         if horse == win_order[0] + 1:
             await ctx.send(f"Congratulations! You won {amount * 7} bouge bucks!")
