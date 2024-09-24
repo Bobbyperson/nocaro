@@ -38,7 +38,8 @@ class Autoresponse(commands.Cog):
             await message.channel.send(message.author.mention)
         if not message.content:
             return
-        if await is_blacklisted(message.author.id):
+        blacklisted = await is_blacklisted(message.author.id)
+        if blacklisted[0]:
             return
 
         if "touhou" in str.lower(message.content):

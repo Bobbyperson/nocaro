@@ -24,7 +24,8 @@ class Fun(commands.Cog):
             return
         if message.content.lower() in ["share", "steal"]:
             return
-        if await mf.is_blacklisted(message.author.id):
+        blacklisted = await mf.is_blacklisted(message.author.id)
+        if blacklisted[0]:
             return
         if isinstance(message.channel, discord.channel.DMChannel):
             if message.author.id in config.blacklisted_dms:
