@@ -1,6 +1,6 @@
 import aiosqlite
 from discord.ext import commands
-from utils.miscfuncs import is_blacklisted
+from cogs.utils.miscfuncs import is_blacklisted
 
 bank = "./data/database.sqlite"
 
