@@ -362,6 +362,9 @@ def moneyfy(amount):
         if amount is None:
             return 0
 
+        if isinstance(amount, str):
+            amount = amount.replace(",", "").replace(" ", "")
+
         # Try converting directly to float then to int
         try:
             return int(float(amount))
@@ -401,11 +404,9 @@ def moneyfy(amount):
                 total = -total
             return int(total)
     except Exception as e:
-        # Catch any unexpected errors and bark about them
         print(f"Caught an unexpected error: {e}")
         return 0
 
-    # If amount doesn't match any pattern, return 0
     return 0
 
 
