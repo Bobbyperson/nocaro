@@ -14,4 +14,5 @@ emoji==2.14.0
 yfinance==0.2.44
 pandas==2.2.3
 pandas_market_calendars==4.4.1
+pyttsx3==2.98
 git+https://github.com/Rapptz/discord-ext-menus
