@@ -1,6 +1,7 @@
 import os
 import random as rd
 import re
+from typing import Union
 
 import aiosqlite
 
@@ -27,42 +28,42 @@ async def new_account(user):
 
 # get uer's balance, returns int
 async def get_bal(user):
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
                     f"SELECT balance FROM main WHERE user_id={USER_ID}"
                 )
-                result_userBal = await cursor.fetchone()
-                return int(result_userBal[0])
+                result_userbal = await cursor.fetchone()
+                return int(result_userbal[0])
 
 
 async def get_history(user):
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 return None
             await cursor.execute(f"SELECT balance FROM main WHERE user_id={USER_ID}")
-            result_userBal = await cursor.fetchone()
-            data = [result_userBal]
+            result_userbal = await cursor.fetchone()
+            data = [result_userbal]
             for i in range(1, 10):
                 await cursor.execute(
                     f"SELECT user_id FROM old{i} WHERE user_id={USER_ID}"
                 )
-                result_userID = await cursor.fetchone()
-                if not result_userID:
+                result_userid = await cursor.fetchone()
+                if not result_userid:
                     return None
                 await cursor.execute(
                     f"SELECT balance FROM old{i} WHERE user_id={USER_ID}"
@@ -100,19 +101,19 @@ async def update_amount(user, change=0, bonuses=True):
 
 # get user's level, returns int
 async def get_level(user):
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(f"SELECT level FROM main WHERE user_id={USER_ID}")
-                result_userBal = await cursor.fetchone()
-                return result_userBal[0]
+                result_userbal = await cursor.fetchone()
+                return result_userbal[0]
 
 
 # update user's level
@@ -130,21 +131,21 @@ async def update_level(user, change=0):
 
 # get user's bananas, returns int
 async def get_banana(user):
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
                     f"SELECT bananas FROM main WHERE user_id={USER_ID}"
                 )
-                result_userBal = await cursor.fetchone()
-                return result_userBal[0]
+                result_userbal = await cursor.fetchone()
+                return result_userbal[0]
 
 
 # update user's bananas
@@ -158,26 +159,25 @@ async def update_banana(user, change=0):
             f"UPDATE main SET bananas = bananas + {change} WHERE user_id={USER_ID}"
         )
         await db.commit()
-    return
 
 
 # get user's immunity, return int
 async def get_immunity(user):
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
                     f"SELECT immunity FROM main WHERE user_id={USER_ID}"
                 )
-                result_userImmunity = await cursor.fetchone()
-                return result_userImmunity[0]
+                result_user_immunity = await cursor.fetchone()
+                return result_user_immunity[0]
 
 
 # update user's immunity
@@ -191,28 +191,27 @@ async def update_immunity(user, change=0):
             f"UPDATE main SET immunity = {change} WHERE user_id={USER_ID}"
         )
         await db.commit()
-    return
 
 
 # get user's inventory, returns array
-async def get_inv(user) -> list:
-    result_userInv = None
-    while not result_userInv:
+async def get_inv(user) -> Union[list, None]:
+    result_userinv = None
+    while not result_userinv:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
                     f"SELECT inventory FROM main WHERE user_id={USER_ID}"
                 )
-                result_userInv = await cursor.fetchone()
-                if not result_userInv[0]:
+                result_userinv = await cursor.fetchone()
+                if not result_userinv[0]:
                     return None
-                c_inv = result_userInv[0].split(",")
+                c_inv = result_userinv[0].split(",")
                 return c_inv
 
 
@@ -243,9 +242,7 @@ async def remove_item(user, item):
         cursor = await db.cursor()
         USER_ID = user.id
         inventory = await get_inv(user)
-        if inventory:
-            inventory = inventory
-        else:
+        if not inventory:
             inventory = []
         inventory.remove(item)
         c_inv = ",".join(str(x) for x in inventory).strip("[]")
@@ -258,9 +255,8 @@ async def remove_item(user, item):
 async def checkmax(user):
     amnt = await get_bal(user)
     prestieges = await get_prestiege(user)
-    if prestieges:
-        if prestieges[3]:
-            return False
+    if prestieges and prestieges[3]:
+        return False
     if amnt > 9223372036854775807:  # int limt
         dif = amnt - 9223372036854775807
         await update_amount(user, amnt - dif)
@@ -280,21 +276,21 @@ async def get_winloss(user):
     Returns:
         string: wllw
     """
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
                     f"SELECT winloss FROM main WHERE user_id={USER_ID}"
                 )
-                result_userBal = await cursor.fetchone()
-                return result_userBal[0]
+                result_userbal = await cursor.fetchone()
+                return result_userbal[0]
 
 
 # update winloss, expects only one letter, anything else will do nothing
@@ -430,21 +426,21 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
 
 
 async def get_investment(user):
-    result_userBal = None
-    while not result_userBal:
+    result_userbal = None
+    while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             USER_ID = user.id
             await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userID = await cursor.fetchone()
-            if not result_userID:
+            result_userid = await cursor.fetchone()
+            if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
                     f"SELECT invested FROM main WHERE user_id={USER_ID}"
                 )
-                result_userBal = await cursor.fetchone()
-                return result_userBal[0]
+                result_userbal = await cursor.fetchone()
+                return result_userbal[0]
 
 
 async def add_investment(user, amount):

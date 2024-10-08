@@ -90,7 +90,7 @@ class Fun(commands.Cog):
     @commands.is_owner()
     async def dm(self, ctx, user: discord.Member, *, message: str):
         """DM the user of your choice"""
-        if not f"{user}":
+        if not user:
             return await ctx.send(f"Could not find any UserID matching **{user.name}**")
 
         try:

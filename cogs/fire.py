@@ -134,14 +134,14 @@ class Fire(commands.Cog):
             # newfb = await fireboard.send(f"{added_msg.author.name}'s message '{added_msg.content}' has {total_reacts} {fire}.")
             await add_msg(total_reacts, added_msg, newfb.id, fireboard.id, emoji)
         else:
-            existingMessage = await fireboard.fetch_message(exists)
+            existing_message = await fireboard.fetch_message(exists)
             emoji = await get_element("emoji", "message_id", added_msg.id)
             if emoji == "unfire":
-                await existingMessage.edit(
+                await existing_message.edit(
                     content=f"<:unfire:1128853116129923093> **{total_reacts}**"
                 )
             else:
-                await existingMessage.edit(content=f"{fire} **{total_reacts}**")
+                await existing_message.edit(content=f"{fire} **{total_reacts}**")
             await edit_msg(total_reacts, added_msg)
 
     # events
@@ -266,19 +266,16 @@ class Fire(commands.Cog):
                     if fireboard.id == react_channel.id:
                         return
                     await self.add_to_board(added_msg, fireboard, total_reacts, "fire")
-        elif react == "unfire":
-            if total_reacts >= 5:
-                fireboard = None
-                for channel in added_msg.guild.text_channels:
-                    if channel.name == "unfireboard":
-                        fireboard = channel
-                        break
-                if fireboard:
-                    if fireboard.id == react_channel.id:
-                        return
-                    await self.add_to_board(
-                        added_msg, fireboard, total_reacts, "unfire"
-                    )
+        elif react == "unfire" and total_reacts >= 5:
+            fireboard = None
+            for channel in added_msg.guild.text_channels:
+                if channel.name == "unfireboard":
+                    fireboard = channel
+                    break
+            if fireboard:
+                if fireboard.id == react_channel.id:
+                    return
+                await self.add_to_board(added_msg, fireboard, total_reacts, "unfire")
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -402,10 +399,8 @@ class Fire(commands.Cog):
                                 msgtosend += f"{fire} **{msg[1]}** - {user} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
                     if (
                         msgtosend
-                        == "Congrats to the following people for getting the top 5 hottest messages this week:\n"
+                        != "Congrats to the following people for getting the top 5 hottest messages this week:\n"
                     ):
-                        pass
-                    else:
                         await fireboard.send(msgtosend)
 
             await setfuckingdata(old)

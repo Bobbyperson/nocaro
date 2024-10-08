@@ -38,21 +38,21 @@ class Stocks(commands.Cog):
                 )
             await db.commit()
 
-    async def add_to_db(self, user_ID, ticker, amount, purchase_price):
+    async def add_to_db(self, user_id, ticker, amount, purchase_price):
         async with aiosqlite.connect(bank) as db:
             async with db.cursor() as cursor:
                 await cursor.execute(
                     "INSERT INTO stocks(user_ID, ticker, amount, purchase_price) VALUES(?, ?, ?, ?)",
-                    (user_ID, ticker, amount, purchase_price),
+                    (user_id, ticker, amount, purchase_price),
                 )
             await db.commit()
 
-    async def remove_from_db(self, user_ID: int, ticker: str, amount: int):
+    async def remove_from_db(self, user_id: int, ticker: str, amount: int):
         async with aiosqlite.connect(bank) as db:
             async with db.cursor() as cursor:
                 await cursor.execute(
                     "SELECT rowid, amount FROM stocks WHERE user_ID = ? AND ticker = ?",
-                    (user_ID, ticker),
+                    (user_id, ticker),
                 )
                 results = await cursor.fetchall()
 
