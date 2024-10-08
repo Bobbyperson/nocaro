@@ -302,6 +302,9 @@ class Economy(commands.Cog):
             await cursor.execute(
                 "CREATE TABLE IF NOT EXISTS 'old9' AS SELECT * FROM main"
             )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS misc(num INTEGER NOT NULL PRIMARY KEY, pointer TEXT NOT NULL, data INTEGER NOT NULL)"
+            )
             await db.commit()
         print("Economy ready")
 
