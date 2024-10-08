@@ -199,19 +199,19 @@ class Player:
     def __init__(self, hand: Hand):
         self.hands = [hand]
 
-    def can_double(self, cost, total, hand_ID):
+    def can_double(self, cost, total, hand_id):
         if (
-            len(self.hands[hand_ID].cards) == 2
+            len(self.hands[hand_id].cards) == 2
             # and len(self.hands[0].cards) == 2
             and total > cost
         ):
             return True
         return False
 
-    def can_split(self, cost, total, hand_ID):
+    def can_split(self, cost, total, hand_id):
         if (
-            len(self.hands[hand_ID].cards) == 2
-            and self.hands[hand_ID].cards[0].value == self.hands[hand_ID].cards[1].value
+            len(self.hands[hand_id].cards) == 2
+            and self.hands[hand_id].cards[0].value == self.hands[hand_id].cards[1].value
             and total > cost
         ):
             return True
@@ -491,7 +491,7 @@ Example command: `,bougegram normal 100`"""
                     await ctx.send(msg_to_send)
             return player_pass
 
-        async def play_word(word=None, threshold=1000, minLength=3, maxLength=5):
+        async def play_word(word=None, threshold=1000, min_length=3, max_length=5):
             if not word:
                 w1 = rd.choice(words)
                 w1a = w1.split(".")[1]
@@ -499,7 +499,11 @@ Example command: `,bougegram normal 100`"""
             # vc = await ctx.voice_client.connect()
             met_threshold = False
             while not met_threshold:
-                if wlc <= threshold and len(w1a) >= minLength and len(w1a) <= maxLength:
+                if (
+                    wlc <= threshold
+                    and len(w1a) >= min_length
+                    and len(w1a) <= max_length
+                ):
                     met_threshold = True
                 else:
                     w1 = rd.choice(words)
@@ -544,11 +548,12 @@ Example command: `,bougegram normal 100`"""
                 )
             except asyncio.TimeoutError:
                 continue
-            if join_msg is not None:
-                if (
-                    join_msg.content.lower() == "skip" and join_msg.author == ctx.author
-                ):  # skip timer
-                    break
+            if (
+                join_msg is not None
+                and join_msg.content.lower() == "skip"
+                and join_msg.author == ctx.author
+            ):
+                break
             if join_msg.author in players and join_msg.content.lower() == "join":
                 await join_msg.reply("You have already joined!")
             elif join_msg.content.lower() == "skip":
@@ -599,16 +604,15 @@ Example command: `,bougegram normal 100`"""
                     while vc.is_playing():
                         await asyncio.sleep(0.1)
                 # contrary to what you may think, this is not useless.
-                if skip_msg is not None:
-                    if skip_msg.content == "skip":
-                        vc.stop()
+                if skip_msg is not None and skip_msg.content == "skip":
+                    vc.stop()
+                    await asyncio.sleep(0.1)
+                    vc.play(FFmpegPCMAudio("audio/skip.wav"))
+                    while vc.is_playing():
                         await asyncio.sleep(0.1)
-                        vc.play(FFmpegPCMAudio("audio/skip.wav"))
-                        while vc.is_playing():
-                            await asyncio.sleep(0.1)
-                        vc.play(FFmpegPCMAudio("audio/done.mp3"))
-                        while vc.is_playing():
-                            await asyncio.sleep(0.1)
+                    vc.play(FFmpegPCMAudio("audio/done.mp3"))
+                    while vc.is_playing():
+                        await asyncio.sleep(0.1)
 
             async def play_round(
                 word=None,
@@ -617,13 +621,13 @@ Example command: `,bougegram normal 100`"""
                 players=players,
                 vc=vc,
                 threshold=1000,
-                minLength=3,
-                maxLength=5,
+                min_length=3,
+                max_length=5,
             ):
-                for i in range(plays):
+                for _ in range(plays):
                     if not await checkgame(singleplayer, players):
                         break
-                    w1a = await play_word(word, threshold, minLength, maxLength)
+                    w1a = await play_word(word, threshold, min_length, max_length)
                     await asyncio.sleep(time)
                     # play done sound here
                     await ctx.send(w1a)
@@ -642,42 +646,43 @@ Example command: `,bougegram normal 100`"""
                     await faster(vc)
                 return players
 
-            if difficulty == "easy":
-                seconds = [8, 5, 4, 2]
-                rounds = [8, 10, 15, 20]
-                freq = [1000, 3000, 5000, 10000]
-                minLength = [3, 4, 5, 6]
-                maxLength = [5, 6, 7, 8]
-            elif difficulty == "normal":
-                seconds = [5, 3, 2, 1]
-                rounds = [8, 10, 15, 20]
-                freq = [1000, 3000, 5000, 10000]
-                minLength = [3, 4, 5, 6]
-                maxLength = [5, 6, 7, 8]
-            elif difficulty == "hard":
-                seconds = [4, 3, 2, 1]
-                rounds = [10, 15, 20, 25]
-                freq = [5000, 5000, 5000, 10000]
-                minLength = [6, 7, 8, 9]
-                maxLength = [10, 10, 11, 12]
-            elif difficulty == "insane":
-                seconds = [3, 2, 1, 0.5]
-                rounds = [20, 20, 20, 20]
-                freq = [10000, 10000, 10000, 10000]
-                minLength = [8, 9, 10, 11]
-                maxLength = [12, 12, 12, 12]
-            elif difficulty == "impossible":
-                seconds = [0.5, 0.5, 0.5, 0.5]
-                rounds = [25, 25, 25, 25]
-                freq = [10000, 10000, 10000, 10000]
-                minLength = [6, 6, 6, 6]
-                maxLength = [15, 15, 15, 15]
-            else:
-                seconds = [5, 3, 2, 1]
-                rounds = [8, 10, 15, 20]
-                freq = [1000, 3000, 5000, 10000]
-                minLength = [3, 4, 5, 6]
-                maxLength = [5, 6, 7, 8]
+            match difficulty:
+                case "easy":
+                    seconds = [8, 5, 4, 2]
+                    rounds = [8, 10, 15, 20]
+                    freq = [1000, 3000, 5000, 10000]
+                    min_length = [3, 4, 5, 6]
+                    max_length = [5, 6, 7, 8]
+                case "normal":
+                    seconds = [5, 3, 2, 1]
+                    rounds = [8, 10, 15, 20]
+                    freq = [1000, 3000, 5000, 10000]
+                    min_length = [3, 4, 5, 6]
+                    max_length = [5, 6, 7, 8]
+                case "hard":
+                    seconds = [4, 3, 2, 1]
+                    rounds = [10, 15, 20, 25]
+                    freq = [5000, 5000, 5000, 10000]
+                    min_length = [6, 7, 8, 9]
+                    max_length = [10, 10, 11, 12]
+                case "insane":
+                    seconds = [3, 2, 1, 0.5]
+                    rounds = [20, 20, 20, 20]
+                    freq = [10000, 10000, 10000, 10000]
+                    min_length = [8, 9, 10, 11]
+                    max_length = [12, 12, 12, 12]
+                case "impossible":
+                    seconds = [0.5, 0.5, 0.5, 0.5]
+                    rounds = [25, 25, 25, 25]
+                    freq = [10000, 10000, 10000, 10000]
+                    min_length = [6, 6, 6, 6]
+                    max_length = [15, 15, 15, 15]
+                case _:
+                    seconds = [5, 3, 2, 1]
+                    rounds = [8, 10, 15, 20]
+                    freq = [1000, 3000, 5000, 10000]
+                    min_length = [3, 4, 5, 6]
+                    max_length = [5, 6, 7, 8]
             initial_players = players
             # level 1
             players = await play_round(
@@ -687,8 +692,8 @@ Example command: `,bougegram normal 100`"""
                 players,
                 vc,
                 freq[0],
-                minLength[0],
-                maxLength[0],
+                min_length[0],
+                max_length[0],
             )
             # level 2
             players = await play_round(
@@ -698,8 +703,8 @@ Example command: `,bougegram normal 100`"""
                 players,
                 vc,
                 freq[1],
-                minLength[1],
-                maxLength[1],
+                min_length[1],
+                max_length[1],
             )
             # level 3
             players = await play_round(
@@ -709,8 +714,8 @@ Example command: `,bougegram normal 100`"""
                 players,
                 vc,
                 freq[2],
-                minLength[2],
-                maxLength[2],
+                min_length[2],
+                max_length[2],
             )
             # level 4
             players = await play_round(
@@ -720,8 +725,8 @@ Example command: `,bougegram normal 100`"""
                 players,
                 vc,
                 freq[3],
-                minLength[3],
-                maxLength[3],
+                min_length[3],
+                max_length[3],
             )
             if len(players) == 1:
                 await ctx.send(
@@ -794,7 +799,7 @@ Example command: `,bougegram normal 100`"""
                 try:
                     econ.moneyfy(moosage.content)
                     return True
-                except:  # noqa: E722
+                except ValueError:
                     return False
             return False
 
@@ -836,9 +841,7 @@ Example command: `,bougegram normal 100`"""
                 webhook = await ctx.channel.create_webhook(
                     name="Nocaro_NPC", reason="TEEHEE"
                 )
-        except (
-            discord.errors.Forbidden or discord.errors.HTTPException or AttributeError
-        ):
+        except (discord.errors.Forbidden, discord.errors.HTTPException, AttributeError):
             return
         event = rd.randint(1, 4)
         bal = await econ.get_bal(ctx.author)
@@ -940,7 +943,6 @@ Example command: `,bougegram normal 100`"""
                         f"Before you can even react, he takes his bouge bucks back, plus a little extra, and then runs away. (You lose {misc.commafy(int(amnt * 1.25))} bouge bucks.)"
                     )
                     await econ.update_amount(ctx.author, int(amnt * -1.25))
-                    return
         elif event == 3:
             amnt = int(bal * per) if bal > 1000 else 100
             last_offer = amnt
@@ -1096,7 +1098,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("5 maximum!")
             return
         full_message = "You just unboxed:\n"
-        for i in range(amount):
+        for _ in range(amount):
             item = await econ.get_random_item()
             item_id = item.split("|")[0]
             just_name = item.split("|")[1]
@@ -1129,17 +1131,17 @@ Example command: `,bougegram normal 100`"""
         if map1 is None or map2 is None or map3 is None or map4 is None or map5 is None:
             await ctx.send("You did not specify a map! You must specify 5.")
             return
-        userMaps = await econ.get_inv(ctx.author)
-        mapsToDelete = [map1, map2, map3, map4, map5]
+        user_maps = await econ.get_inv(ctx.author)
+        maps_to_delete = [map1, map2, map3, map4, map5]
         # check if any duplicates
-        if len(mapsToDelete) != len(set(mapsToDelete)):
+        if len(maps_to_delete) != len(set(maps_to_delete)):
             await ctx.send("You cannot trade in duplicates!")
             return
-        for map in mapsToDelete:
-            if map not in userMaps:
+        for map in maps_to_delete:
+            if map not in user_maps:
                 await ctx.send(f"You do not own {map}!")
                 return
-        for map in mapsToDelete:
+        for map in maps_to_delete:
             await econ.remove_item(ctx.author, map)
         await ctx.send("Tradein successful.")
         await econ.update_banana(ctx.author, 1)
@@ -1198,7 +1200,6 @@ Example command: `,bougegram normal 100`"""
         if msg.content.lower() == "no":
             await ctx.send("<:WTF:871245957168246835>")
             ctx.command.reset_cooldown(ctx)
-            return
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -1220,13 +1221,11 @@ Example command: `,bougegram normal 100`"""
             )
             return
         prestiege = await econ.get_prestiege(ctx.author)
-        if prestiege:
-            if prestiege[4]:
-                await ctx.send("You cannot trade $BB with this person.")
+        if prestiege and prestiege[4]:
+            await ctx.send("You cannot trade $BB with this person.")
         prestiege = await econ.get_prestiege(ctx.author)
-        if prestiege:
-            if prestiege[4]:
-                await ctx.send("You cannot trade $BB.")
+        if prestiege and prestiege[4]:
+            await ctx.send("You cannot trade $BB.")
         if await econ.checkmax(member):
             await ctx.send("You cannot trade with this person. They have work to do.")
             return
@@ -1822,18 +1821,16 @@ Example command: `,bougegram normal 100`"""
         unix = int(round(time.time(), 0))
         current = await econ.get_immunity(member)
         currentauthor = await econ.get_immunity(ctx.author)
-        if current:
-            if int(current) > unix:
-                await ctx.reply(
-                    f"Sorry {member} still has protection for {await misc.human_time_duration(current - unix)}."
-                )
-                ctx.command.reset_cooldown(ctx)
-                return
-        if currentauthor:
-            if currentauthor > unix:
-                await ctx.reply("You can't rob while under protection broooooo.")
-                ctx.command.reset_cooldown(ctx)
-                return
+        if current and int(current) > unix:
+            await ctx.reply(
+                f"Sorry {member} still has protection for {await misc.human_time_duration(current - unix)}."
+            )
+            ctx.command.reset_cooldown(ctx)
+            return
+        if currentauthor and currentauthor > unix:
+            await ctx.reply("You can't rob while under protection broooooo.")
+            ctx.command.reset_cooldown(ctx)
+            return
         if not member:
             await ctx.reply("No target specified!")
             ctx.command.reset_cooldown(ctx)
@@ -1858,7 +1855,6 @@ Example command: `,bougegram normal 100`"""
                 f" is in jail and cannot steal or be stolen from for 10 minutes."
             )
             await econ.update_immunity(user, unix + 600)
-            return
         else:
             if gunga == 1:
                 stealamnt = stealamnt * 10
@@ -2152,30 +2148,28 @@ Example command: `,bougegram normal 100`"""
                 )
                 insurance = None
                 options = get_options()
-            if insurance is not None:
-                if (
-                    insurance.content.lower() == "yes"
-                    or insurance.content.lower() == "y"
-                ):
-                    await econ.update_amount(ctx.author, -1 * (amount // 2))
-                    if dealer.get_value() == 21:
-                        if player.hands[0].get_value() < 21:
-                            await ctx.reply(
-                                "Dealer has blackjack! Your bouge bucks, including insurance cost, has been returned."
-                            )
-                            await econ.update_amount(ctx.author, (amount // 2) + amount)
-                            return
-                        elif player.hands[0].get_value() == 21:
-                            await ctx.reply(
-                                f"Both you and the dealer have blackjack! You won {amount} bouge bucks!"
-                            )
-                            await econ.update_amount(ctx.author, amount)
-                            return
-                    else:
+            if insurance is not None and (
+                insurance.content.lower() == "yes" or insurance.content.lower() == "y"
+            ):
+                await econ.update_amount(ctx.author, -1 * (amount // 2))
+                if dealer.get_value() == 21:
+                    if player.hands[0].get_value() < 21:
                         await ctx.reply(
-                            "Dealer does not have blackjack, continue playing normally."
+                            "Dealer has blackjack! Your bouge bucks, including insurance cost, has been returned."
                         )
-                        options = get_options()
+                        await econ.update_amount(ctx.author, (amount // 2) + amount)
+                        return
+                    elif player.hands[0].get_value() == 21:
+                        await ctx.reply(
+                            f"Both you and the dealer have blackjack! You won {amount} bouge bucks!"
+                        )
+                        await econ.update_amount(ctx.author, amount)
+                        return
+                else:
+                    await ctx.reply(
+                        "Dealer does not have blackjack, continue playing normally."
+                    )
+                    options = get_options()
         options = get_options()
         # end insurance
         split = False
@@ -2417,19 +2411,17 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("You try to give money, but their pockets are full.")
             return
         prestieges = await econ.get_prestiege(ctx.author)
-        if prestieges:
-            if prestieges[3]:
-                await ctx.send(
-                    "You try to gift the bouge bucks, but you physically cannot make yourself gift it."
-                )
-                return
+        if prestieges and prestieges[3]:
+            await ctx.send(
+                "You try to gift the bouge bucks, but you physically cannot make yourself gift it."
+            )
+            return
         user_prestieges = await econ.get_prestiege(member)
-        if user_prestieges:
-            if user_prestieges[3]:
-                await ctx.send(
-                    "You try to hand over the bouge bucks, but as you approach them, you realize that this person might be better off without your money."
-                )
-                return
+        if user_prestieges and user_prestieges[3]:
+            await ctx.send(
+                "You try to hand over the bouge bucks, but as you approach them, you realize that this person might be better off without your money."
+            )
+            return
         if member is None:
             await ctx.send("No target specified!")
             return
@@ -2587,10 +2579,9 @@ Example command: `,bougegram normal 100`"""
         totalmoney = await econ.get_bal(user)
         current = await econ.get_immunity(user)
         user_prestieges = await econ.get_prestiege(ctx.author)
-        if user_prestieges:
-            if user_prestieges[3]:
-                await ctx.reply("I pity the fool.")
-                return
+        if user_prestieges and user_prestieges[3]:
+            await ctx.reply("I pity the fool.")
+            return
         if current > unix + 43200:
             await ctx.reply("You have immunity for over 12 hours bruh")
             return
@@ -2759,18 +2750,16 @@ Example command: `,bougegram normal 100`"""
     async def award_map(self):
         for guild in self.client.guilds:
             for user in guild.members:
-                if user.activity is not None:
-                    if user.activity.name is not None:
-                        if user.activity.name.lower() == "osu!":
-                            try:
-                                if (
-                                    user.activity.details is not None
-                                    and not await econ.checkmax(user)
-                                ):
-                                    print("Just gave money to " + user.name)
-                                    await econ.update_amount(user, 100)
-                            except:  # noqa: E722
-                                return
+                if user.activity is not None and user.activity.name is not None:
+                    if user.activity.name.lower() == "osu!":
+                        try:
+                            if (
+                                user.activity.details is not None
+                                and not await econ.checkmax(user)
+                            ):
+                                await econ.update_amount(user, 100)
+                        except:  # noqa: E722
+                            return
 
     @commands.command(aliases=["fof"], hidden=True)
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
@@ -2952,13 +2941,11 @@ Example command: `,bougegram normal 100`"""
 
                 if msg.content.lower() == "no":
                     await ctx.send("Cancelling...")
-                    return
 
         else:
             await ctx.reply(
                 "This command may only be used in a DM."
             )  # easiest to read code 2012
-            return
 
     @commands.hybrid_command(aliases=["qd"])
     @commands.max_concurrency(1, per=commands.BucketType.channel, wait=False)
@@ -2966,8 +2953,8 @@ Example command: `,bougegram normal 100`"""
         """Play a reaction based game against someone."""
         amount = econ.moneyfy(amount)
         with open("words.txt", "r") as file:
-            allText = file.read()
-            words = list(map(str, allText.split()))
+            all_text = file.read()
+            words = list(map(str, all_text.split()))
             word = rd.choice(words)
         if await econ.checkmax(ctx.author):
             await ctx.send(
@@ -2982,7 +2969,7 @@ Example command: `,bougegram normal 100`"""
                 and moosage.content.lower() == "i accept"
             )
 
-        def invitedGiveBalCheck(moosage):
+        def invited_give_bal_check(moosage):
             return (
                 moosage.author == member
                 and moosage.channel == ctx.channel
@@ -3088,7 +3075,7 @@ Example command: `,bougegram normal 100`"""
 
             try:
                 msg = await self.client.wait_for(
-                    "message", check=invitedGiveBalCheck, timeout=30
+                    "message", check=invited_give_bal_check, timeout=30
                 )  # 30 seconds to reply
             except asyncio.TimeoutError:
                 await ctx.send(f"{member} did not accept your duel! Cancelling.")
@@ -3129,7 +3116,6 @@ Example command: `,bougegram normal 100`"""
                         f"{msg2.author} typed `{word}` first and won {amount} bouge bucks!!!"
                     )
                     await econ.update_amount(msg2.author, amount * 2)
-                    return
 
     @commands.hybrid_command(aliases=["s"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
@@ -3247,12 +3233,6 @@ Example command: `,bougegram normal 100`"""
         if ctx.author == member:
             await ctx.send("Stop playing with yourself.")
             return
-        try:
-            amount = econ.moneyfy(amount)
-        except:  # noqa: E722
-            ctx.command.reset_cooldown(ctx)
-            await ctx.send("You goofed i think idk.")
-            return
         if amount == 0:
             await ctx.send(
                 "Welcome to share or steal!\n"
@@ -3297,10 +3277,10 @@ Example command: `,bougegram normal 100`"""
             ctx.command.reset_cooldown(ctx)
             return
 
-        def authorGiveBalCheck(m):
+        def author_give_bal_check(m):
             return m.author == ctx.author and m.content.lower() in ["share", "steal"]
 
-        def invitedGiveBalCheck(m):
+        def invited_give_bal_check(m):
             return m.author == member and m.content.lower() in ["share", "steal"]
 
         def checkagree(m):
@@ -3327,7 +3307,7 @@ Example command: `,bougegram normal 100`"""
                 pass
         try:
             msg2 = await self.client.wait_for(
-                "message", check=authorGiveBalCheck, timeout=30
+                "message", check=author_give_bal_check, timeout=30
             )
         except asyncio.TimeoutError:
             await ctx.send("cancelling...")
@@ -3341,7 +3321,7 @@ Example command: `,bougegram normal 100`"""
                 pass
         try:
             msg3 = await self.client.wait_for(
-                "message", check=invitedGiveBalCheck, timeout=30
+                "message", check=invited_give_bal_check, timeout=30
             )
         except asyncio.TimeoutError:
             await ctx.send("cancelling...")
@@ -3370,22 +3350,18 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("Both users share! You both get 2x payout!")
             await econ.update_amount(ctx.author, amount * 2, False)
             await econ.update_amount(member, amount * 2, False)
-            return
-        if g1 == "share" and g2 == "steal":
+        elif g1 == "share" and g2 == "steal":
             await ctx.send("One user steals! That user gets 3x payout!")
             await econ.update_amount(ctx.author, amount * -1, False)
             await econ.update_amount(member, amount * 3, False)
-            return
-        if g1 == "steal" and g2 == "share":
+        elif g1 == "steal" and g2 == "share":
             await ctx.send("One user steals! That user gets 3x payout!")
             await econ.update_amount(ctx.author, amount * 3, False)
             await econ.update_amount(member, amount * -1, False)
-            return
-        if g1 == "steal" and g2 == "steal":
+        elif g1 == "steal" and g2 == "steal":
             await ctx.send("Both users steal! You both get nothing!")
             await econ.update_amount(member, amount * -1, False)
             await econ.update_amount(ctx.author, amount * -1, False)
-            return
 
     @commands.command(hidden=True)
     @commands.cooldown(1, 1800, commands.BucketType.user)
@@ -3483,10 +3459,10 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             )
 
         def banker():
-            sum = 0
+            banker_sum = 0
             for i in rewards:
-                sum += i
-            avg = sum / len(rewards)
+                banker_sum += i
+            avg = banker_sum / len(rewards)
             troll = rd.randint(5, 25)
             return int(avg - (avg * (troll / 100)))
 
@@ -3577,7 +3553,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await main_msg.edit(
                 content=f"Current prizes: {misc.array_to_string([econ.unmoneyfy(x) for x in rewards])}\nCurrent cases: {misc.array_to_string(cases)}\nYour chosen case: {chosen_case}\nChoose {times - x} more cases:"
             )
-            for i in range(times):
+            for _ in range(times):
                 x += 1
                 try:
                     msg = await self.client.wait_for(
@@ -3865,17 +3841,13 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             if hand_score in ["four of a kind", "full house", "flush", "straight"]:
                 # Stand if the hand is strong
                 pass
-            elif hand_score == "three of a kind":
+            elif (
+                hand_score == "three of a kind"
+                or hand_score == "two pair"
+                or hand_score == "pair"
+            ):
                 # Draw two if three of a kind, aiming for a full house
-                redraw_indices = [
-                    i for i, v in enumerate(values) if value_counts[v] == 1
-                ]
-            elif hand_score == "two pair":
                 # Draw one if two pairs, aiming for a full house
-                redraw_indices = [
-                    i for i, v in enumerate(values) if value_counts[v] == 1
-                ]
-            elif hand_score == "pair":
                 # Draw three if a pair, aiming for three of a kind or a full house
                 redraw_indices = [
                     i for i, v in enumerate(values) if value_counts[v] == 1
@@ -4121,12 +4093,10 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         except asyncio.TimeoutError:
             await ctx.reply("You didn't choose! Assuming none.")
             choice = None
-        if choice:
-            if (
-                choice.content.lower() != "none"
-            ):  # not redundant - checking for what the user said, not if there was a message
-                for char in choice.content:
-                    player.cards[int(char) - 1] = deck.draw()
+        if choice and choice.content.lower() != "none":
+            # not redundant - checking for what the user said, not if there was a message
+            for char in choice.content:
+                player.cards[int(char) - 1] = deck.draw()
         dealer, deck, _ = dealer_draw(dealer, deck)
         # ok so returning the deck isn't necessary but like whatever man
         # After determining the score and important cards
@@ -5198,8 +5168,6 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     )
                     await misc.blacklist_user(ctx.author.id, int(time.time()) + 604800)
 
-        return
-
     ###############################################################
     # ███████ ██████   ██████  ██ ██      ███████ ██████  ███████
     # ██      ██   ██ ██    ██ ██ ██      ██      ██   ██ ██
@@ -5279,10 +5247,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             ctx.command.reset_cooldown(ctx)
         elif isinstance(error, commands.NotOwner):
             return
-        elif isinstance(error, commands.UserNotFound):
-            await ctx.reply("The person you specified was not found! Try pinging them.")
-            ctx.command.reset_cooldown(ctx)
-        elif isinstance(error, commands.MemberNotFound):
+        elif isinstance(error, commands.UserNotFound) or isinstance(error, commands.MemberNotFound):
             await ctx.reply("The person you specified was not found! Try pinging them.")
             ctx.command.reset_cooldown(ctx)
         elif isinstance(error, commands.BadArgument):
