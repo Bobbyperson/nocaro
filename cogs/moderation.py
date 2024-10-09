@@ -3,11 +3,11 @@ import json
 import time
 from datetime import timedelta
 
+import config
 import discord
 from discord.ext import commands
 
 import cogs.utils.miscfuncs as mf
-import config
 
 
 def array_to_string(arr):
