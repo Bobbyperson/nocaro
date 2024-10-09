@@ -1,0 +1,30 @@
+name: Run isort
+
+on: [push, pull_request]
+
+permissions:
+  contents: write
+
+jobs:
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install isort
+        run: pip install isort
+
+      - name: Run isort
+        run: isort .
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'Apply isort formatting'
+          file_pattern: '**/*.py'
