@@ -55,21 +55,104 @@ class InventorySource(menus.ListPageSource):
         await self.message.edit(embed=self.compose_embed())
 
 
-# class InventorySource(menus.ListPageSource):
-#     def __init__(self, data):
-#         super().__init__(data, per_page=3)  # Set to 3 items per page
+class MineButton(discord.ui.Button):
+    def __init__(self, is_mine, chance):
+        super().__init__(emoji="❓", style=discord.ButtonStyle.primary)
+        self.is_mine = is_mine
+        self.chance = chance
 
-#     async def format_page(self, menu, entries):
-#         embed = discord.Embed(color=discord.Color.blurple(), title="Your Inventory")
-#         for item_name, item_id, count in entries:
-#             # Assuming each entry is a tuple (item_name, item_id, count)
-#             embed.add_field(
-#                 name=f"{item_name} x{count}",
-#                 value=f"[View Item](https://assets.ppy.sh/beatmaps/{item_id}/covers/cover@2x.jpg)",
-#                 inline=False
-#             )
-#         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
-#         return embed
+    async def callback(self, interaction: discord.Interaction):
+        self.disabled = True
+        if self.is_mine:
+            self.emoji = "💣"
+            self.style = discord.ButtonStyle.red
+            for child in self.view.children:
+                child.disabled = True
+                if isinstance(child, MineButton):
+                    if child.is_mine:
+                        child.emoji = "💣"
+                    else:
+                        child.emoji = "💰"
+            await interaction.response.edit_message(
+                content=f"# Mines!\n💥 Game Over! Potential earnings lost: {econ.unmoneyfy(self.view.money_earned)}",
+                view=self.view,
+            )
+            self.view.money_earned = 0
+            self.view.stop()
+        else:
+            self.emoji = "💰"
+            self.style = discord.ButtonStyle.green
+            fraction = 1 / self.chance
+            self.view.successful_clicks += 1
+            self.view.money_earned += self.view.bet * fraction
+            self.view.money_earned = round(self.view.money_earned, 2)
+            await interaction.response.edit_message(
+                content=f"# Mines!\nBouge Bucks earned: {econ.unmoneyfy(self.view.money_earned)}",
+                view=self.view,
+            )
+
+
+class CashOutButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="💰 Cash Out", style=discord.ButtonStyle.green)
+
+    async def callback(self, interaction: discord.Interaction):
+        for child in self.view.children:
+            child.disabled = True
+            if isinstance(child, MineButton):
+                if child.is_mine:
+                    child.emoji = "💣"
+                else:
+                    child.emoji = "💰"
+        await interaction.response.edit_message(
+            content=f"# Mines!\nYou cashed out! Total Bouge Bucks earned: {econ.unmoneyfy(self.view.money_earned)}",
+            view=self.view,
+        )
+        self.view.stop()
+
+
+class ReplayButton(discord.ui.Button):
+    def __init__(self, ctx, command: str, amount):
+        super().__init__(label="🔄 Replay", style=discord.ButtonStyle.green)
+        self.command = command
+        self.ctx = ctx
+        self.amount = amount
+        self.timeout = 300
+
+    async def callback(self, interaction: discord.Interaction):
+        self.disabled = True
+        await self.ctx.invoke(self.client.get_command(self.command), str(self.amount))
+        self.view.stop()
+
+
+class MinesView(discord.ui.View):
+    def __init__(self, chance, bet):
+        super().__init__()
+        self.money_earned = 0
+        self.message = None  # Will be set later
+        self.bet = bet
+        self.successful_clicks = 0
+        self.timeout = 30
+        self.timedout = False
+
+        for _ in range(5):
+            for _ in range(4):
+                is_mine = rd.randint(1, chance) == 1
+                button = MineButton(is_mine=is_mine, chance=chance)
+                self.add_item(button)
+
+        self.add_item(CashOutButton())
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+            if isinstance(child, MineButton):
+                if child.is_mine:
+                    child.emoji = "💣"
+                else:
+                    child.emoji = "💰"
+        self.timedout = True
+        self.stop()
 
 
 class Card:
@@ -874,7 +957,7 @@ Example command: `,bougegram normal 100`"""
                     await econ.update_amount(ctx.author, int(amnt * 2.1))
                 else:
                     await peppy_say(
-                        f"{ctx.author.mention}! I'm back! My map fucking sucked! I've gone bankrupt so I can't really give you your money back. Maybe next time I'll ask you for an osu lazer investment.",
+                        f"{ctx.author.mention}! I'm back! My map fucking sucked! I've gone bankrupt so I can't really give you your bouge bucks back. Maybe next time I'll ask you for an osu lazer investment.",
                     )
             elif moosage.content.lower() == "no":
                 await peppy_say(
@@ -2408,7 +2491,7 @@ Example command: `,bougegram normal 100`"""
             )
             return
         if await econ.checkmax(member):
-            await ctx.send("You try to give money, but their pockets are full.")
+            await ctx.send("You try to give bouge bucks, but their pockets are full.")
             return
         prestieges = await econ.get_prestiege(ctx.author)
         if prestieges and prestieges[3]:
@@ -2419,7 +2502,7 @@ Example command: `,bougegram normal 100`"""
         user_prestieges = await econ.get_prestiege(member)
         if user_prestieges and user_prestieges[3]:
             await ctx.send(
-                "You try to hand over the bouge bucks, but as you approach them, you realize that this person might be better off without your money."
+                "You try to hand over the bouge bucks, but as you approach them, you realize that this person might be better off without them."
             )
             return
         if member is None:
@@ -2430,7 +2513,7 @@ Example command: `,bougegram normal 100`"""
             return
         if amount < 0:
             await ctx.send(
-                "you can't abuse oversights in my code to steal someone's money bro"
+                "you can't abuse oversights in my code to steal someone's bouge bucks bro"
             )
             return
         if member.bot:
@@ -3219,16 +3302,16 @@ Example command: `,bougegram normal 100`"""
     ):
         """The worst game. Trust based game."""
         phrases = [
-            "Why does your partner deserve your share? Take your money. Steal.",
-            "You deserve as much money as you can get. You can just take it, steal.",
+            "Why does your partner deserve your share? Take your bouge bucks. Steal.",
+            "You deserve as many bouge bucks as you can get. You can just take it, steal.",
             "If you steal, I'll give you both 5x payout just this once. You can trust me.",
             "Why not steal? You can't trust your partner.",
-            "You deserve this money, you need it more. Steal.",
+            "You deserve this bouge bucks, you need it more. Steal.",
             "ok just saying it would be really funny if you stole.",
         ]
         secondphrases = [
             "Just so you know, your partner stole. You should too, you wouldn't want them to get your money would you?",
-            "Just so you know, your partner shared. Stealing will get you more money.",
+            "Just so you know, your partner shared. Stealing will get you more bouge bucks.",
         ]
         if ctx.author == member:
             await ctx.send("Stop playing with yourself.")
@@ -3314,9 +3397,9 @@ Example command: `,bougegram normal 100`"""
             ctx.command.reset_cooldown(ctx)
             return
         await ctx.send(f"{member.mention} please DM me share or steal")
-        if rd.randint(1, 3) == 1:
+        if rd.randint(1, 2) == 1:
             try:
-                await member.send(rd.choice(phrases + secondphrases))
+                await member.send(rd.choice(secondphrases))
             except Exception:
                 pass
         try:
@@ -3408,10 +3491,10 @@ Example command: `,bougegram normal 100`"""
         if not bet:
             await ctx.reply(
                 """**Welcome to Deal or No Deal!**
-This game is played with 26 cases, each containing a different amount of money.
+This game is played with 26 cases, each containing a different amount of bouge bucks.
 You choose one case to keep, and then proceeds to open the remaining cases, one by one.
 After a couple of cases are opened, the banker gives an offer to you. You can choose **Deal** or **No Deal**.
-If you decide to take the deal, you will receive the amount of money that the dealer offered and the game ends.
+If you decide to take the deal, you will receive the amount of bouge bucks that the dealer offered and the game ends.
 If you decide no deal, you can continue to open cases.
 The game ends when you either decide to deal, or when all cases have been opened.
 To begin, retype this command with a bet, minimum 500 bouge bucks."""
@@ -4213,7 +4296,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             return
         amount = econ.moneyfy(bet)
         if amount < 0:
-            await ctx.send("You can't bet negative money.")
+            await ctx.send("You can't bet negative bouge bucks.")
             ctx.command.reset_cooldown(ctx)
             return
         balance = await econ.get_bal(ctx.author)
@@ -4324,6 +4407,46 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             while vc.is_playing():
                 await asyncio.sleep(0.1)
             await vc.disconnect()
+
+    @commands.hybrid_command()
+    @commands.cooldown(1, 1, commands.BucketType.user)
+    @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    async def mines(self, ctx, amount: str = ""):
+        if amount == "":
+            await ctx.send(
+                """Welcome to Mines!
+A few of these blocks are bombs!
+Click as many as you like, then cash out when you're done.
+Please run this command again with a bet to start playing."""
+            )
+            return
+
+        chance = 8
+        amount = econ.moneyfy(amount)
+        total = await econ.get_bal(ctx.author)
+        if amount > total:
+            await ctx.send("You can't afford that!")
+            return
+        if amount < 1:
+            await ctx.send("Please bet at least 1 bouge buck.")
+            return
+        await econ.update_amount(ctx.author, -1 * amount)
+        view = MinesView(chance, amount)
+        message = await ctx.send(
+            content=f"# Mines!\nBouge Bucks earned: {view.money_earned}", view=view
+        )
+        view.message = message
+        await view.wait()
+        if view.timedout:
+            await ctx.reply("You timed out! Cashing out automatically...")
+        if view.money_earned > 0:
+            await ctx.send(
+                f"You earned a total of {econ.unmoneyfy(view.money_earned)}!"
+            )
+            await econ.update_amount(ctx.author, view.money_earned)
+            await econ.update_winloss(ctx.author, "w")
+        else:
+            await econ.update_winloss(ctx.author, "l")
 
     ##############################################################
     # ███████ ██████   ██████  ██ ██      ███████ ██████  ███████
