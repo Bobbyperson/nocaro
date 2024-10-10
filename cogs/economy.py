@@ -62,6 +62,8 @@ class MineButton(discord.ui.Button):
         self.chance = chance
 
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user != self.view.user:
+            return
         self.disabled = True
         if self.is_mine:
             self.emoji = "💣"
@@ -97,6 +99,8 @@ class CashOutButton(discord.ui.Button):
         super().__init__(label="💰 Cash Out", style=discord.ButtonStyle.green)
 
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user != self.view.user:
+            return
         for child in self.view.children:
             child.disabled = True
             if isinstance(child, MineButton):
@@ -126,7 +130,7 @@ class ReplayButton(discord.ui.Button):
 
 
 class MinesView(discord.ui.View):
-    def __init__(self, chance, bet):
+    def __init__(self, chance, bet, user):
         super().__init__()
         self.money_earned = 0
         self.message = None  # Will be set later
@@ -134,6 +138,7 @@ class MinesView(discord.ui.View):
         self.successful_clicks = 0
         self.timeout = 30
         self.timedout = False
+        self.user = user
 
         for _ in range(5):
             for _ in range(4):
@@ -4431,7 +4436,7 @@ Please run this command again with a bet to start playing."""
             await ctx.send("Please bet at least 1 bouge buck.")
             return
         await econ.update_amount(ctx.author, -1 * amount)
-        view = MinesView(chance, amount)
+        view = MinesView(chance, amount, ctx.author)
         message = await ctx.send(
             content=f"# Mines!\nBouge Bucks earned: {view.money_earned}", view=view
         )
