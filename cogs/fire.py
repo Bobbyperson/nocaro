@@ -344,9 +344,11 @@ class Fire(commands.Cog):
                 if result is not None:
                     old = int(result[0])
                 else:
+                    await cursor.execute(
+                        f'INSERT INTO misc (pointer, data) VALUES ("weeklyFire", {int(t.time()) + 604800})'
+                    )
+                    await db.commit()
                     old = None
-            if not old:
-                await setfuckingdata(int(t.time()))
             return old
 
         async def setfuckingdata(old):
