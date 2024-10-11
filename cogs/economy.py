@@ -96,7 +96,7 @@ class MineButton(discord.ui.Button):
 
 class CashOutButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="💰 Cash Out", style=discord.ButtonStyle.green)
+        super().__init__(label="", emoji="✅", style=discord.ButtonStyle.green)
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user != self.view.user:
@@ -115,20 +115,6 @@ class CashOutButton(discord.ui.Button):
         self.view.stop()
 
 
-class ReplayButton(discord.ui.Button):
-    def __init__(self, ctx, command: str, amount):
-        super().__init__(label="🔄 Replay", style=discord.ButtonStyle.green)
-        self.command = command
-        self.ctx = ctx
-        self.amount = amount
-        self.timeout = 300
-
-    async def callback(self, interaction: discord.Interaction):
-        self.disabled = True
-        await self.ctx.invoke(self.client.get_command(self.command), str(self.amount))
-        self.view.stop()
-
-
 class MinesView(discord.ui.View):
     def __init__(self, chance, bet, user):
         super().__init__()
@@ -140,8 +126,10 @@ class MinesView(discord.ui.View):
         self.timedout = False
         self.user = user
 
-        for _ in range(5):
-            for _ in range(4):
+        for i in range(5):
+            for j in range(5):
+                if i == 0 and j == 0:
+                    continue
                 is_mine = rd.randint(1, chance) == 1
                 button = MineButton(is_mine=is_mine, chance=chance)
                 self.add_item(button)
@@ -4419,10 +4407,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     async def mines(self, ctx, amount: str = ""):
         if amount == "":
             await ctx.send(
-                """Welcome to Mines!
-A few of these blocks are bombs!
-Click as many as you like, then cash out when you're done.
-Please run this command again with a bet to start playing."""
+                """Welcome to Mines! A few of these blocks are bombs! Click as many as you like, then cash out when you're done. Please run this command again with a bet to start playing."""
             )
             return
 
@@ -4446,7 +4431,7 @@ Please run this command again with a bet to start playing."""
             await ctx.reply("You timed out! Cashing out automatically...")
         if view.money_earned > 0:
             await ctx.send(
-                f"You earned a total of {econ.unmoneyfy(view.money_earned)}!"
+                f"You earned a total of {econ.unmoneyfy(view.money_earned)} bouge bucks!"
             )
             await econ.update_amount(ctx.author, view.money_earned)
             await econ.update_winloss(ctx.author, "w")
