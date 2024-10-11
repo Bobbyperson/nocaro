@@ -4401,7 +4401,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 await asyncio.sleep(0.1)
             await vc.disconnect()
 
-    @commands.hybrid_command()
+    @commands.hybrid_command(aliases=["mine", "m"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     async def mines(self, ctx, amount: str = ""):
