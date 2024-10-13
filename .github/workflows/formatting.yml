@@ -27,13 +27,13 @@ jobs:
         run: |
           isort .
 
-      - name: Run black
-        run: |
-          black .
-
       - name: Run ruff
         run: |
           ruff check . --fix
+
+      - name: Run black
+        run: |
+          black .
 
       - name: Commit and push changes if needed
         env:
