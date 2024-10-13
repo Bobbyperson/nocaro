@@ -5373,6 +5373,14 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await ctx.reply(
                 "You lack the appropriate permissions to perform this command."
             )
+        elif isinstance(error, commands.MissingRequiredArgument):
+            ctx.command.reset_cooldown(ctx)
+            await ctx.reply(error)  # this one is perfect by default
+        elif isinstance(error, commands.UnexpectedQuoteError) or isinstance(
+            error, commands.InvalidEndOfQuotedStringError
+        ):
+            ctx.command.reset_cooldown(ctx)
+            await ctx.reply("You did not close a quote in your arguments!")
         else:
             ctx.command.reset_cooldown(ctx)
             channel = await self.client.fetch_channel(config.error_reporting_channel)
