@@ -336,9 +336,6 @@ class Economy(commands.Cog):
                 "invested INT NOT NULL DEFAULT 0)"
             )
             await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS blacklist(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, timestamp INTEGER NOT NULL)"
-            )
-            await cursor.execute(
                 "CREATE TABLE IF NOT EXISTS prestiege("
                 ""
                 "num INT PRIMARY KEY,"
@@ -348,34 +345,6 @@ class Economy(commands.Cog):
                 "pres3 INT DEFAULT 0,"
                 "pres4 INT DEFAULT 0,"
                 "pres5 INT DEFAULT 0)"
-            )
-            await db.commit()
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old1' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old2' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old3' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old4' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old5' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old6' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old7' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old8' AS SELECT * FROM main"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS 'old9' AS SELECT * FROM main"
             )
             await cursor.execute(
                 "CREATE TABLE IF NOT EXISTS misc(num INTEGER NOT NULL PRIMARY KEY, pointer TEXT NOT NULL, data INTEGER NOT NULL)"

@@ -41,6 +41,9 @@ class database(commands.Cog):
                 "guildID INTEGER NOT NULL"
                 ")"
             )
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS blacklist(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, timestamp INTEGER NOT NULL)"
+            )
             await db.commit()
 
         print("Database ready")
