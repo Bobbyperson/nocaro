@@ -238,6 +238,8 @@ class Fire(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         fire = "🔥"
+        if not payload.guild_id:
+            return
         react_channel = self.client.get_channel(payload.channel_id)
         added_msg = await react_channel.fetch_message(payload.message_id)
         react = payload.emoji.name
