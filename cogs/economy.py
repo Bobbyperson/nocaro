@@ -15,7 +15,6 @@ import aiosqlite
 import asyncpg
 import config
 import discord
-import matplotlib.pyplot as plt
 import pyttsx3
 from discord import FFmpegPCMAudio
 from discord.ext import commands, menus, tasks
@@ -419,48 +418,11 @@ class Economy(commands.Cog):
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def history(self, ctx, user: discord.Member = None):
+    async def history(self, ctx):
         """Check your bouge buck history/trends."""
-        if user is None:
-            user = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, user.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
-        async with ctx.typing():
-            y_axis = await econ.get_history(user)
-            if not y_axis:
-                await ctx.reply(
-                    "Your bouge buck account is not 10 days old. Please try again when it is!"
-                )
-            x_axis = [*range(1, 11)]
-            x_axis.reverse()
-            with plt.xkcd():
-                fig = plt.figure(figsize=(10, 5))
-                plt.plot(
-                    x_axis,
-                    y_axis,
-                    label="history",
-                    color="blue",
-                    linestyle="dashed",
-                    linewidth=3,
-                    marker="o",
-                    markerfacecolor="red",
-                    markersize=12,
-                )
-                plt.title(f"{user.name}'s bouge buck history")
-                plt.xlabel("Days")
-                plt.ylabel("Amount")
-                plt.xticks(x_axis)
-                with io.BytesIO() as image:
-                    fig.savefig(image, bbox_inches="tight", dpi=150, format="png")
-                    image.seek(0)
-                    await ctx.send(
-                        file=discord.File(image, "history.png"),
-                        content="",
-                    )
+        await ctx.send(
+            "This command is currently broken and [pending a rewrite](<https://github.com/Bobbyperson/nocaro/issues/27>), sorry."
+        )
 
     @commands.command(hidden=True)
     async def moneytest(self, ctx, amount):
