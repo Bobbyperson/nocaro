@@ -3198,27 +3198,21 @@ Example command: `,bougegram normal 100`"""
     async def slots(self, ctx, amount: str = None):
         """Play a slot machine."""
         if not amount:
-            await ctx.send("Please specify an amount to bet.")
-            return
+            return await ctx.send("Please specify an amount to bet.")
         if await econ.checkmax(ctx.author):
-            await ctx.send(
+            return await ctx.send(
                 "You attempt to gamble but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
             )
-            return
         blacklisted = await misc.is_blacklisted(ctx.author.id)
         if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
+            return await ctx.send("You are blacklisted from this bot.")
         amount = econ.moneyfy(amount)
-        if amount <= 0:
-            await ctx.reply("I will skin you alive.")
-            return
-        if await econ.get_bal(ctx.author) < amount:
-            await ctx.reply("Not enough money!!! go `,map`")
-            return
+        if amount < 0:
+            return await ctx.reply("I will skin you alive.")
         if amount < 1:
-            await ctx.send("Please bet at least 1 bouge buck.")
-            return
+            return await ctx.send("Please bet at least 1 bouge buck.")
+        if await econ.get_bal(ctx.author) < amount:
+            return await ctx.reply("Not enough money!!! go `,map`")
         bars = [
             "<:BRUH:857485566383751209>",
             "<:WTF:871245957168246835>",
