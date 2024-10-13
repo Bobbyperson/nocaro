@@ -1090,25 +1090,6 @@ Example command: `,bougegram normal 100`"""
                 else:
                     await peppy_say("aw man, wish i was able to sell that ticket")
 
-    # no longer needed, used for checking if winloss works correctly
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def giveme(self, ctx, winloss):
-        await econ.update_winloss(ctx.author, winloss)
-        await ctx.send("Winloss updated!")
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def impersonate(
-        self, ctx, member: discord.Member = None, message: str = None
-    ):
-        await misc.send_webhook(
-            ctx=ctx, name=member.display_name, avatar=member.avatar, message=message
-        )
-        await ctx.message.delete()
-
-    # await webhook.delete()
-
     # silly
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -2653,11 +2634,8 @@ Example command: `,bougegram normal 100`"""
     @commands.command(hidden=True)
     @commands.is_owner()
     async def agive(self, ctx, member: discord.Member = None, amount: str = None):
-        if not member:
-            return
-        if amount is None:
-            ctx.reply("idiot")
-            return
+        if not member or not amount:
+            return await ctx.reply("idiot")
         amount = econ.moneyfy(amount)
         await econ.update_amount(member, amount, False)
         await ctx.reply(f"you gave {member} {amount} bouge bucks")
@@ -2665,11 +2643,8 @@ Example command: `,bougegram normal 100`"""
     @commands.command(hidden=True)
     @commands.is_owner()
     async def abanana(self, ctx, member: discord.Member = None, amount: int = 0):
-        if not member:
-            return
-        if amount == 0:
-            ctx.reply("idiot")
-            return
+        if not member or not amount:
+            return await ctx.reply("idiot")
         await econ.update_banana(member, amount)
         await ctx.reply(f"you gave {member} {amount} bananas")
 
@@ -5261,12 +5236,6 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         except Exception as e:
             print(e)
             await ctx.send(f"`{e}`")
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def testprestiege(self, ctx, addto):
-        await econ.log_prestiege(ctx.author, addto)
-        await ctx.send(await econ.get_prestiege(ctx.author))
 
     @commands.command(hidden=True)
     @commands.is_owner()

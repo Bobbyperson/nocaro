@@ -1,5 +1,4 @@
 import asyncio
-import os
 import random
 import time
 
@@ -214,27 +213,6 @@ class database(commands.Cog):
                 avatar=message.author.display_avatar,
                 message=newmsg,
             )
-
-    @commands.command()
-    @commands.is_owner()
-    async def moveoldtonew(self, ctx):
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            for filename in os.listdir("data"):
-                if filename.endswith(".txt"):
-                    with open("data/" + filename, "r", encoding="utf-8") as f:
-                        file_lines = [line.rstrip() for line in f.readlines()]
-                        for line in file_lines:
-                            length = line.find("-")
-                            message_id = line[length + 1 :]
-                            channel_id = line[0:length]
-                            await cursor.execute(
-                                "INSERT INTO messages(messageID, channelID, guildID) values(?, ?, ?)",
-                                (message_id, channel_id, int(filename[:-4])),
-                            )
-                        await db.commit()
-                    os.remove("data/" + filename)
-        await ctx.send("Done")
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
