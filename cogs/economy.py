@@ -357,7 +357,7 @@ class Economy(commands.Cog):
         print("Economy ready")
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
-    # @commands.cooldown(1, 60, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def history(
         self, ctx, user: Optional[discord.User] = None, *, timeframe: str = "1 week"
     ):
