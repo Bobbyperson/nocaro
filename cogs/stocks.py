@@ -146,7 +146,11 @@ class Stocks(commands.Cog):
                 return await ctx.send(
                     "You don't have enough money to buy that many stocks"
                 )
-            await econ.update_amount(ctx.author, math.ceil(-stock_price * amount), tracker_reason="stockinvest")
+            await econ.update_amount(
+                ctx.author,
+                math.ceil(-stock_price * amount),
+                tracker_reason="stockinvest",
+            )
             await self.add_to_db(
                 ctx.author.id, stock, amount, math.ceil(stock_price * amount)
             )
@@ -193,7 +197,9 @@ class Stocks(commands.Cog):
                     if total_stocks < amount:
                         return await ctx.send("You don't have enough stocks to sell")
             await self.remove_from_db(ctx.author.id, stock, amount)
-            await econ.update_amount(ctx.author, math.floor(stock_price * amount), tracker_reason="sellstock")
+            await econ.update_amount(
+                ctx.author, math.floor(stock_price * amount), tracker_reason="sellstock"
+            )
             await ctx.reply(
                 f"You have successfully sold {amount} stocks of {stock} for {math.floor(stock_price * amount)} bouge bucks!"
             )

@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 
 import aiosqlite
 import asyncpg
+import config
 import discord
 import matplotlib.pyplot as plt
 import pyttsx3
@@ -27,7 +28,6 @@ from pydub import AudioSegment
 
 import cogs.utils.econfuncs as econ
 import cogs.utils.miscfuncs as misc
-import config
 
 # main bank file
 bank = "./data/database.sqlite"
@@ -3113,7 +3113,9 @@ Example command: `,bougegram normal 100`"""
                 await econ.update_amount(
                     ctx.author, -1 * amount, False, tracker_reason="quickdraw"
                 )
-                await econ.update_amount(msg.author, -1 * amount, False, tracker_reason="quickdraw")
+                await econ.update_amount(
+                    msg.author, -1 * amount, False, tracker_reason="quickdraw"
+                )
                 time_to_wait = rd.randint(3, 31)
                 messages = [
                     "Don't blink...",
@@ -3146,7 +3148,9 @@ Example command: `,bougegram normal 100`"""
                     await ctx.send(
                         f"{msg2.author} typed `{word}` first and won {amount} bouge bucks!!!"
                     )
-                    await econ.update_amount(msg2.author, amount * 2, tracker_reason="quickdraw")
+                    await econ.update_amount(
+                        msg2.author, amount * 2, tracker_reason="quickdraw"
+                    )
                     return
         if member:
             if amount > await econ.get_bal(member):
@@ -3163,8 +3167,12 @@ Example command: `,bougegram normal 100`"""
             except asyncio.TimeoutError:
                 await ctx.send(f"{member} did not accept your duel! Cancelling.")
             if msg.content.lower() == "i accept":
-                await econ.update_amount(ctx.author, -1 * amount, False, tracker_reason="quickdraw")
-                await econ.update_amount(member, -1 * amount, False, tracker_reason="quickdraw")
+                await econ.update_amount(
+                    ctx.author, -1 * amount, False, tracker_reason="quickdraw"
+                )
+                await econ.update_amount(
+                    member, -1 * amount, False, tracker_reason="quickdraw"
+                )
                 time_to_wait = rd.randint(3, 31)
                 messages = [
                     "Don't blink...",
@@ -3198,7 +3206,9 @@ Example command: `,bougegram normal 100`"""
                     await ctx.send(
                         f"{msg2.author} typed `{word}` first and won {amount} bouge bucks!!!"
                     )
-                    await econ.update_amount(msg2.author, amount * 2, tracker_reason="quickdraw")
+                    await econ.update_amount(
+                        msg2.author, amount * 2, tracker_reason="quickdraw"
+                    )
 
     @commands.hybrid_command(aliases=["s"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
@@ -3250,7 +3260,9 @@ Example command: `,bougegram normal 100`"""
             await ctx.reply(
                 f"What the fuck? You got the gunga jackpot! You win {misc.commafy(amount * 25)} bouge bucks!"
             )
-            await econ.update_amount(ctx.author, amount * 20 - amount, tracker_reason="slots")
+            await econ.update_amount(
+                ctx.author, amount * 20 - amount, tracker_reason="slots"
+            )
             await econ.update_winloss(ctx.author, "b")
             user = ctx.author
             voice_status = user.voice
@@ -3268,7 +3280,9 @@ Example command: `,bougegram normal 100`"""
                 await ctx.reply(
                     f"Jackpot! You get {misc.commafy(amount * 3)} bouge bucks!!!"
                 )
-                await econ.update_amount(ctx.author, amount * 3 - amount, tracker_reason="slots")
+                await econ.update_amount(
+                    ctx.author, amount * 3 - amount, tracker_reason="slots"
+                )
                 if rd.randint(1, 5) == 1:
                     user = ctx.author
                     voice_status = user.voice
@@ -3282,7 +3296,9 @@ Example command: `,bougegram normal 100`"""
                 return
             await econ.update_winloss(ctx.author, "w")
             await ctx.reply(f"Nice, you get {misc.commafy(amount * 2)} bouge bucks.")
-            await econ.update_amount(ctx.author, amount * 2 - amount, tracker_reason="slots")
+            await econ.update_amount(
+                ctx.author, amount * 2 - amount, tracker_reason="slots"
+            )
             return
         await econ.update_winloss(ctx.author, "l")
         await ctx.reply(f"Nothing, you lose {misc.commafy(amount)} bouge bucks.")
@@ -3425,20 +3441,36 @@ Example command: `,bougegram normal 100`"""
                 g1 = "share"
         if g1 == "share" and g2 == "share":
             await ctx.send("Both users share! You both get 2x payout!")
-            await econ.update_amount(ctx.author, amount * 2, False, tracker_reason="shareorsteal")
-            await econ.update_amount(member, amount * 2, False, tracker_reason="shareorsteal")
+            await econ.update_amount(
+                ctx.author, amount * 2, False, tracker_reason="shareorsteal"
+            )
+            await econ.update_amount(
+                member, amount * 2, False, tracker_reason="shareorsteal"
+            )
         elif g1 == "share" and g2 == "steal":
             await ctx.send("One user steals! That user gets 3x payout!")
-            await econ.update_amount(ctx.author, amount * -1, False, tracker_reason="shareorsteal")
-            await econ.update_amount(member, amount * 3, False, tracker_reason="shareorsteal")
+            await econ.update_amount(
+                ctx.author, amount * -1, False, tracker_reason="shareorsteal"
+            )
+            await econ.update_amount(
+                member, amount * 3, False, tracker_reason="shareorsteal"
+            )
         elif g1 == "steal" and g2 == "share":
             await ctx.send("One user steals! That user gets 3x payout!")
-            await econ.update_amount(ctx.author, amount * 3, False, tracker_reason="shareorsteal")
-            await econ.update_amount(member, amount * -1, False, tracker_reason="shareorsteal")
+            await econ.update_amount(
+                ctx.author, amount * 3, False, tracker_reason="shareorsteal"
+            )
+            await econ.update_amount(
+                member, amount * -1, False, tracker_reason="shareorsteal"
+            )
         elif g1 == "steal" and g2 == "steal":
             await ctx.send("Both users steal! You both get nothing!")
-            await econ.update_amount(member, amount * -1, False, tracker_reason="shareorsteal")
-            await econ.update_amount(ctx.author, amount * -1, False, tracker_reason="shareorsteal")
+            await econ.update_amount(
+                member, amount * -1, False, tracker_reason="shareorsteal"
+            )
+            await econ.update_amount(
+                ctx.author, amount * -1, False, tracker_reason="shareorsteal"
+            )
 
     @commands.command(hidden=True)
     @commands.cooldown(1, 1800, commands.BucketType.user)
@@ -3568,7 +3600,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 await ctx.send(
                     f"You just won ${misc.commafy(amount)}!\nYour chosen case number {chosen_case} had {misc.commafy(troll)} bouge bucks in it."
                 )
-                await econ.update_amount(ctx.author, amount, tracker_reason="dealornodeal")
+                await econ.update_amount(
+                    ctx.author, amount, tracker_reason="dealornodeal"
+                )
                 if amount > bet and amount > troll:
                     await econ.update_winloss(ctx.author, "w")
                 else:
@@ -4204,7 +4238,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 await ctx.send(
                     f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
                 )
-                await econ.update_amount(ctx.author, -1 * amount, tracker_reason="poker")
+                await econ.update_amount(
+                    ctx.author, -1 * amount, tracker_reason="poker"
+                )
                 await econ.update_winloss(ctx.author, "l")
             else:
                 if score(player)[1] > score(dealer)[1]:
@@ -4217,7 +4253,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     await ctx.send(
                         f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
                     )
-                    await econ.update_amount(ctx.author, -1 * amount, tracker_reason="poker")
+                    await econ.update_amount(
+                        ctx.author, -1 * amount, tracker_reason="poker"
+                    )
                     await econ.update_winloss(ctx.author, "l")
                 else:
                     for i in range(4, -1, -1):  # reversed loop, lol
@@ -4225,14 +4263,18 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                             await ctx.send(
                                 f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
                             )
-                            await econ.update_amount(ctx.author, amount, tracker_reason="poker")
+                            await econ.update_amount(
+                                ctx.author, amount, tracker_reason="poker"
+                            )
                             await econ.update_winloss(ctx.author, "w")
                             break
                         elif score(player)[3][i] < score(dealer)[3][i]:
                             await ctx.send(
                                 f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
                             )
-                            await econ.update_amount(ctx.author, -1 * amount, tracker_reason="poker")
+                            await econ.update_amount(
+                                ctx.author, -1 * amount, tracker_reason="poker"
+                            )
                             await econ.update_winloss(ctx.author, "l")
                             break
                     else:  # if the loop completes without breaking, it's a tie
@@ -4243,7 +4285,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 pinme = await ctx.send(
                     f"YOU JUST GOT A ROYAL FLUSH!!!!!!! YOU GET 1,000,000,000x PAYOUT!!!!!! YOU JUST WON {econ.unmoneyfy(amount * 1_000_000_000)} BOUGE BUCKS!!!!!!!!!!!"
                 )
-                await econ.update_amount(ctx.author, amount * 1_000_000_000, tracker_reason="poker")
+                await econ.update_amount(
+                    ctx.author, amount * 1_000_000_000, tracker_reason="poker"
+                )
                 await econ.update_winloss(ctx.author, "b")
                 try:
                     await pinme.pin()
@@ -4344,7 +4388,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await econ.update_winloss(ctx.author, "w")
         else:
             await ctx.send("Your horse didn't win... womp womp....")
-            await econ.update_amount(ctx.author, -1 * amount, tracker_reason="horserace")
+            await econ.update_amount(
+                ctx.author, -1 * amount, tracker_reason="horserace"
+            )
             await econ.update_winloss(ctx.author, "l")
 
     @commands.command(hidden=True, aliases=["cf"])
@@ -4434,7 +4480,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await ctx.send(
                 f"You earned a total of {econ.unmoneyfy(view.money_earned)} bouge bucks!"
             )
-            await econ.update_amount(ctx.author, view.money_earned, tracker_reason="mines")
+            await econ.update_amount(
+                ctx.author, view.money_earned, tracker_reason="mines"
+            )
             await econ.update_winloss(ctx.author, "w")
         else:
             await econ.update_winloss(ctx.author, "l")
@@ -4561,7 +4609,12 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 )
                 amnt = await econ.get_bal(ctx.author)
                 if amnt != 9223372036854775807:
-                    await econ.update_amount(ctx.author, 9223372036854775807, False, tracker_reason="caveundo")
+                    await econ.update_amount(
+                        ctx.author,
+                        9223372036854775807,
+                        False,
+                        tracker_reason="caveundo",
+                    )
                 return True
 
         prestieges = await econ.get_prestiege(ctx.author)
@@ -4835,7 +4888,12 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     await narrator("Ending 3 of ?: Hot Feet", 0)
                     return
 
-                await econ.update_amount(ctx.author, -9223372036854775807, False, tracker_reason="transcendence")
+                await econ.update_amount(
+                    ctx.author,
+                    -9223372036854775807,
+                    False,
+                    tracker_reason="transcendence",
+                )
                 async with aiosqlite.connect(bank) as db:
                     async with db.cursor() as cursor:
                         await cursor.execute(
@@ -4888,7 +4946,12 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 )
 
                 if t3.content == "2":  # dorchadas stew not drank
-                    await econ.update_amount(ctx.author, 9223372036854775807, False, tracker_reason="caveundo")
+                    await econ.update_amount(
+                        ctx.author,
+                        9223372036854775807,
+                        False,
+                        tracker_reason="caveundo",
+                    )
                     await narrator(
                         "Suddenly, you feel a sharp pain in your chest. Your ascension comes to a grinding halt. You begin falling uncontrollably. Your body goes into an uncontrolled downward spiral as you struggle to maintain control in your freefall. You regain some control just in time to see yourself coming down to the cave, only to see your real body slumped over, motionless. You pass it, still gaining speed. The white void around you begins to turn a crimson red. Apparitions of blue emojis circle you, they all scream and laugh at you while changing their expressions rapidly. You fall endlessly.",
                         10,
@@ -4957,7 +5020,10 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                                         "Ending 5 of ?: Absolutely Flabberghasted, Dumbfounded Even."
                                     )
                                     await econ.update_amount(
-                                        ctx.author, 9223372036854775807, False, tracker_reason="caveundo"
+                                        ctx.author,
+                                        9223372036854775807,
+                                        False,
+                                        tracker_reason="caveundo",
                                     )
                                     return
                                 elif screams > 2:
