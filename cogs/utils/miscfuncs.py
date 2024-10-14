@@ -171,6 +171,8 @@ def human_time_to_seconds(*args) -> int:
                 value += float(time) * 60 * 60 * 24
             case "w" | "week" | "weeks":
                 value += float(time) * 60 * 60 * 24 * 7
+            case "m" | "month" | "months":
+                value += float(time) * 60 * 60 * 24 * 30
             case "y" | "year" | "years":
                 value += float(time) * 60 * 60 * 24 * 365
 
