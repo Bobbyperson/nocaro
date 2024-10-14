@@ -75,7 +75,7 @@ async def get_history(user):
 
 
 # update user's balance
-async def update_amount(user, change=0, bonuses=True, tracker_reason=None):
+async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
     async with aiosqlite.connect(bank, timeout=10) as db:
         bal = await get_bal(user)
         cursor = await db.cursor()
@@ -92,15 +92,16 @@ async def update_amount(user, change=0, bonuses=True, tracker_reason=None):
             await cursor.execute(
                 f"UPDATE main SET balance = 9223372036854775807 WHERE user_id={user.id}"
             )
+            await cursor.execute(
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {bal + change - 9223372036854775807}, '{tracker_reason}', {int(time.time())})"
+            )
         else:
             await cursor.execute(
                 f"UPDATE main SET balance = {bal + change} WHERE user_id={user.id}"
             )
-        if not tracker_reason:
-            tracker_reason = "unknown"
-        await cursor.execute(
-            f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {change}, '{tracker_reason}', {int(time.time())})"
-        )
+            await cursor.execute(
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {change}, '{tracker_reason}', {int(time.time())})"
+            )
         await db.commit()
 
 
