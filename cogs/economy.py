@@ -426,7 +426,9 @@ class Economy(commands.Cog):
 
             # Format y-axis
             ax = plt.gca()
-            ax.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: econ.unmoneyfy(x)))
+            ax.yaxis.set_major_formatter(
+                FuncFormatter(lambda x, pos: econ.unmoneyfy(x))
+            )
 
             plt.tight_layout()
 
