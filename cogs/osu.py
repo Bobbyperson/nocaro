@@ -8,7 +8,7 @@ import discord
 import requests
 from discord.ext import commands
 
-import cogs.utils.econfuncs as ef
+import cogs.utils.econfuncs as econ
 import cogs.utils.miscfuncs as mf
 
 bank = "./data/database.sqlite"
@@ -202,12 +202,12 @@ class osu(commands.Cog):
         """Invest in an osu player."""
         if osu_id == 0:
             return await ctx.send("Please enter a valid user id.")
-        amount = ef.moneyfy(amount)
+        amount = econ.moneyfy(amount)
         if amount == 0:
             return await ctx.send("Please enter an amount.")
         if amount < 0:
             return await ctx.send("Please enter a positive amount.")
-        total_bal = await ef.get_bal(ctx.author)
+        total_bal = await econ.get_bal(ctx.author)
         if total_bal < amount:
             return await ctx.send("You don't have that many bouge bucks! Go `,map`")
         async with aiosqlite.connect(bank) as db:
@@ -236,7 +236,9 @@ class osu(commands.Cog):
                     await ctx.send(
                         f"You have successfully invested {amount} bouge bucks in {osu_name}."
                     )
-                    await ef.update_amount(ctx.author, amount)
+                    await econ.update_amount(
+                        ctx.author, amount, tracker_reason="osuinvest"
+                    )
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -267,9 +269,8 @@ class osu(commands.Cog):
                     await ctx.send(
                         f"You just sold your investment {osu_name} for {mf.commafy(int(reward))} bouge bucks (~{round(mult, 3)}x {old_score} -> {new_score})!"
                     )
-                    await ef.update_amount(
-                        ctx.author,
-                        reward,
+                    await econ.update_amount(
+                        ctx.author, reward, tracker_reason="osusell"
                     )
 
     @commands.hybrid_command(aliases=["investments", "checkinvestment"])
