@@ -409,7 +409,12 @@ class Economy(commands.Cog):
         plt.grid(True)
 
         # Date formatting
-        date_format = DateFormatter("%Y-%m-%d %H:%M")
+        if timeframe_seconds < 60 * 60 * 24 + 1:
+            date_format = DateFormatter("%Y-%m-%d %H:%M")
+        elif timeframe_seconds < 60 * 60 * 24 * 30 + 1:
+            date_format = DateFormatter("%Y-%m-%d")
+        else:
+            date_format = DateFormatter("%Y-%m")
         plt.gca().xaxis.set_major_formatter(date_format)
         plt.gcf().autofmt_xdate()
 
