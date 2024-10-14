@@ -408,7 +408,7 @@ class Economy(commands.Cog):
 
             # Plotting
             plt.figure(figsize=(10, 5))
-            plt.plot(x, y, marker="o")
+            plt.plot(x, y, marker=None)
             plt.xlabel("Time")
             plt.ylabel("Balance")
             plt.title(f"Bouge Buck Balance History for {user.display_name}")
