@@ -365,17 +365,13 @@ class Economy(commands.Cog):
         if not user:
             user = ctx.author
 
-        # Convert timeframe string to seconds
         timeframe_args = timeframe.split()
         timeframe_seconds = misc.human_time_to_seconds(*timeframe_args)
 
-        # Get the current balance
         current_balance = await econ.get_bal(user)
 
-        # Connect to the database and fetch transaction history
         async with aiosqlite.connect(bank) as db:
             async with db.cursor() as cursor:
-                # Get transaction history within the timeframe
                 await cursor.execute(
                     "SELECT amount, time FROM history WHERE user_id = ? AND time > ? ORDER BY time ASC",
                     (user.id, int(time.time()) - timeframe_seconds),
@@ -385,11 +381,9 @@ class Economy(commands.Cog):
         if not result:
             return await ctx.send("No history found.")
 
-        # Initialize lists for plotting
         x = []
         y = []
 
-        # Start with the current balance
         balance = current_balance
 
         # Add the current balance as the starting point
@@ -398,9 +392,7 @@ class Economy(commands.Cog):
 
         # Process transactions in reverse order to reconstruct balances
         for amount, timestamp in reversed(result):
-            balance -= (
-                amount  # Subtract the change to get the balance before the transaction
-            )
+            balance -= amount
             x.append(datetime.datetime.fromtimestamp(timestamp))
             y.append(balance)
 
@@ -421,13 +413,12 @@ class Economy(commands.Cog):
         plt.gca().xaxis.set_major_formatter(date_format)
         plt.gcf().autofmt_xdate()
 
-        # Y-axis formatting using econ.unmoneyfy
+        # Format y-axis
         ax = plt.gca()
         ax.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: econ.unmoneyfy(x)))
 
         plt.tight_layout()
 
-        # Save plot to buffer
         with io.BytesIO() as img:
             plt.savefig(img, format="png")
             img.seek(0)
