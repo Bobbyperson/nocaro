@@ -29,7 +29,7 @@ jobs:
 
       - name: Run ruff
         run: |
-          ruff check . --fix
+          ruff check . --fix --output-format=github
 
       - name: Run black
         run: |
