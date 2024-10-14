@@ -236,7 +236,9 @@ class osu(commands.Cog):
                     await ctx.send(
                         f"You have successfully invested {amount} bouge bucks in {osu_name}."
                     )
-                    await econ.update_amount(ctx.author, amount, tracker_reason="osuinvest")
+                    await econ.update_amount(
+                        ctx.author, amount, tracker_reason="osuinvest"
+                    )
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -268,9 +270,7 @@ class osu(commands.Cog):
                         f"You just sold your investment {osu_name} for {mf.commafy(int(reward))} bouge bucks (~{round(mult, 3)}x {old_score} -> {new_score})!"
                     )
                     await econ.update_amount(
-                        ctx.author,
-                        reward,
-                        tracker_reason="osusell"
+                        ctx.author, reward, tracker_reason="osusell"
                     )
 
     @commands.hybrid_command(aliases=["investments", "checkinvestment"])
