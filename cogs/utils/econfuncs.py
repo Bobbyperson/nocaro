@@ -416,6 +416,8 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
         amount = amount.strip(",")
         amount = int(amount)
 
+    if amount >= 1_000_000_000_000_000_000:
+        return f"{amount / 1_000_000_000_000_000_000:.2f}".rstrip("0").rstrip(".") + "Q"
     if amount >= 1_000_000_000_000_000:
         return f"{amount / 1_000_000_000_000_000:.2f}".rstrip("0").rstrip(".") + "q"
     if amount >= 1_000_000_000_000:
