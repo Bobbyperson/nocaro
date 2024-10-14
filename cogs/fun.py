@@ -1,10 +1,10 @@
 import random
 
-import config
 import discord
 from discord.ext import commands
 
 import cogs.utils.miscfuncs as mf
+import config
 
 
 class Fun(commands.Cog):

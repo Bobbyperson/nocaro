@@ -129,3 +129,68 @@ async def blacklist_user(user_id, timestamp):
             f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})"
         )
         await db.commit()
+
+
+def human_time_to_seconds(*args) -> int:
+    if not args or len(args) == 0:
+        return 0
+
+    if len(args) == 1:
+        time = args[0]
+        unit = time[-1]
+        value = float(time[:-1])
+
+        match unit:
+            case "m":
+                return int(value * 60)
+            case "h":
+                return int(value * 60 * 60)
+            case "d":
+                return int(value * 60 * 60 * 24)
+            case "w":
+                return int(value * 60 * 60 * 24 * 7)
+            case "y":
+                return int(value * 60 * 60 * 24 * 365)
+            case "_":
+                return int(value)
+
+    value = 0
+    for i, arg in enumerate(args):
+        if i == 0:
+            time = arg
+            continue
+
+        match arg:
+            case "s" | "second" | "seconds" | "sec":
+                value += float(time)
+            case "m" | "minute" | "minutes" | "min":
+                value += float(time) * 60
+            case "h" | "hour" | "hours" | "hr" | "hrs":
+                value += float(time) * 60 * 60
+            case "d" | "day" | "days":
+                value += float(time) * 60 * 60 * 24
+            case "w" | "week" | "weeks":
+                value += float(time) * 60 * 60 * 24 * 7
+            case "y" | "year" | "years":
+                value += float(time) * 60 * 60 * 24 * 365
+
+    return int(value)
+
+
+def seconds_to_human_time(seconds: int) -> str:
+    units = [
+        ("y", 60 * 60 * 24 * 365),
+        ("w", 60 * 60 * 24 * 7),
+        ("d", 60 * 60 * 24),
+        ("h", 60 * 60),
+        ("m", 60),
+        ("s", 1),
+    ]
+
+    result = []
+    for unit_name, unit_seconds in units:
+        unit_value, seconds = divmod(seconds, unit_seconds)
+        if unit_value > 0:
+            result.append(f"{int(unit_value)}{unit_name}")
+
+    return " ".join(result) if result else "0s"
