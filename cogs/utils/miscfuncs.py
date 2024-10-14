@@ -175,22 +175,3 @@ def human_time_to_seconds(*args) -> int:
                 value += float(time) * 60 * 60 * 24 * 365
 
     return int(value)
-
-
-def seconds_to_human_time(seconds: int) -> str:
-    units = [
-        ("y", 60 * 60 * 24 * 365),
-        ("w", 60 * 60 * 24 * 7),
-        ("d", 60 * 60 * 24),
-        ("h", 60 * 60),
-        ("m", 60),
-        ("s", 1),
-    ]
-
-    result = []
-    for unit_name, unit_seconds in units:
-        unit_value, seconds = divmod(seconds, unit_seconds)
-        if unit_value > 0:
-            result.append(f"{int(unit_value)}{unit_name}")
-
-    return " ".join(result) if result else "0s"
