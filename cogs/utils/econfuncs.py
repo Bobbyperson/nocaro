@@ -1,6 +1,7 @@
 import os
 import random as rd
 import re
+import time
 from typing import Union
 
 import aiosqlite
@@ -74,10 +75,9 @@ async def get_history(user):
 
 
 # update user's balance
-async def update_amount(user, change=0, bonuses=True):
+async def update_amount(user, change=0, bonuses=True, tracker_reason=None):
     async with aiosqlite.connect(bank, timeout=10) as db:
         bal = await get_bal(user)
-        USER_ID = user.id
         cursor = await db.cursor()
         change = int(change)
         uncapped = False
@@ -90,12 +90,17 @@ async def update_amount(user, change=0, bonuses=True):
                 change = int(change - (change * (0.05 * prestieges[2])))
         if (bal + change) > 9223372036854775807 and not uncapped:
             await cursor.execute(
-                f"UPDATE main SET balance = 9223372036854775807 WHERE user_id={USER_ID}"
+                f"UPDATE main SET balance = 9223372036854775807 WHERE user_id={user.id}"
             )
         else:
             await cursor.execute(
-                f"UPDATE main SET balance = {bal + change} WHERE user_id={USER_ID}"
+                f"UPDATE main SET balance = {bal + change} WHERE user_id={user.id}"
             )
+        if not tracker_reason:
+            tracker_reason = "unknown"
+        await cursor.execute(
+            f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {change}, '{tracker_reason}', {int(time.time())})"
+        )
         await db.commit()
 
 

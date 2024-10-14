@@ -129,3 +129,59 @@ async def blacklist_user(user_id, timestamp):
             f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})"
         )
         await db.commit()
+
+
+def human_time_to_seconds(*args) -> int:
+    if not args or len(args) == 0:
+        return 0
+
+    if len(args) == 1:
+        time = args[0]
+        unit = time[-1]
+        try:
+            value = float(time[:-1])
+        except ValueError:
+            return -1
+
+        match unit:
+            case "m":
+                return int(value * 60)
+            case "h":
+                return int(value * 60 * 60)
+            case "d":
+                return int(value * 60 * 60 * 24)
+            case "w":
+                return int(value * 60 * 60 * 24 * 7)
+            case "M":
+                return int(value * 60 * 60 * 24 * 30)
+            case "y":
+                return int(value * 60 * 60 * 24 * 365)
+            case "_":
+                return int(value)
+
+    value = 0
+    for i, arg in enumerate(args):
+        if i == 0:
+            try:
+                time = float(arg)
+            except ValueError:
+                return -1
+            continue
+
+        match arg:
+            case "s" | "second" | "seconds" | "sec":
+                value += float(time)
+            case "m" | "minute" | "minutes" | "min":
+                value += float(time) * 60
+            case "h" | "hour" | "hours" | "hr" | "hrs":
+                value += float(time) * 60 * 60
+            case "d" | "day" | "days":
+                value += float(time) * 60 * 60 * 24
+            case "w" | "week" | "weeks":
+                value += float(time) * 60 * 60 * 24 * 7
+            case "M" | "month" | "months":
+                value += float(time) * 60 * 60 * 24 * 30
+            case "y" | "year" | "years":
+                value += float(time) * 60 * 60 * 24 * 365
+
+    return int(value)
