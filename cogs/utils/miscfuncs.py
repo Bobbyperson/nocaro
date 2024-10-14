@@ -138,7 +138,10 @@ def human_time_to_seconds(*args) -> int:
     if len(args) == 1:
         time = args[0]
         unit = time[-1]
-        value = float(time[:-1])
+        try:
+            value = float(time[:-1])
+        except ValueError:
+            return -1
 
         match unit:
             case "m":
@@ -149,6 +152,8 @@ def human_time_to_seconds(*args) -> int:
                 return int(value * 60 * 60 * 24)
             case "w":
                 return int(value * 60 * 60 * 24 * 7)
+            case "M":
+                return int(value * 60 * 60 * 24 * 30)
             case "y":
                 return int(value * 60 * 60 * 24 * 365)
             case "_":
@@ -157,7 +162,10 @@ def human_time_to_seconds(*args) -> int:
     value = 0
     for i, arg in enumerate(args):
         if i == 0:
-            time = arg
+            try:
+                time = float(arg)
+            except ValueError:
+                return -1
             continue
 
         match arg:
@@ -171,7 +179,7 @@ def human_time_to_seconds(*args) -> int:
                 value += float(time) * 60 * 60 * 24
             case "w" | "week" | "weeks":
                 value += float(time) * 60 * 60 * 24 * 7
-            case "m" | "month" | "months":
+            case "M" | "month" | "months":
                 value += float(time) * 60 * 60 * 24 * 30
             case "y" | "year" | "years":
                 value += float(time) * 60 * 60 * 24 * 365

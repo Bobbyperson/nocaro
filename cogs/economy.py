@@ -367,72 +367,78 @@ class Economy(commands.Cog):
 
         timeframe_args = timeframe.split()
         timeframe_seconds = misc.human_time_to_seconds(*timeframe_args)
+        if timeframe_seconds == -1:
+            return await ctx.send(
+                "Invalid timeframe. Be sure you did not use numerical words."
+            )
 
         current_balance = await econ.get_bal(user)
+        async with ctx.typing():
+            async with aiosqlite.connect(bank) as db:
+                async with db.cursor() as cursor:
+                    await cursor.execute(
+                        "SELECT amount, time FROM history WHERE user_id = ? AND time > ? ORDER BY time ASC",
+                        (user.id, int(time.time()) - timeframe_seconds),
+                    )
+                    result = await cursor.fetchall()
 
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT amount, time FROM history WHERE user_id = ? AND time > ? ORDER BY time ASC",
-                    (user.id, int(time.time()) - timeframe_seconds),
+            if not result:
+                return await ctx.send(
+                    "No history found, please try using a longer timeframe."
                 )
-                result = await cursor.fetchall()
 
-        if not result:
-            return await ctx.send("No history found.")
+            x = []
+            y = []
 
-        x = []
-        y = []
+            balance = current_balance
 
-        balance = current_balance
-
-        # Add the current balance as the starting point
-        x.append(datetime.datetime.fromtimestamp(time.time()))
-        y.append(balance)
-
-        # Process transactions in reverse order to reconstruct balances
-        for amount, timestamp in reversed(result):
-            balance -= amount
-            x.append(datetime.datetime.fromtimestamp(timestamp))
+            # Add the current balance as the starting point
+            x.append(datetime.datetime.fromtimestamp(time.time()))
             y.append(balance)
 
-        # Reverse the lists to have them in chronological order
-        x.reverse()
-        y.reverse()
+            # Process transactions in reverse order to reconstruct balances
+            for amount, timestamp in reversed(result):
+                balance -= amount
+                x.append(datetime.datetime.fromtimestamp(timestamp))
+                y.append(balance)
 
-        # Plotting
-        plt.figure(figsize=(10, 5))
-        plt.plot(x, y, marker="o")
-        plt.xlabel("Time")
-        plt.ylabel("Balance")
-        plt.title(f"Bouge Buck Balance History for {user.display_name}")
-        plt.grid(True)
+            # Reverse the lists to have them in chronological order
+            x.reverse()
+            y.reverse()
 
-        # Date formatting
-        if timeframe_seconds < 60 * 60 * 24 + 1:
-            date_format = DateFormatter("%Y-%m-%d %H:%M")
-        elif timeframe_seconds < 60 * 60 * 24 * 30 + 1:
-            date_format = DateFormatter("%Y-%m-%d")
-        else:
-            date_format = DateFormatter("%Y-%m")
-        plt.gca().xaxis.set_major_formatter(date_format)
-        plt.gcf().autofmt_xdate()
+            # Plotting
+            plt.figure(figsize=(10, 5))
+            plt.plot(x, y, marker="o")
+            plt.xlabel("Time")
+            plt.ylabel("Balance")
+            plt.title(f"Bouge Buck Balance History for {user.display_name}")
+            plt.grid(True)
 
-        # Format y-axis
-        ax = plt.gca()
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: econ.unmoneyfy(x)))
+            # Date formatting
+            if timeframe_seconds < 60 * 60 * 24 + 1:
+                date_format = DateFormatter("%Y-%m-%d %H:%M")
+            elif timeframe_seconds < 60 * 60 * 24 * 30 + 1:
+                date_format = DateFormatter("%Y-%m-%d")
+            else:
+                date_format = DateFormatter("%Y-%m")
+            plt.gca().xaxis.set_major_formatter(date_format)
+            plt.gcf().autofmt_xdate()
 
-        plt.tight_layout()
+            # Format y-axis
+            ax = plt.gca()
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: econ.unmoneyfy(x)))
 
-        with io.BytesIO() as img:
-            plt.savefig(img, format="png")
-            img.seek(0)
-            plt.close()
+            plt.tight_layout()
 
-            await ctx.send(
-                file=discord.File(fp=img, filename="history.png"),
-                content=f"{user.mention}'s Bouge Buck history",
-            )
+            with io.BytesIO() as img:
+                plt.savefig(img, format="png")
+                img.seek(0)
+                plt.close()
+
+                await ctx.send(
+                    file=discord.File(fp=img, filename="history.png"),
+                    content=f"{user.mention}'s Bouge Buck history",
+                )
 
     @commands.command(hidden=True)
     async def moneytest(self, ctx, amount):
