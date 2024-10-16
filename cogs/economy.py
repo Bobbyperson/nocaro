@@ -2320,9 +2320,10 @@ Example command: `,bougegram normal 100`"""
                                     for i, card in enumerate(deck.cards):
                                         if card.value == 7:
                                             seven_card = deck.cards.pop(i)
-                                    dealer.add_card(
-                                        seven_card
-                                    )  # ensure actual card from deck and no duplicates
+                                            dealer.add_card(
+                                                seven_card
+                                            )  # ensure actual card from deck and no duplicates
+                                            break
                                     await pippi_say(ctx, "Ok, done.")
                                     options = get_options()
                                     await update_game()
