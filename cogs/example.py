@@ -1,9 +1,7 @@
 import asyncio
-import random
 import time
 
 import discord
-import emoji
 from discord import ButtonStyle, Interaction
 from discord.ext import commands
 from discord.ui import Button, View
@@ -28,33 +26,6 @@ class Example(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Example ready")
-
-    @commands.command()
-    @commands.is_owner()
-    async def wawa(self, ctx):
-        choice = random.randint(1, 3)
-
-        emojis_across_all_guilds_lol = self.client.emojis
-        default_emojis_maybe = list(
-            emoji.EMOJI_DATA.keys()
-        )  # includes emojis that discord does not have
-        guild_emojis = ctx.guild.emojis
-
-        if choice == 1:
-            random_emoji = random.choice(emojis_across_all_guilds_lol)
-        elif choice == 2 and guild_emojis:
-            random_emoji = random.choice(guild_emojis)
-        elif choice == 3:
-            done = False
-            while not done:
-                try:  # keep trying until we get a valid emoji
-                    random_emoji = random.choice(default_emojis_maybe)
-                    await ctx.message.add_reaction(random_emoji)
-                    done = True
-                except discord.HTTPException:
-                    pass
-            return
-        await ctx.message.add_reaction(random_emoji)
 
     @commands.command(aliases=["pong"], hidden=True)
     async def ping(self, ctx):
