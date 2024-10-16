@@ -2,10 +2,11 @@ import asyncio
 import os
 import random
 
-import config
 import discord
 from discord.ext import commands, tasks
 from pretty_help import PrettyHelp
+
+import config
 
 
 async def main():

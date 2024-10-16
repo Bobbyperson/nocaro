@@ -14,7 +14,6 @@ from typing import Optional, Tuple
 
 import aiosqlite
 import asyncpg
-import config
 import discord
 import matplotlib.pyplot as plt
 import pyttsx3
@@ -28,6 +27,7 @@ from pydub import AudioSegment
 
 import cogs.utils.econfuncs as econ
 import cogs.utils.miscfuncs as misc
+import config
 
 # main bank file
 bank = "./data/database.sqlite"
