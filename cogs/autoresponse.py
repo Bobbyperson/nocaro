@@ -1,4 +1,7 @@
 import aiosqlite
+import emoji
+import random
+import discord
 from discord.ext import commands
 
 from cogs.utils.miscfuncs import is_blacklisted
@@ -68,6 +71,30 @@ class Autoresponse(commands.Cog):
             await message.add_reaction(jackbox)
         elif "pick it up" in str.lower(message.content):
             await message.channel.send("SKAAAAAAAAAA!")
+
+        if random.randint(1, 500) == 1:
+            return
+
+        emoji_type = random.randint(1, 2)
+
+        default_emojis_maybe = list(
+            emoji.EMOJI_DATA.keys()
+        )  # includes emojis that discord does not have
+        guild_emojis = message.guild.emojis
+
+        if emoji_type == 1 and guild_emojis:
+            random_emoji = random.choice(guild_emojis)
+        elif emoji_type == 2:
+            done = False
+            while not done:
+                try:  # keep trying until we get a valid emoji
+                    random_emoji = random.choice(default_emojis_maybe)
+                    await message.add_reaction(random_emoji)
+                    done = True
+                except discord.HTTPException:
+                    pass
+            return
+        await message.add_reaction(random_emoji)
 
 
 async def setup(client):
