@@ -549,11 +549,10 @@ Example command: `,bougegram normal 100`"""
                     await ctx.send(msg_to_send)
             return player_pass
 
-        async def play_word(word=None, threshold=1000, min_length=3, max_length=5):
-            if not word:
-                w1 = rd.choice(words)
-                w1a = w1.split(".")[1]
-                wlc = int(w1.split(".")[0])
+        async def play_word(threshold=1000, min_length=3, max_length=5):
+            w1 = rd.choice(words)
+            w1a = w1.split(".")[1]
+            wlc = int(w1.split(".")[0])
             # vc = await ctx.voice_client.connect()
             met_threshold = False
             while not met_threshold:
@@ -673,7 +672,6 @@ Example command: `,bougegram normal 100`"""
                         await asyncio.sleep(0.1)
 
             async def play_round(
-                word=None,
                 time=5,
                 plays=10,
                 players=players,
@@ -685,7 +683,7 @@ Example command: `,bougegram normal 100`"""
                 for _ in range(plays):
                     if not await checkgame(singleplayer, players):
                         break
-                    w1a = await play_word(word, threshold, min_length, max_length)
+                    w1a = await play_word(threshold, min_length, max_length)
                     await asyncio.sleep(time)
                     # play done sound here
                     await ctx.send(w1a)
@@ -744,7 +742,6 @@ Example command: `,bougegram normal 100`"""
             initial_players = players
             # level 1
             players = await play_round(
-                None,
                 seconds[0],
                 rounds[0],
                 players,
@@ -755,7 +752,6 @@ Example command: `,bougegram normal 100`"""
             )
             # level 2
             players = await play_round(
-                None,
                 seconds[1],
                 rounds[1],
                 players,
@@ -766,7 +762,6 @@ Example command: `,bougegram normal 100`"""
             )
             # level 3
             players = await play_round(
-                None,
                 seconds[2],
                 rounds[2],
                 players,
@@ -777,7 +772,6 @@ Example command: `,bougegram normal 100`"""
             )
             # level 4
             players = await play_round(
-                None,
                 seconds[3],
                 rounds[3],
                 players,
