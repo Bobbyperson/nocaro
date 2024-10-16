@@ -199,7 +199,7 @@ class database(commands.Cog):
                 )
                 await db.commit()
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
-            "fixupx.com" not in msg
+            not "fixupx.com" in msg
             and "fixvx.com" not in msg
             and "fxtwitter.com" not in msg
             and "vxtwitter.com" not in msg
