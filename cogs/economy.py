@@ -357,9 +357,9 @@ class Economy(commands.Cog):
         print("Economy ready")
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def history(
-        self, ctx, user: Optional[discord.User] = None, *, timeframe: str = "1 week"
+        self, ctx, user: Optional[discord.User] = None, *, timeframe: str = "1 day"
     ):
         """Check your Bouge Buck history/trends."""
         if not user:
@@ -384,8 +384,10 @@ class Economy(commands.Cog):
 
             if not result:
                 return await ctx.send(
-                    "No history found, please try using a longer timeframe."
+                    f"No history found within the last {timeframe}, please try specifying a longer timeframe."
                 )
+
+            last_result_timestamp = result[-1][1]
 
             x = []
             y = []
@@ -415,9 +417,9 @@ class Economy(commands.Cog):
             plt.grid(True)
 
             # Date formatting
-            if timeframe_seconds < 60 * 60 * 24 + 1:
+            if int(time.time()) - last_result_timestamp < 60 * 60 * 24 + 1:
                 date_format = DateFormatter("%Y-%m-%d %H:%M")
-            elif timeframe_seconds < 60 * 60 * 24 * 30 + 1:
+            elif int(time.time()) - last_result_timestamp < 60 * 60 * 24 * 30 + 1:
                 date_format = DateFormatter("%Y-%m-%d")
             else:
                 date_format = DateFormatter("%Y-%m")
@@ -437,9 +439,9 @@ class Economy(commands.Cog):
                 img.seek(0)
                 plt.close()
 
-                await ctx.send(
+                await ctx.reply(
                     file=discord.File(fp=img, filename="history.png"),
-                    content=f"{user.mention}'s Bouge Buck history",
+                    content=f"{user.name}'s Bouge Buck history",
                 )
 
     @commands.command(hidden=True)
