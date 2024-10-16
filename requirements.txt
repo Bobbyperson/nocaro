@@ -1,5 +1,5 @@
 aiosqlite==0.20.0
-Pillow==10.4.0
+Pillow==11.0.0
 aiosqlite==0.20.0
 discord-pretty-help==2.0.7
 discord.py==2.4.0
