@@ -23,16 +23,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install isort black ruff
-
-      - name: Run isort
-        run: |
-          isort .
-        working-directory: ./checkout
+          pip install black ruff
 
       - name: Run ruff
         run: |
-          ruff check . --fix --output-format=github
+          ruff check . --select I --fix --output-format=github
         working-directory: ./checkout
 
       - name: Run black
