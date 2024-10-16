@@ -13,6 +13,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: ./checkout
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -21,19 +22,23 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install isort black ruff
 
       - name: Run isort
         run: |
           isort .
+        working-directory: ./checkout
 
       - name: Run ruff
         run: |
           ruff check . --fix --output-format=github
+        working-directory: ./checkout
 
       - name: Run black
         run: |
           black .
+        working-directory: ./checkout
 
       - name: Commit and push changes if needed
         env:
@@ -43,8 +48,9 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           if ! git diff --quiet; then
             git add .
-            git commit -m "Format code with isort, black, and ruff [skip ci]"
-            git push
+            git commit --amend --no-edit
+            git push --force
           else
             echo "No changes to commit."
           fi
+        working-directory: ./checkout
