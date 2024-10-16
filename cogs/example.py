@@ -40,6 +40,9 @@ class Example(commands.Cog):
         )  # includes emojis that discord does not have
         guild_emojis = ctx.guild.emojis
 
+        if type(choice) is int:
+            pass
+
         if choice == 1:
             random_emoji = random.choice(emojis_across_all_guilds_lol)
         elif choice == 2 and guild_emojis:
