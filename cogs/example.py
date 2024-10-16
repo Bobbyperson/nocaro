@@ -46,6 +46,9 @@ class Example(commands.Cog):
         if type(choice) is not int:
             pass
 
+        if type(choice) is not int:
+            pass
+
         if choice == 1:
             random_emoji = random.choice(emojis_across_all_guilds_lol)
         elif choice == 2 and guild_emojis:
