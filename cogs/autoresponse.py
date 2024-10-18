@@ -73,7 +73,7 @@ class Autoresponse(commands.Cog):
         elif "pick it up" in str.lower(message.content):
             await message.channel.send("SKAAAAAAAAAA!")
 
-        if random.randint(1, 500) == 1:
+        if random.randint(1, 500) != 1:
             return
 
         emoji_type = random.randint(1, 2)
