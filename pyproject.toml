@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "nocaro"
+version = "0.1.0"
+description = ""
+authors = ["Bobbyperson <bobbyperson12345@gmail.com>"]
+license = "GNU GPLv3"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+aiosqlite = "^0.20.0"
+pillow = "^11.0.0"
+"discord.py" = {extras = ["voice"], version = "^2.4.0"}
+discord-pretty-help = "^2.0.7"
+requests = "^2.32.3"
+ffmpy = "^0.4.0"
+pyquery = "^2.0.1"
+asyncio = "^3.4.3"
+asyncpg = "^0.30.0"
+matplotlib = "^3.9.2"
+pydub = "^0.25.1"
+emoji = "^2.14.0"
+yfinance = "^0.2.45"
+pandas = "^2.2.3"
+pandas_market_calendars = "^4.4.1"
+pyttsx3 = "^2.98"
+discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+ruff = "^0.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

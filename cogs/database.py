@@ -7,7 +7,7 @@ import discord
 import discord.ext
 from discord.ext import commands
 
-import cogs.utils.miscfuncs as mf
+import utils.miscfuncs as mf
 
 bank = "./data/database.sqlite"
 

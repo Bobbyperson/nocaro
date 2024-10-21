@@ -1,0 +1,15 @@
+[general]
+token = ""
+owner_id = 0
+prefix = ","
+
+[osu]
+client_id = 0
+client_secret = ""
+
+[blacklists]
+blacklisted_servers = []
+blacklisted_dms = []
+
+[channels]
+error_reporting_channel = 0

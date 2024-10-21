@@ -9,12 +9,12 @@ import random as rd
 import sys
 import time
 import traceback
+import tomllib
 from collections import Counter
 from typing import Optional, Tuple
 
 import aiosqlite
 import asyncpg
-import config
 import discord
 import matplotlib.pyplot as plt
 import pyttsx3
@@ -26,11 +26,14 @@ from matplotlib.ticker import FuncFormatter
 from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 
-import cogs.utils.econfuncs as econ
-import cogs.utils.miscfuncs as misc
+import utils.econfuncs as econ
+import utils.miscfuncs as misc
 
 # main bank file
 bank = "./data/database.sqlite"
+
+with open("config.toml", "rb") as f:
+    config = tomllib.load(f)
 
 
 class InventorySource(menus.ListPageSource):
@@ -5445,7 +5448,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await ctx.reply("You did not close a quote in your arguments!")
         else:
             ctx.command.reset_cooldown(ctx)
-            channel = await self.client.fetch_channel(config.error_reporting_channel)
+            channel = await self.client.fetch_channel(
+                config["channels"]["error_reporting_channel"]
+            )
             embed = discord.Embed(
                 title="An Error has occurred",
                 description=f"Error: \n `{error}`\nCommand: `{ctx.command}`",

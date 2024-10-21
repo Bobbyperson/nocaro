@@ -1,1 +1,2 @@
 templates/theory.txt linguist-vendored
+*.lock linguist-generated

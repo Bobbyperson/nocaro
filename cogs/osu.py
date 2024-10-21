@@ -1,17 +1,20 @@
 import asyncio
 import math
 import time
+import tomllib
 
 import aiosqlite
-import config
 import discord
 import requests
 from discord.ext import commands
 
-import cogs.utils.econfuncs as econ
-import cogs.utils.miscfuncs as mf
+import utils.econfuncs as econ
+import utils.miscfuncs as mf
 
 bank = "./data/database.sqlite"
+
+with open("config.toml", "rb") as f:
+    config = tomllib.load(f)
 
 
 def get_unix():
@@ -111,8 +114,8 @@ class osu(commands.Cog):
     async def refresh_token(self):  # token lasts for one day
         url = "https://osu.ppy.sh/oauth/token"
         myjson = {
-            "client_id": config.osu_client_id,
-            "client_secret": config.osu_client_secret,
+            "client_id": config["osu"]["client_id"],
+            "client_secret": config["osu"]["client_secret"],
             "grant_type": "client_credentials",
             "scope": "public",
         }

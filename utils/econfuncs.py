@@ -6,7 +6,7 @@ from typing import Union
 
 import aiosqlite
 
-import cogs.utils.miscfuncs as mf
+import utils.miscfuncs as mf
 
 if __name__ == "__main__":
     print(

@@ -8,8 +8,8 @@ import pandas_market_calendars as mcal
 import yfinance as yf
 from discord.ext import commands
 
-import cogs.utils.econfuncs as econ
-import cogs.utils.miscfuncs as mf
+import utils.econfuncs as econ
+import utils.miscfuncs as mf
 
 bank = "./data/database.sqlite"
 
