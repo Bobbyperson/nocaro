@@ -51,10 +51,6 @@ class Example(commands.Cog):
         )
 
     @commands.command(hidden=True)
-    async def play(self, ctx):
-        await ctx.send("please use the < prefix for music")
-
-    @commands.command(hidden=True)
     async def btest(self, ctx):
         # Send a message with a button
         view = MyButtonView()
