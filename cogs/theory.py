@@ -11,7 +11,7 @@ class theory(commands.Cog):
     async def theory(self, ctx, word=None):
         theories = ["Theory", "Theorem", "Method"]
         if not word:
-            with open("templates/theory.txt", "r") as f:
+            with open("templates/theory.txt") as f:
                 words = [line.rstrip() for line in f.readlines()]
                 word = random.choice(words)
         await ctx.send("The " + word.title() + " " + random.choice(theories))

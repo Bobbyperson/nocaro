@@ -339,7 +339,7 @@ async def formatted_winloss(user):
 # get random map
 async def get_random_item():
     file_path = "maps/maps.txt"
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         maps = [line.rstrip() for line in f.readlines()]
         item = rd.choice(maps)
         return item

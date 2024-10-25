@@ -19,7 +19,7 @@ def array_to_string(arr):
 
 
 async def get_json():
-    with open("automod.json", "r") as f:
+    with open("automod.json") as f:
         return json.load(f)
 
 

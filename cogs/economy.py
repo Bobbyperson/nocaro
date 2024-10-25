@@ -8,8 +8,8 @@ import os.path
 import random as rd
 import sys
 import time
-import traceback
 import tomllib
+import traceback
 from collections import Counter
 from typing import Optional, Tuple
 
@@ -2885,7 +2885,7 @@ Example command: `,bougegram normal 100`"""
             if bet != "flop" and bet != "fire":
                 await ctx.send("Please specify `flop` or `fire`")
                 return
-            with open("lastgame.txt", "r") as f:
+            with open("lastgame.txt") as f:
                 last_game = int(f.read())
             if last_game > unix:
                 await ctx.send("A game is already in progress!")
@@ -3037,7 +3037,7 @@ Example command: `,bougegram normal 100`"""
     async def quickdraw(self, ctx, member: discord.Member = None, amount: str = "0"):
         """Play a reaction based game against someone."""
         amount = econ.moneyfy(amount)
-        with open("words.txt", "r") as file:
+        with open("words.txt") as file:
             all_text = file.read()
             words = list(map(str, all_text.split()))
             word = rd.choice(words)
