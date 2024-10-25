@@ -2,7 +2,7 @@
 
 ## About
 
-Nocaro is a multi-purpose discord bot. It's main appeal is it's wide selection of economy commands. Users are able to earn and gamble Bouge Bucks, a fake currency. 
+Nocaro is a multi-purpose discord bot. It's main appeal is it's wide selection of economy commands. Users are able to earn and gamble Bouge Bucks, a fake currency.
 
 Nocaro was essentially my introducion to programming, and therefore contains a LOT of really dumb code made over many years. You should be careful if you decide to use this project as example code for anything.
 
