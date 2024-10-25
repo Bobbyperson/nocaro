@@ -8,7 +8,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.11,<3.13,!=3.12.5"
 aiosqlite = "^0.20.0"
 pillow = "^11.0.0"
 "discord.py" = {extras = ["voice"], version = "^2.4.0"}

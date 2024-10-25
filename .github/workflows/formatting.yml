@@ -7,4 +7,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: jpetrucciani/black-check@master
+    - uses: jpetrucciani/black-check@24.10.0
