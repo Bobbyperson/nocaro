@@ -11,7 +11,7 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/python-poetry/poetry
-    rev: '1.8.4'
+    rev: '1.8.0'
     hooks:
       - id: poetry-check
         language_version: python3.12
