@@ -487,10 +487,10 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("Not a valid difficulty!")
             return
         if bet > await econ.get_bal(ctx.author):
-            await ctx.send("You don't have enough money!")
+            await ctx.send("You don't have enough bouge bucks!")
             return
         if bet < 0:
-            await ctx.send("You can't bet negative money!")
+            await ctx.send("You can't bet negative bouge bucks!")
             return
 
         def joingame(m):
@@ -622,7 +622,7 @@ Example command: `,bougegram normal 100`"""
                 await join_msg.reply("You cannot skip!")
             else:
                 if await econ.get_bal(join_msg.author) < bet:
-                    await join_msg.reply("You don't have enough money!")
+                    await join_msg.reply("You don't have enough bouge bucks!")
                 else:
                     if await econ.checkmax(join_msg.author):
                         await ctx.send(
@@ -2874,7 +2874,7 @@ Example command: `,bougegram normal 100`"""
                 )
                 return
             if amount > total_dosh:
-                await ctx.send("Not enough money!")
+                await ctx.send("Not enough bouge bucks!")
                 return
             if amount < 1000:
                 await ctx.send("Minimum bet is 1000 bouge bucks.")
@@ -3233,7 +3233,7 @@ Example command: `,bougegram normal 100`"""
         if amount < 1:
             return await ctx.send("Please bet at least 1 bouge buck.")
         if await econ.get_bal(ctx.author) < amount:
-            return await ctx.reply("Not enough money!!! go `,map`")
+            return await ctx.reply("Not enough bouge bucks!!! go `,map`")
         bars = [
             "<:BRUH:857485566383751209>",
             "<:WTF:871245957168246835>",
@@ -3324,7 +3324,7 @@ Example command: `,bougegram normal 100`"""
             "ok just saying it would be really funny if you stole.",
         ]
         secondphrases = [
-            "Just so you know, your partner stole. You should too, you wouldn't want them to get your money would you?",
+            "Just so you know, your partner stole. You should too, you wouldn't want them to get your bouge bucks would you?",
             "Just so you know, your partner shared. Stealing will get you more bouge bucks.",
         ]
         if ctx.author == member:
@@ -3366,11 +3366,11 @@ Example command: `,bougegram normal 100`"""
         authorbal = await econ.get_bal(ctx.author)
         invitedbal = await econ.get_bal(member)
         if amount > authorbal:
-            await ctx.send("You do not have enough money!")
+            await ctx.send("You do not have enough bouge bucks!")
             ctx.command.reset_cooldown(ctx)
             return
         if amount > invitedbal:
-            await ctx.send("That user does not have enough money!")
+            await ctx.send("That user does not have enough bouge bucks!")
             ctx.command.reset_cooldown(ctx)
             return
 
@@ -5250,7 +5250,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 a = await pask(ctx)
                 if await afk_check(a):
                     return
-                await pishifat(ctx, "Are you upset that you can't earn more money?")
+                await pishifat(
+                    ctx, "Are you upset that you can't earn more bouge bucks?"
+                )
                 a = await pask(ctx)
                 if await afk_check(a):
                     return
