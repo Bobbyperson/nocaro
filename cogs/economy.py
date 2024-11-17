@@ -93,6 +93,11 @@ class MineButton(discord.ui.Button):
             fraction = 1 / self.chance
             self.view.successful_clicks += 1
             self.view.money_earned += self.view.bet * fraction
+            # TODO
+            # self.view.money_earned = (self.view.bet / 1000) * (
+            #     (2**self.view.successful_clicks)
+            #     / ((self.chance / 2) / (self.view.successful_clicks))
+            # )
             self.view.money_earned = round(self.view.money_earned, 2)
             await interaction.response.edit_message(
                 content=f"# Mines!\nBouge Bucks earned: {econ.unmoneyfy(self.view.money_earned)}",
@@ -1868,7 +1873,7 @@ Example command: `,bougegram normal 100`"""
             return
         if await econ.checkmax(member):
             await ctx.send(
-                f"You attempt to steal from {ctx.author.name}. As you approach, you notice the state they're in, a husk of their former self. Unnerved, you run away."
+                f"You attempt to steal from {member.name}. As you approach, you notice the state they're in, a husk of their former self. Unnerved, you run away."
             )
             ctx.command.reset_cooldown(ctx)
             return
@@ -3909,6 +3914,11 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await ctx.send("You are blacklisted from this bot.")
             return
 
+        if await econ.checkmax(ctx.author):
+            return await ctx.send(
+                "You attempt to challenge the dealer, but your brain is too rotten. Maybe you should attempt to `,enterthecave`."
+            )
+
         def check_yes(moosage):
             return (
                 moosage.author == ctx.author
@@ -4336,6 +4346,11 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             )
             ctx.command.reset_cooldown(ctx)
             return
+
+        if await econ.checkmax(ctx.author):
+            return await ctx.send(
+                "Right as you place your bet, a horse kicks you in the head. Maybe you should attempt to `,enterthecave`."
+            )
         amount = econ.moneyfy(bet)
         if amount < 0:
             await ctx.send("You can't bet negative bouge bucks.")
@@ -4470,6 +4485,11 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             return
         if amount < 1:
             await ctx.send("Please bet at least 1 bouge buck.")
+            return
+        if await econ.checkmax(ctx.author):
+            await ctx.send(
+                "Right as you enter the minefield, one explodes and sends you directly to a nearby cave. Maybe you should attempt to `,enterthecave`."
+            )
             return
         await econ.update_amount(ctx.author, -1 * amount, tracker_reason="mines")
         view = MinesView(chance, amount, ctx.author)
