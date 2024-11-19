@@ -909,6 +909,8 @@ Example command: `,bougegram normal 100`"""
                 )
         except (discord.errors.Forbidden, discord.errors.HTTPException, AttributeError):
             return
+        if await econ.checkmax(ctx.author):
+            return
         event = rd.randint(1, 4)
         bal = await econ.get_bal(ctx.author)
         per = rd.randint(1, 15) / 100
