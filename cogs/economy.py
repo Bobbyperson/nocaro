@@ -4482,6 +4482,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         chance = 8
         amount = econ.moneyfy(amount)
         total = await econ.get_bal(ctx.author)
+        blacklisted = await misc.is_blacklisted(ctx.author.id)
+        if blacklisted[0]:
+            return await ctx.send("NOOOOOO!")
         if amount > total:
             await ctx.send("You can't afford that!")
             return
