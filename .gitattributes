@@ -1,2 +1,3 @@
 templates/theory.txt linguist-vendored
+templates/words.txt linguist-vendored
 *.lock linguist-generated

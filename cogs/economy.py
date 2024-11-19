@@ -3044,7 +3044,7 @@ Example command: `,bougegram normal 100`"""
     async def quickdraw(self, ctx, member: discord.Member = None, amount: str = "0"):
         """Play a reaction based game against someone."""
         amount = econ.moneyfy(amount)
-        with open("words.txt") as file:
+        with open("templates/words.txt") as file:
             all_text = file.read()
             words = list(map(str, all_text.split()))
             word = rd.choice(words)
