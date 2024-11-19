@@ -240,7 +240,7 @@ class osu(commands.Cog):
                         f"You have successfully invested {amount} bouge bucks in {osu_name}."
                     )
                     await econ.update_amount(
-                        ctx.author, amount, tracker_reason="osuinvest"
+                        ctx.author, -1 * amount, tracker_reason="osuinvest"
                     )
 
     @commands.hybrid_command()
