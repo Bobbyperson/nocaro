@@ -33,14 +33,13 @@ async def get_bal(user):
     while not result_userbal:
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
+            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={user.id}")
             result_userid = await cursor.fetchone()
             if not result_userid:
                 await new_account(user)
             else:
                 await cursor.execute(
-                    f"SELECT balance FROM main WHERE user_id={USER_ID}"
+                    f"SELECT balance FROM main WHERE user_id={user.id}"
                 )
                 result_userbal = await cursor.fetchone()
                 return int(result_userbal[0])
@@ -83,24 +82,28 @@ async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
         uncapped = False
         prestieges = await get_prestiege(user)
         if prestieges is not None and bonuses:
-            uncapped = True if prestieges[3] else False
             if change > 0:
                 change = int(change + (change * (0.025 * prestieges[0])))
             else:
                 change = int(change - (change * (0.05 * prestieges[2])))
-        if (bal + change) > 9223372036854775807 and not uncapped:
+        if prestieges is not None:
+            uncapped = True if prestieges[3] else False
+        new_balance = bal + change
+        if not uncapped and new_balance > 9223372036854775807:
+            new_balance = 9223372036854775807
+            excess = bal + change - 9223372036854775807
             await cursor.execute(
-                f"UPDATE main SET balance = 9223372036854775807 WHERE user_id={user.id}"
+                f"UPDATE main SET balance = '{str(new_balance)}' WHERE user_id={user.id}"
             )
             await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {bal + change - 9223372036854775807}, '{tracker_reason}', {int(time.time())})"
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{str(excess)}', '{tracker_reason}', {int(time.time())})"
             )
         else:
             await cursor.execute(
-                f"UPDATE main SET balance = {bal + change} WHERE user_id={user.id}"
+                f"UPDATE main SET balance = '{str(new_balance)}' WHERE user_id={user.id}"
             )
             await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {change}, '{tracker_reason}', {int(time.time())})"
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {str(change)}, '{tracker_reason}', {int(time.time())})"
             )
         await db.commit()
 
