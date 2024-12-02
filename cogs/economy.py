@@ -4718,606 +4718,636 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             except asyncio.TimeoutError:
                 await ctx.send("You didn't respond! Exiting.")
                 return
+            skip = False
+            if prestieges is not None:
+                await narrator(
+                    "Looks like you've been here before, wanna cut to the chase? The last edit to the story/text was 12/2/24. (yes/no)"
+                )
+                try:
+                    msg = await self.client.wait_for(
+                        "message",
+                        check=lambda m: m.author == ctx.author
+                        and m.channel == ctx.channel
+                        and m.content.lower() in ["yes", "no"],
+                        timeout=30,
+                    )
+                except asyncio.TimeoutError:
+                    await ctx.send("Assuming no.")
+                if msg.content.lower() == "yes":
+                    skip = True
             async with ctx.typing():
-                await narrator(
-                    "In the bouge casino, when days became weeks, became months, became years, you found yourself at the top. You had won it all, and lost it all. You had taken from the rich, and taken from the poor. You had taken from the casino, and taken from yourself.",
-                    7,
-                )
-                await narrator(
-                    "With years passing, your mind and body became weak. The gain of bouge bucks was no longer a thrill, but a necessity. You had become a husk of your former self, a shell of a person, reduced to nothing but a gambler.",
-                    7,
-                )
-                await narrator(
-                    "Every passing day you felt your body weaken, your vision blur, and your mind fade. You knew that one day, you'd either find yourself at rock bottom, or realize you have killed yourself from greed.",
-                    7,
-                )
-                await narrator(
-                    "You remember, long ago, hearing whispers of a path to redemption. A way to cleanse yourself of your sins, to be reborn anew. You remember hearing of a cave, deep in the mountains, guarded by a strange figure.",
-                    7,
-                )
-                await narrator(
-                    "One day, you decided to venture out to this cave. You knew that if you had kept on, you'd surely die. On your venture to the cave, it seemed as if you knew the way, as if you had been there before.",
-                    7,
-                )
-                await narrator("You attempt to approach the cave...", 3)
-                await narrator(
-                    "You expect the worst, but upon reaching the caves entrance, you pass with no issue.",
-                    4,
-                )
-                await narrator("A voice beckons you from deep within in the cave:", 3)
-                await misc.send_webhook(
-                    ctx,
-                    name="???",
-                    avatar=blurrypfp,
-                    message="You are worthy. Proceed through the cave until you find me.",
-                )
-                await asyncio.sleep(4)
-
-                await narrator(
-                    "What do you do?\n1. Enter the cave\n2. Leave\n`Note: Type the number of the option you'd like to pick`",
-                    0,
-                )
-                t1 = await ask(ctx, 2)
-                if t1.content == "2":
+                if not skip:
                     await narrator(
-                        "Frightened for what lies ahead, you leave the cave. You limp away and wonder what would've happened if you entered, and if you'll be content never gambling again.",
+                        "In the bouge casino, when days became weeks, became months, became years, you found yourself at the top. You had won it all, and lost it all. You had taken from the rich, and taken from the poor. You had taken from the casino, and taken from yourself.",
+                        7,
+                    )
+                    await narrator(
+                        "With years passing, your mind and body became weak. The gain of bouge bucks was no longer a thrill, but a necessity. You had become a husk of your former self, a shell of a person, reduced to nothing but a gambler.",
+                        7,
+                    )
+                    await narrator(
+                        "Every passing day you felt your body weaken, your vision blur, and your mind fade. You knew that one day, you'd either find yourself at rock bottom, or realize you have killed yourself from greed.",
+                        7,
+                    )
+                    await narrator(
+                        "You remember, long ago, hearing whispers of a path to redemption. A way to cleanse yourself of your sins, to be reborn anew. You remember hearing of a cave, deep in the mountains, guarded by a strange figure.",
+                        7,
+                    )
+                    await narrator(
+                        "One day, you decided to venture out to this cave. You knew that if you had kept on, you'd surely die. On your venture to the cave, it seemed as if you knew the way, as if you had been there before.",
+                        7,
+                    )
+                    await narrator("You attempt to approach the cave...", 3)
+                    await narrator(
+                        "You expect the worst, but upon reaching the caves entrance, you pass with no issue.",
+                        4,
+                    )
+                    await narrator(
+                        "A voice beckons you from deep within in the cave:", 3
+                    )
+                    await misc.send_webhook(
+                        ctx,
+                        name="???",
+                        avatar=blurrypfp,
+                        message="You are worthy. Proceed through the cave until you find me.",
+                    )
+                    await asyncio.sleep(4)
+
+                    await narrator(
+                        "What do you do?\n1. Enter the cave\n2. Leave\n`Note: Type the number of the option you'd like to pick`",
+                        0,
+                    )
+                    t1 = await ask(ctx, 2)
+                    if t1.content == "2":
+                        await narrator(
+                            "Frightened for what lies ahead, you leave the cave. You limp away and wonder what would've happened if you entered, and if you'll be content never gambling again.",
+                            5,
+                        )
+                        await narrator("Ending 1 of ?: Coward", 0)
+                        return
+                    if await afk_check(t1):
+                        return
+
+                    await narrator(
+                        "You proceed into the cave, not knowing what awaits you next.",
+                        4,
+                    )
+                    await narrator(
+                        "Deeper down now, you're unsure how far your weak body can take you. The endless gambling has turned you into a husk of your former self.",
                         5,
                     )
-                    await narrator("Ending 1 of ?: Coward", 0)
-                    return
-                if await afk_check(t1):
-                    return
-
-                await narrator(
-                    "You proceed into the cave, not knowing what awaits you next.", 4
-                )
-                await narrator(
-                    "Deeper down now, you're unsure how far your weak body can take you. The endless gambling has turned you into a husk of your former self.",
-                    5,
-                )
-                await narrator(
-                    "You notice a faint light in the distance. You push further and find the voice from before. You are unsure of who he is. While attempting to move closer, you collapse from exhaustion.",
-                    5,
-                )
-                await narrator(
-                    "After regaining consciousness, the voice reveals himself:", 3
-                )
-                await rrtyui(ctx, "I am rrtyui, protector of these caves.", 3)
-                await narrator(
-                    "You recognize his name, rrtyui, the mapper of legends. You thought he was just a myth spread around by the gamblers at the bouge casino. The rumors were that he exiled himself after becoming the best gambler in existence.",
-                    5,
-                )
-
-                t2 = tree
-                while t2.content != "1":
                     await narrator(
-                        "You say...\n1. [Nothing]\n2. i love ur map rainshower <:PRETTY:803797776348741688>\n3. I can't believe it's you!\n4. [Introduce yourself]",
-                        0,
+                        "You notice a faint light in the distance. You push further and find the voice from before. You are unsure of who he is. While attempting to move closer, you collapse from exhaustion.",
+                        5,
                     )
-                    t2 = await ask(ctx, 4)
-                    if await afk_check(t2):
-                        return
-                    if t2.content == "2":
-                        await user(
-                            ctx,
-                            "i love ur map rainshower <:PRETTY:803797776348741688>",
-                            2,
-                        )
-                        await rrtyui(ctx, "Uhhhhh... Thanks.", 2)
-                    if t2.content == "3":
-                        await user(
-                            ctx,
-                            "I can't believe it's really you! Are all of the legends true?",
-                            2,
-                        )
-                        await rrtyui(
-                            ctx,
-                            "Indeed, after straining my body to the point of near death with gambling, I exiled and locked myself in this cave, so that I'd never be able to gamble again. I was the first and only person to ever reach 9.2 quintillion bouge bucks, until today.",
-                            6,
-                        )
-                    if t2.content == "4":
+                    await narrator(
+                        "After regaining consciousness, the voice reveals himself:", 3
+                    )
+                    await rrtyui(ctx, "I am rrtyui, protector of these caves.", 3)
+                    await narrator(
+                        "You recognize his name, rrtyui, the mapper of legends. You thought he was just a myth spread around by the gamblers at the bouge casino. The rumors were that he exiled himself after becoming the best gambler in existence.",
+                        5,
+                    )
+
+                    t2 = tree
+                    while t2.content != "1":
                         await narrator(
-                            "You begin to introduce yourself but you are immediately cut off: ",
-                            2,
+                            "You say...\n1. [Nothing]\n2. i love ur map rainshower <:PRETTY:803797776348741688>\n3. I can't believe it's you!\n4. [Introduce yourself]",
+                            0,
                         )
-                        await rrtyui(
-                            ctx,
-                            "There is no need for introductions, I know exactly who you are. I've been watching your gambling career with great interest.",
-                            3,
-                        )
+                        t2 = await ask(ctx, 4)
+                        if await afk_check(t2):
+                            return
+                        if t2.content == "2":
+                            await user(
+                                ctx,
+                                "i love ur map rainshower <:PRETTY:803797776348741688>",
+                                2,
+                            )
+                            await rrtyui(ctx, "Uhhhhh... Thanks.", 2)
+                        if t2.content == "3":
+                            await user(
+                                ctx,
+                                "I can't believe it's really you! Are all of the legends true?",
+                                2,
+                            )
+                            await rrtyui(
+                                ctx,
+                                "Indeed, after straining my body to the point of near death with gambling, I exiled and locked myself in this cave, so that I'd never be able to gamble again. I was the first and only person to ever reach 9.2 quintillion bouge bucks, until today.",
+                                6,
+                            )
+                        if t2.content == "4":
+                            await narrator(
+                                "You begin to introduce yourself but you are immediately cut off: ",
+                                2,
+                            )
+                            await rrtyui(
+                                ctx,
+                                "There is no need for introductions, I know exactly who you are. I've been watching your gambling career with great interest.",
+                                3,
+                            )
 
-                await rrtyui(
-                    ctx,
-                    "Here, drink this. It'll help you regain your strength temporarily, your body is too weak for what happens next.",
-                    3,
-                )
-
-                await narrator(
-                    "He hands you dorchadas stew. You...\n1. [Drink it]\n2. [Do not]", 2
-                )
-                t3 = await ask(ctx, 2)
-                if await afk_check(t3):
-                    return
-                if t3.content == "2":
                     await rrtyui(
                         ctx,
-                        "Suit yourself, but I cannot guarantee your safety from this point onwards.",
+                        "Here, drink this. It'll help you regain your strength temporarily, your body is too weak for what happens next.",
+                        3,
+                    )
+
+                    await narrator(
+                        "He hands you dorchadas stew. You...\n1. [Drink it]\n2. [Do not]",
                         2,
                     )
-                if t3.content == "1":
-                    await narrator("You drink it and feel better instantly.", 2)
-
-                await user(ctx, "What happens next?", 1)
-                await rrtyui(
-                    ctx,
-                    "Your endless and unchecked gambling has taken a toll on your body. However, I can put you on the path of regeneration, have you reborn again anew, for a price.",
-                    4,
-                )
-                await narrator(
-                    "You think for a moment. You think of everything that brought you here, all the stealing, the hardships, and loss. You also think about your addiction, which is really the main thing.",
-                    7,
-                )
-                await narrator(
-                    "You get lost in thought, you realize that you've reached the end, you've won. You've made it to the top, past everyone else. As of this moment, you're the best gambler ever. But at what cost?",
-                    8,
-                )
-                await narrator(
-                    "Is that good enough? Permanantly better than everyone, but unable to gamble? What if you get that itch again, a now literally insatiable itch to gamble?",
-                    7,
-                )
-                await narrator("You collect yourself:", 1)
-                await user(ctx, "What all will happen to me?", 1)
-                await rrtyui(
-                    ctx,
-                    "In exchange for all of your bouge bucks, I will put you on the path to regenerate your body. It will be as if you have never stepped foot into a casino. Along with this, you will earn a unique power.",
-                    5,
-                )
-                # todo: dialogue tree option to ask what the power is
-                t4 = tree
-                while t4.content != "1":
-                    await narrator(
-                        "You say...\n1. [Nothing]\n2. What is the power?\n3. How can I trust you?",
-                        0,
-                    )
-                    t4 = await ask(ctx, 3)
-                    if await afk_check(t4):
+                    t3 = await ask(ctx, 2)
+                    if await afk_check(t3):
                         return
-                    if t4.content == "2":
-                        await user(ctx, "What is the power?", 2)
-                        await rrtyui(ctx, "I've no clue, it's unique for everyone.", 2)
-                    if t4.content == "3":
-                        await user(ctx, "How can I trust you?", 2)
+                    if t3.content == "2":
                         await rrtyui(
                             ctx,
-                            "Do you really have a choice? Can you leave this cave as you are now and live with never gambling again?",
-                            3,
+                            "Suit yourself, but I cannot guarantee your safety from this point onwards.",
+                            2,
                         )
+                    if t3.content == "1":
+                        await narrator("You drink it and feel better instantly.", 2)
 
-                await rrtyui(ctx, "Do we have a deal?", 1)
-
-                await narrator(
-                    "He reaches his hand out towards you. \n1. [Shake it] We do.\n2. [Do not shake it] We do not.",
-                    0,
-                )
-                t5 = await ask(ctx, 2)
-                if t5.content == "2":
-                    await rrtyui(ctx, "What a shame. Leave my sight.", 2)
-                    await narrator("You awkwardly meander outside of the cave.", 3)
-                    if t3.content == "2":  # dorchadas stew not taken
-                        await narrator(
-                            "Right as you reach the exit, you feel your heart burst. You collapse and die an agonizing death alone.",
-                            3,
-                        )
-                        await narrator("Ending 2 of ?: Cold Feet", 0)
-                        return
-                    await narrator(
-                        "Right as you reach the exit, you feel the dorchadas stew begin to wear off. You begin sprinting to the bouge casino, hoping to use the last remaining strength to gamble one last time. Right as you reach a blackjack table, you feel your heart burst. You collapse to the ground and die an agonizing death. On the bright side, 6 people left a fire reaction on your death, immortalizing the moment forever on the fireboard.",
-                        10,
+                    await user(ctx, "What happens next?", 1)
+                    await rrtyui(
+                        ctx,
+                        "Your endless and unchecked gambling has taken a toll on your body. However, I can put you on the path of regeneration, have you reborn again anew, for a price.",
+                        4,
                     )
-                    await narrator("Ending 3 of ?: Hot Feet", 0)
-                    return
-
-                await econ.update_amount(
-                    ctx.author,
-                    -9223372036854775807,
-                    False,
-                    tracker_reason="transcendence",
-                )
-                async with aiosqlite.connect(bank) as db:
-                    async with db.cursor() as cursor:
-                        await cursor.execute(
-                            f"DELETE FROM stocks WHERE user_ID = {ctx.author.id}"
+                    await narrator(
+                        "You think for a moment. You think of everything that brought you here, all the stealing, the hardships, and loss. You also think about your addiction, which is really the main thing.",
+                        7,
+                    )
+                    await narrator(
+                        "You get lost in thought, you realize that you've reached the end, you've won. You've made it to the top, past everyone else. As of this moment, you're the best gambler ever. But at what cost?",
+                        8,
+                    )
+                    await narrator(
+                        "Is that good enough? Permanantly better than everyone, but unable to gamble? What if you get that itch again, a now literally insatiable itch to gamble?",
+                        7,
+                    )
+                    await narrator("You collect yourself:", 1)
+                    await user(ctx, "What all will happen to me?", 1)
+                    await rrtyui(
+                        ctx,
+                        "In exchange for all of your bouge bucks, I will put you on the path to regenerate your body. It will be as if you have never stepped foot into a casino. Along with this, you will earn a unique power.",
+                        5,
+                    )
+                    # todo: dialogue tree option to ask what the power is
+                    t4 = tree
+                    while t4.content != "1":
+                        await narrator(
+                            "You say...\n1. [Nothing]\n2. What is the power?\n3. How can I trust you?",
+                            0,
                         )
-                        await cursor.execute(
-                            f"DELETE FROM osu WHERE user_id = {ctx.author.id}"
-                        )
-                    await db.commit()
-                await narrator(
-                    "You shake his hand. Almost immediately, you feel your bouge bucks (and stock portfolio) hit zero.",
-                    3,
-                )
-                await rrtyui(ctx, "Excellent. Come, sit.", 1)
-                await narrator("He motions you to two mats on the floor.", 2)
-                await narrator(
-                    "You sit down on the mat, sitting directly opposite of him.", 3
-                )
-                await rrtyui(ctx, "Meditate with me. Your transcendence begins now.", 2)
-                # todo: add questions to this (transcendence?) (what will happen?) (who will i see?)
-                # await narrator("You say:", 0)
-                # t6 = await ask(ctx, 3)
-                # if await afkcheck(t6):
-                #     return
-                # if t6.content == "1":
-                #     return
-                await narrator(
-                    'You both cross your legs and begin chanting "omsu" in unison.', 2
-                )
-                await rrtyui(
-                    ctx,
-                    "Close your eyes, clear your mind, think of nothing besides whats brought you here.",
-                    3,
-                )
-                await narrator(
-                    "After what feels like an eternity of chanting, you begin to feel weightless and slowly start rising upwards.",
-                    2,
-                )
-                await narrator(
-                    "You look down to see your own body, nearly motionless, still chanting and meditating with rrtyui.",
-                    3,
-                )
-                await narrator(
-                    "You continue floating upwards. You notice you're about to hit the ceiling so you brace yourself, only to pass through it effortlessly.",
-                    3,
-                )
-                await narrator(
-                    "No matter what you do you keep floating upwards, gaining in speed rapidly.",
-                    2,
-                )
+                        t4 = await ask(ctx, 3)
+                        if await afk_check(t4):
+                            return
+                        if t4.content == "2":
+                            await user(ctx, "What is the power?", 2)
+                            await rrtyui(
+                                ctx, "I've no clue, it's unique for everyone.", 2
+                            )
+                        if t4.content == "3":
+                            await user(ctx, "How can I trust you?", 2)
+                            await rrtyui(
+                                ctx,
+                                "Do you really have a choice? Can you leave this cave as you are now and live with never gambling again?",
+                                3,
+                            )
 
-                if t3.content == "2":  # dorchadas stew not drank
+                    await rrtyui(ctx, "Do we have a deal?", 1)
+
+                    await narrator(
+                        "He reaches his hand out towards you. \n1. [Shake it] We do.\n2. [Do not shake it] We do not.",
+                        0,
+                    )
+                    t5 = await ask(ctx, 2)
+                    if t5.content == "2":
+                        await rrtyui(ctx, "What a shame. Leave my sight.", 2)
+                        await narrator("You awkwardly meander outside of the cave.", 3)
+                        if t3.content == "2":  # dorchadas stew not taken
+                            await narrator(
+                                "Right as you reach the exit, you feel your heart burst. You collapse and die an agonizing death alone.",
+                                3,
+                            )
+                            await narrator("Ending 2 of ?: Cold Feet", 0)
+                            return
+                        await narrator(
+                            "Right as you reach the exit, you feel the dorchadas stew begin to wear off. You begin sprinting to the bouge casino, hoping to use the last remaining strength to gamble one last time. Right as you reach a blackjack table, you feel your heart burst. You collapse to the ground and die an agonizing death. On the bright side, 6 people left a fire reaction on your death, immortalizing the moment forever on the fireboard.",
+                            10,
+                        )
+                        await narrator("Ending 3 of ?: Hot Feet", 0)
+                        return
+
                     await econ.update_amount(
                         ctx.author,
-                        9223372036854775807,
+                        -9223372036854775807,
                         False,
-                        tracker_reason="caveundo",
+                        tracker_reason="transcendence",
+                    )
+                    async with aiosqlite.connect(bank) as db:
+                        async with db.cursor() as cursor:
+                            await cursor.execute(
+                                f"DELETE FROM stocks WHERE user_ID = {ctx.author.id}"
+                            )
+                            await cursor.execute(
+                                f"DELETE FROM osu WHERE user_id = {ctx.author.id}"
+                            )
+                        await db.commit()
+                    await narrator(
+                        "You shake his hand. Almost immediately, you feel your bouge bucks (and stock portfolio) hit zero.",
+                        3,
+                    )
+                    await rrtyui(ctx, "Excellent. Come, sit.", 1)
+                    await narrator("He motions you to two mats on the floor.", 2)
+                    await narrator(
+                        "You sit down on the mat, sitting directly opposite of him.", 3
+                    )
+                    await rrtyui(
+                        ctx, "Meditate with me. Your transcendence begins now.", 2
+                    )
+                    # todo: add questions to this (transcendence?) (what will happen?) (who will i see?)
+                    # await narrator("You say:", 0)
+                    # t6 = await ask(ctx, 3)
+                    # if await afkcheck(t6):
+                    #     return
+                    # if t6.content == "1":
+                    #     return
+                    await narrator(
+                        'You both cross your legs and begin chanting "omsu" in unison.',
+                        2,
+                    )
+                    await rrtyui(
+                        ctx,
+                        "Close your eyes, clear your mind, think of nothing besides whats brought you here.",
+                        3,
                     )
                     await narrator(
-                        "Suddenly, you feel a sharp pain in your chest. Your ascension comes to a grinding halt. You begin falling uncontrollably. Your body goes into an uncontrolled downward spiral as you struggle to maintain control in your freefall. You regain some control just in time to see yourself coming down to the cave, only to see your real body slumped over, motionless. You pass it, still gaining speed. The white void around you begins to turn a crimson red. Apparitions of blue emojis circle you, they all scream and laugh at you while changing their expressions rapidly. You fall endlessly.",
+                        "After what feels like an eternity of chanting, you begin to feel weightless and slowly start rising upwards.",
+                        2,
+                    )
+                    await narrator(
+                        "You look down to see your own body, nearly motionless, still chanting and meditating with rrtyui.",
+                        3,
+                    )
+                    await narrator(
+                        "You continue floating upwards. You notice you're about to hit the ceiling so you brace yourself, only to pass through it effortlessly.",
+                        3,
+                    )
+                    await narrator(
+                        "No matter what you do you keep floating upwards, gaining in speed rapidly.",
+                        2,
+                    )
+
+                    if t3.content == "2":  # dorchadas stew not drank
+                        await econ.update_amount(
+                            ctx.author,
+                            9223372036854775807,
+                            False,
+                            tracker_reason="caveundo",
+                        )
+                        await narrator(
+                            "Suddenly, you feel a sharp pain in your chest. Your ascension comes to a grinding halt. You begin falling uncontrollably. Your body goes into an uncontrolled downward spiral as you struggle to maintain control in your freefall. You regain some control just in time to see yourself coming down to the cave, only to see your real body slumped over, motionless. You pass it, still gaining speed. The white void around you begins to turn a crimson red. Apparitions of blue emojis circle you, they all scream and laugh at you while changing their expressions rapidly. You fall endlessly.",
+                            10,
+                        )
+                        await narrator(
+                            "Ending 4 of ?: :red_square::red_square::red_square: Hell"
+                        )
+                        return
+                    # todo: metaphor for bouge buck progression, word this better maybe? tate's idea
+
+                    await narrator(
+                        "You float so high everything around you becomes pure white. Around the same time, you begin to slow down.",
+                        2,
+                    )
+                    await narrator(
+                        "You gracefully land in a barren white void. The only thing you can see is a decrepit old building resembling a tavern.",
+                        3,
+                    )
+                    await narrator(
+                        "You approach it carefully. As you come up to the entrance the rusty and mangled door opens automatically.",
+                        4,
+                    )
+                    users = ctx.guild.members
+                    await narrator(
+                        "Stepping inside, you can see that the inside is immaculate. The theming of areas varies wildly, the gambling area has a low ceiling, the restaurant has a space defying deck with a magnificent river flowing next to it. You see tons of bouge members hanging out, playing party games, and of course gambling.",
                         10,
                     )
                     await narrator(
-                        "Ending 4 of ?: :red_square::red_square::red_square: Hell"
+                        f"You quickly take in all you can: {rd.choice(users).name} is playing blackjack. {rd.choice(users).name} is flirting with {rd.choice(users).name}. {rd.choice(users).name} is playing slots.",
+                        5,
                     )
-                    return
-                # todo: metaphor for bouge buck progression, word this better maybe? tate's idea
-
-                await narrator(
-                    "You float so high everything around you becomes pure white. Around the same time, you begin to slow down.",
-                    2,
-                )
-                await narrator(
-                    "You gracefully land in a barren white void. The only thing you can see is a decrepit old building resembling a tavern.",
-                    3,
-                )
-                await narrator(
-                    "You approach it carefully. As you come up to the entrance the rusty and mangled door opens automatically.",
-                    4,
-                )
-                users = ctx.guild.members
-                await narrator(
-                    "Stepping inside, you can see that the inside is immaculate. The theming of areas varies wildly, the gambling area has a low ceiling, the restaurant has a space defying deck with a magnificent river flowing next to it. You see tons of bouge members hanging out, playing party games, and of course gambling.",
-                    10,
-                )
-                await narrator(
-                    f"You quickly take in all you can: {rd.choice(users).name} is playing blackjack. {rd.choice(users).name} is flirting with {rd.choice(users).name}. {rd.choice(users).name} is playing slots.",
-                    5,
-                )
-                await narrator(
-                    'Strangely enough, in one corner of the tavern, you spot three pictures with a giant "WANTED" sign below it. You barely make out the names etched onto the picture: "x3Karma", "kolpy__", and "Heatwave".',
-                    5,
-                )
-                # todo: add more options to explore, add more world building
-                await narrator("You feel a tug on your pant leg. You look down.", 5)
-                await blue_emoji(
-                    ctx=ctx,
-                    emotion=nervous,
-                    msg="E-excuse me sir... You're expected.",
-                    time=5,
-                )
-                t6 = tree
-                screams = 0
-                while t6.content != "5":
-                    if screams > 1:
-                        t6_1 = tree
-                        while t6_1.content != "2":
-                            if screams > 3:
-                                await narrator(
-                                    "2.---------> [Do not.] <---------\n2.---------> [Do not.] <---------"
-                                )
-                            elif screams > 2:
-                                await narrator("1. [Scream]\n2. ---> [Do not.] <---")
-                            else:
-                                await narrator("1. [Scream]\n2. [Do not.]")
-                            t6_1 = await ask(ctx, 2)
-                            if t6_1.content == "1":
+                    await narrator(
+                        'Strangely enough, in one corner of the tavern, you spot three pictures with a giant "WANTED" sign below it. You barely make out the names etched onto the picture: "x3Karma", "kolpy__", and "Heatwave".',
+                        5,
+                    )
+                    # todo: add more options to explore, add more world building
+                    await narrator("You feel a tug on your pant leg. You look down.", 5)
+                    await blue_emoji(
+                        ctx=ctx,
+                        emotion=nervous,
+                        msg="E-excuse me sir... You're expected.",
+                        time=5,
+                    )
+                    t6 = tree
+                    screams = 0
+                    while t6.content != "5":
+                        if screams > 1:
+                            t6_1 = tree
+                            while t6_1.content != "2":
                                 if screams > 3:
                                     await narrator(
-                                        "You fucked up. Right as you open your mouth, The Blutler:tm: pulls out a history maker slider and stabs you with it. He leaves you there to bleed out.",
-                                        7,
+                                        "2.---------> [Do not.] <---------\n2.---------> [Do not.] <---------"
                                     )
-                                    await narrator(
-                                        "Ending 5 of ?: Absolutely Flabberghasted, Dumbfounded Even."
-                                    )
-                                    await econ.update_amount(
-                                        ctx.author,
-                                        9223372036854775807,
-                                        False,
-                                        tracker_reason="caveundo",
-                                    )
-                                    return
                                 elif screams > 2:
                                     await narrator(
-                                        "You push your vocal cords to the limit. Screaming as loud as humanly possible.",
-                                        5,
+                                        "1. [Scream]\n2. ---> [Do not.] <---"
                                     )
-                                    await blue_emoji(
-                                        ctx=ctx,
-                                        emotion=rage,
-                                        msg="Scream again, and you'll regret it.",
-                                        time=5,
-                                    )
-                                    screams += 1
                                 else:
+                                    await narrator("1. [Scream]\n2. [Do not.]")
+                                t6_1 = await ask(ctx, 2)
+                                if t6_1.content == "1":
+                                    if screams > 3:
+                                        await narrator(
+                                            "You fucked up. Right as you open your mouth, The Blutler:tm: pulls out a history maker slider and stabs you with it. He leaves you there to bleed out.",
+                                            7,
+                                        )
+                                        await narrator(
+                                            "Ending 5 of ?: Absolutely Flabberghasted, Dumbfounded Even."
+                                        )
+                                        await econ.update_amount(
+                                            ctx.author,
+                                            9223372036854775807,
+                                            False,
+                                            tracker_reason="caveundo",
+                                        )
+                                        return
+                                    elif screams > 2:
+                                        await narrator(
+                                            "You push your vocal cords to the limit. Screaming as loud as humanly possible.",
+                                            5,
+                                        )
+                                        await blue_emoji(
+                                            ctx=ctx,
+                                            emotion=rage,
+                                            msg="Scream again, and you'll regret it.",
+                                            time=5,
+                                        )
+                                        screams += 1
+                                    else:
+                                        await narrator(
+                                            "You scream as loud as you can. You place your hands near your mouth to amplify the sound and have it travel the tavern as much as possible. Everyone stops what they're doing and looks at you.",
+                                            10,
+                                        )
+                                        await blue_emoji(
+                                            ctx=ctx,
+                                            emotion=peeved,
+                                            msg="Sir. Do not scream again.",
+                                            time=5,
+                                        )
+                                        screams += 1
+                                if t6_1.content == "2":
+                                    screams = 0
                                     await narrator(
-                                        "You scream as loud as you can. You place your hands near your mouth to amplify the sound and have it travel the tavern as much as possible. Everyone stops what they're doing and looks at you.",
-                                        10,
+                                        "You say...\n1. [Scream]\n2. Who are you?\n3. I'm expected?\n4. Who's expecting me?\n5. [Nothing]",
+                                        0,
                                     )
-                                    await blue_emoji(
-                                        ctx=ctx,
-                                        emotion=peeved,
-                                        msg="Sir. Do not scream again.",
-                                        time=5,
-                                    )
-                                    screams += 1
-                            if t6_1.content == "2":
-                                screams = 0
-                                await narrator(
-                                    "You say...\n1. [Scream]\n2. Who are you?\n3. I'm expected?\n4. Who's expecting me?\n5. [Nothing]",
-                                    0,
-                                )
-                    elif screams > 0:
-                        await narrator(
-                            "You say...\n1. [Scream again]\n2. Who are you?\n3. I am?\n4. Who's expecting me?\n5. [Nothing]",
-                            0,
-                        )
-                    else:
-                        await narrator(
-                            "You say...\n1. [Scream]\n2. Who are you?\n3. I'm expected?\n4. Who's expecting me?\n5. [Nothing]",
-                            0,
-                        )
-                    t6 = await ask(ctx, 5)
-                    if t6.content == "1":
-                        if screams > 0:
+                        elif screams > 0:
                             await narrator(
-                                "You scream again. Much louder and longer this time.", 3
+                                "You say...\n1. [Scream again]\n2. Who are you?\n3. I am?\n4. Who's expecting me?\n5. [Nothing]",
+                                0,
                             )
-                            await blue_emoji(
-                                ctx=ctx,
-                                emotion=bruh,
-                                msg="Sir. I ask again, please refrain from screaming inside the bouge tavern.",
-                                time=5,
-                            )
-                            screams += 1
                         else:
-                            await narrator("You let out quick yelp.", 3)
+                            await narrator(
+                                "You say...\n1. [Scream]\n2. Who are you?\n3. I'm expected?\n4. Who's expecting me?\n5. [Nothing]",
+                                0,
+                            )
+                        t6 = await ask(ctx, 5)
+                        if t6.content == "1":
+                            if screams > 0:
+                                await narrator(
+                                    "You scream again. Much louder and longer this time.",
+                                    3,
+                                )
+                                await blue_emoji(
+                                    ctx=ctx,
+                                    emotion=bruh,
+                                    msg="Sir. I ask again, please refrain from screaming inside the bouge tavern.",
+                                    time=5,
+                                )
+                                screams += 1
+                            else:
+                                await narrator("You let out quick yelp.", 3)
+                                await blue_emoji(
+                                    ctx=ctx,
+                                    emotion=bruh,
+                                    msg="Sir, please refrain from screaming inside the bouge tavern, you're disturbing the patrons.",
+                                    time=5,
+                                )
+                                screams += 1
+                        if t6.content == "2":
+                            await user(ctx, "Who are you?", 3)
                             await blue_emoji(
                                 ctx=ctx,
-                                emotion=bruh,
-                                msg="Sir, please refrain from screaming inside the bouge tavern, you're disturbing the patrons.",
+                                emotion=heyyy,
+                                msg="I'm The Blutler:tm:, I tend to the patrons and keep the place tidy.",
                                 time=5,
                             )
-                            screams += 1
-                    if t6.content == "2":
-                        await user(ctx, "Who are you?", 3)
-                        await blue_emoji(
-                            ctx=ctx,
-                            emotion=heyyy,
-                            msg="I'm The Blutler:tm:, I tend to the patrons and keep the place tidy.",
-                            time=5,
-                        )
-                    if t6.content == "3":
-                        await user(ctx, "I'm expected?", 3)
-                        await blue_emoji(
-                            ctx=ctx,
-                            emotion=pretty,
-                            msg="Yes, for quite some time now.",
-                            time=5,
-                        )
-                    if t6.content == "4":
-                        await user(ctx, "Who's expecting me?", 3)
-                        await blue_emoji(
-                            ctx=ctx,
-                            emotion=stare,
-                            msg="I was instructed not to say.",
-                            time=5,
-                        )
+                        if t6.content == "3":
+                            await user(ctx, "I'm expected?", 3)
+                            await blue_emoji(
+                                ctx=ctx,
+                                emotion=pretty,
+                                msg="Yes, for quite some time now.",
+                                time=5,
+                            )
+                        if t6.content == "4":
+                            await user(ctx, "Who's expecting me?", 3)
+                            await blue_emoji(
+                                ctx=ctx,
+                                emotion=stare,
+                                msg="I was instructed not to say.",
+                                time=5,
+                            )
 
-                await blue_emoji(
-                    ctx=ctx, emotion=smile, msg="Right this way please.", time=3
-                )
-                await narrator(
-                    "You follow him. On your way there you look near the restaurant. You see PRETTY having a candle lit dinner with WTF. It looks like they're in love.",
-                    time=3,
-                )
-                await narrator(
-                    "<:WTF:871245957168246835>🤝<:PRETTY:803797776348741688>", 5
-                )
-                await narrator(
-                    "You keep following him, lagging behind only slightly, when he suddenly walks directly through a wall. You hesitantly put your arms in front of you and attempt to follow him. You phase right through the wall as well.",
-                    6,
-                )
-                await narrator(
-                    "You're in a dark hallway now. The passage is completely linear and angled at a 5 degree incline. The atmosphere reminds you of cold weather. You continue following The Blutler:tm: until you reach a large door.",
-                    6,
-                )
-                await blue_emoji(ctx=ctx, emotion=nerd, msg="Through here.", time=3)
-                await narrator(
-                    "Before you can say anything, he has already gone back through the wall.",
-                    3,
-                )
-                await narrator(
-                    "You push the door open and walk through. The area you step into has no walls or ceiling, you see fields of beautiful flowers for as long as you can see. You look behind you and notice that the door is completely gone.",
-                    10,
-                )
-                await narrator(
-                    "You walk amongst the flowers for a moment until you hear a voice.",
-                    5,
-                )
-                await narrator(
-                    f"Due to discord limitations, there must be a 30 second wait here. This will resume in <t:{int(time.time() + 60)}:R>",
-                    60,
-                )
-                await pishifat(ctx, "Hello there!", 5)
-                await narrator("You begin to kneel, but he stops you.", 3)
-                await pishifat(
-                    ctx,
-                    "Please. If anyone kneeling it should be me. You're here for a reason, you need to be regenerated.",
-                    10,
-                )
-                await user(ctx, "What happens during my regeneration?", time=5)
-                await pishifat(
-                    ctx,
-                    "Your soul will be placed back into a newly created body. Before we begin, I must ask you some questions.",
-                    5,
-                )
-                await narrator(
-                    "He materializes two chairs made out of sliders facing each other. You both sit down.",
-                    5,
-                )
-                await pishifat(
-                    ctx,
-                    "Answer these questions however you like. Take as much time as you need. (Up to 5 minutes).",
-                    5,
-                )
-                await pishifat(
-                    ctx, "Without looking, how many times have you gifted someone?"
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx, "Without looking, how many times have you unboxed a map?"
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx,
-                    "Without looking, what are the numbers in your osu profile link? (Example: <https://osu.ppy.sh/users/17991696>) If this isn't applicable to you, describe an achievement you're proud of.",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(ctx, "Interesting...", 5)
-                await pishifat(
-                    ctx,
-                    "How much PP is your top play? (If this isn't applicable to you, describe an achievement you're proud of.)",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(ctx, "Are you subscribed to my channel?")
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(ctx, "Do you consider yourself a good person?")
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(ctx, "What is your favorite emoji?")
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(ctx, "Is Austin a good bot developer?")
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                a = tree
-                if a.content == "no":
-                    await pishifat(ctx, "Do you consider yourself a nice person?")
-                    a = tree
+                    await blue_emoji(
+                        ctx=ctx, emotion=smile, msg="Right this way please.", time=3
+                    )
+                    await narrator(
+                        "You follow him. On your way there you look near the restaurant. You see PRETTY having a candle lit dinner with WTF. It looks like they're in love.",
+                        time=3,
+                    )
+                    await narrator(
+                        "<:WTF:871245957168246835>🤝<:PRETTY:803797776348741688>", 5
+                    )
+                    await narrator(
+                        "You keep following him, lagging behind only slightly, when he suddenly walks directly through a wall. You hesitantly put your arms in front of you and attempt to follow him. You phase right through the wall as well.",
+                        6,
+                    )
+                    await narrator(
+                        "You're in a dark hallway now. The passage is completely linear and angled at a 5 degree incline. The atmosphere reminds you of cold weather. You continue following The Blutler:tm: until you reach a large door.",
+                        6,
+                    )
+                    await blue_emoji(ctx=ctx, emotion=nerd, msg="Through here.", time=3)
+                    await narrator(
+                        "Before you can say anything, he has already gone back through the wall.",
+                        3,
+                    )
+                    await narrator(
+                        "You push the door open and walk through. The area you step into has no walls or ceiling, you see fields of beautiful flowers for as long as you can see. You look behind you and notice that the door is completely gone.",
+                        10,
+                    )
+                    await narrator(
+                        "You walk amongst the flowers for a moment until you hear a voice.",
+                        5,
+                    )
+                    await narrator(
+                        f"Due to discord limitations, there must be a 30 second wait here. This will resume in <t:{int(time.time() + 60)}:R>",
+                        60,
+                    )
+                    await pishifat(ctx, "Hello there!", 5)
+                    await narrator("You begin to kneel, but he stops you.", 3)
+                    await pishifat(
+                        ctx,
+                        "Please. If anyone kneeling it should be me. You're here for a reason, you need to be regenerated.",
+                        10,
+                    )
+                    await user(ctx, "What happens during my regeneration?", time=5)
+                    await pishifat(
+                        ctx,
+                        "Your soul will be placed back into a newly created body. Before we begin, I must ask you some questions.",
+                        5,
+                    )
+                    await narrator(
+                        "He materializes two chairs made out of sliders facing each other. You both sit down.",
+                        5,
+                    )
+                    await pishifat(
+                        ctx,
+                        "Answer these questions however you like. Take as much time as you need. (Up to 5 minutes).",
+                        5,
+                    )
+                    await pishifat(
+                        ctx, "Without looking, how many times have you gifted someone?"
+                    )
                     a = await pask(ctx)
                     if await afk_check(a):
                         return
-                    if a.content == "yes":
-                        await pishifat(ctx, "Really.", 5)
-                await pishifat(ctx, "What is your gender?")
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await narrator(
-                    "You somehow sense that you're halfway done now.", 5
-                )  # move this lol
-                await pishifat(ctx, "What's your favorite discord bot?")
-                a = await pask(ctx)
-                if "nocaro" not in a.content.lower():
-                    await pishifat(ctx, "wow", 5)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx,
-                    "Who is your favorite mapper? (If this isn't applicable to you, tell me your ideal sandwich recipe.)",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(ctx, "Good choice.")
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx, "Are you upset that you can't earn more bouge bucks?"
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx,
-                    "What is your favorite gambling game that isn't blackjack or slots?",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx,
-                    "Who is your favorite member in this server? If you are uncomfortable with answering, just say so.",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx, "Who is your least favorite person in this server?", 3
-                )
-                await pishifat(ctx, "Just kidding.", 3)
-                await pishifat(
-                    ctx,
-                    "How many ranked maps do you have? (If this isn't applicable to you, tell me about a time you overcame a tough challenge.)",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx,
-                    "What is your favorite map? (If this isn't applicable to you, what's your max bench?)",
-                )
-                a = await pask(ctx)
-                if await afk_check(a):
-                    return
-                await pishifat(
-                    ctx,
-                    "Thank you for answering my questions. There is but one more.",
-                    5,
-                )
+                    await pishifat(
+                        ctx, "Without looking, how many times have you unboxed a map?"
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx,
+                        "Without looking, what are the numbers in your osu profile link? (Example: <https://osu.ppy.sh/users/17991696>) If this isn't applicable to you, describe an achievement you're proud of.",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "Interesting...", 5)
+                    await pishifat(
+                        ctx,
+                        "How much PP is your top play? (If this isn't applicable to you, describe an achievement you're proud of.)",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "Are you subscribed to my channel?")
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "Do you consider yourself a good person?")
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "What is your favorite emoji?")
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "Is Austin a good bot developer?")
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    a = tree
+                    if a.content == "no":
+                        await pishifat(ctx, "Do you consider yourself a nice person?")
+                        a = tree
+                        a = await pask(ctx)
+                        if await afk_check(a):
+                            return
+                        if a.content == "yes":
+                            await pishifat(ctx, "Really.", 5)
+                    await pishifat(ctx, "What is your gender?")
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await narrator(
+                        "You somehow sense that you're halfway done now.", 5
+                    )  # move this lol
+                    await pishifat(ctx, "What's your favorite discord bot?")
+                    a = await pask(ctx)
+                    if "nocaro" not in a.content.lower():
+                        await pishifat(ctx, "wow", 5)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx,
+                        "Who is your favorite mapper? (If this isn't applicable to you, tell me your ideal sandwich recipe.)",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "Good choice.")
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx, "Are you upset that you can't earn more bouge bucks?"
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx,
+                        "What is your favorite gambling game that isn't blackjack or slots?",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx,
+                        "Who is your favorite member in this server? If you are uncomfortable with answering, just say so.",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx, "Who is your least favorite person in this server?", 3
+                    )
+                    await pishifat(ctx, "Just kidding.", 3)
+                    await pishifat(
+                        ctx,
+                        "How many ranked maps do you have? (If this isn't applicable to you, tell me about a time you overcame a tough challenge.)",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx,
+                        "What is your favorite map? (If this isn't applicable to you, what's your max bench?)",
+                    )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(
+                        ctx,
+                        "Thank you for answering my questions. There is but one more.",
+                        5,
+                    )
                 await pishifat(
                     ctx,
                     "Which power do you want?\n1. Gold Dust - 2.5% increased rewards (Stackable 4x)\n2. Reality Distortion - The ability to edit every aspect of your balance image, even making it a gif\n3. Loss Sooo Heavy - 5% Reduced loss (stackable 2x)\n4. Green Strength - Remove the $BB limit, but remove your ability to gift, be gifted, trade $BB, and enter the cave ever again\n5. Be Humble - Leave here with no power",
