@@ -408,7 +408,7 @@ class Economy(commands.Cog):
 
             # Process transactions in reverse order to reconstruct balances
             for amount, timestamp in reversed(result):
-                balance -= amount
+                balance -= int(amount)
                 x.append(datetime.datetime.fromtimestamp(timestamp))
                 y.append(balance)
 

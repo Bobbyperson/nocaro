@@ -103,7 +103,7 @@ async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
                 f"UPDATE main SET balance = '{str(new_balance)}' WHERE user_id={user.id}"
             )
             await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, {str(change)}, '{tracker_reason}', {int(time.time())})"
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{str(change)}', '{tracker_reason}', {int(time.time())})"
             )
         await db.commit()
 
