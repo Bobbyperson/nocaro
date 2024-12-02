@@ -5378,6 +5378,10 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         "Head down, you wind up at the casino again. You feel a sense of shame and embarrassment as you open the doors. Everyone looks at you with a mix of pity and disgust. Out of pure embarrassment, you leave the casino and decide to come back later. You are now blacklisted from Nocaro for 1 week."
                     )
                     await misc.blacklist_user(ctx.author.id, int(time.time()) + 604800)
+                # ensure bal is set to zero after rebirth, as theres nothing stopping you from gambling during the command
+                current_bal = await econ.get_bal(ctx.author)
+                if current_bal != 0:
+                    await econ.update_amount(ctx.author, -current_bal)
 
     ###############################################################
     # ███████ ██████   ██████  ██ ██      ███████ ██████  ███████
