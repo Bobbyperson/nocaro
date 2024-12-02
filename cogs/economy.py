@@ -897,6 +897,11 @@ Example command: `,bougegram normal 100`"""
             self.client.get_command("unbox"),
             self.client.get_command("balance"),
             self.client.get_command("poker"),
+            self.client.get_command("dealornodeal"),
+            self.client.get_command("steal"),
+            self.client.get_command("mines"),
+            self.client.get_command("horserace"),
+            self.client.get_command("coinflip"),
         ]:
             return
         try:
