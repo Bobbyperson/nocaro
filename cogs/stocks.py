@@ -81,8 +81,7 @@ class Stocks(commands.Cog):
         loop = asyncio.get_event_loop()
         stock = yf.Ticker(stock_ticker)
 
-        # Correct use of run_in_executor with lambda to include arguments
-        hist = await loop.run_in_executor(None, lambda: stock.history(period="1d"))
+        hist = await loop.run_in_executor(None, lambda: stock.history(period="5d"))
         return hist["Close"].iloc[-1]  # Fetches the last closing price
 
     async def is_market_open(self):
