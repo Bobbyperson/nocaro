@@ -46,6 +46,6 @@ Nocaro is open-source and licensed under the [GNU GPL v3](./LICENSE). The source
 These Terms of Service will be governed and construed in accordance with the laws of the United States of America.
 
 ### 11. Contact Information
-For any questions or concerns regarding these Terms of Service, please open an issue on the Github so that it may be addressed.
+For any questions or concerns regarding these Terms of Service, please open an issue on the GitHub so that it may be addressed.
 
 **Effective Date:** Sep 9th, 2024
