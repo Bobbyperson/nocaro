@@ -310,10 +310,6 @@ class Fire(commands.Cog):
                     if fireboard.id == react_channel.id:
                         return
                     await self.add_to_board(added_msg, fireboard, total_reacts, "fire")
-            if total_reacts < 5:
-                exists = await get_element("fb_id", "message_id", added_msg.id)
-                if exists:
-                    await delete_element("message_id", added_msg.id)
         elif react == "unfire":
             if total_reacts >= 5:
                 fireboard = None
@@ -327,10 +323,6 @@ class Fire(commands.Cog):
                     await self.add_to_board(
                         added_msg, fireboard, total_reacts, "unfire"
                     )
-            if total_reacts < 5:
-                exists = await get_element("fb_id", "message_id", added_msg.id)
-                if exists:
-                    await delete_element("message_id", added_msg.id)
 
     @commands.command(hidden=True)
     async def unix(self, ctx):
