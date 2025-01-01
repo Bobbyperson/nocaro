@@ -1686,13 +1686,13 @@ xml = ["lxml (>=4.9.2)"]
 
 [[package]]
 name = "pandas-market-calendars"
-version = "4.4.2"
+version = "4.5.0"
 description = "Market and exchange trading calendars for pandas"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pandas_market_calendars-4.4.2-py3-none-any.whl", hash = "sha256:52a0fea562113d511f3f1ae372e2a86e4a37147dacec9644094ff6f88aee8d53"},
-    {file = "pandas_market_calendars-4.4.2.tar.gz", hash = "sha256:4261a2c065565de1cd3646982b2e206e1069714b8140878dd6eba972546dfbcb"},
+    {file = "pandas_market_calendars-4.5.0-py3-none-any.whl", hash = "sha256:ed38d6d4d8ca02d3e6c1fc996fdbac9677906d85b88e1c2f45b1200f6e20231a"},
+    {file = "pandas_market_calendars-4.5.0.tar.gz", hash = "sha256:3a09285594861ffb3d4a6700854ea4574dcab290b4ab78eeec55e33992294643"},
 ]
 
 [package.dependencies]
@@ -5326,4 +5326,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13,!=3.12.5"
-content-hash = "ac45f70f519532ae9ea666582dc4ace9bee7b87781728a996dc13fa6448f496c"
+content-hash = "797da3d0705ab8861a177ddb9c110a944321adc76e44837bf78728be8b68edb7"
