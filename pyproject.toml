@@ -23,7 +23,7 @@ pydub = "^0.25.1"
 emoji = "^2.14.0"
 yfinance = "^0.2.51"
 pandas = "^2.2.3"
-pandas_market_calendars = "^4.5.0"
+pandas_market_calendars = "^4.5.1"
 pyttsx3 = "^2.98"
 discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
 
