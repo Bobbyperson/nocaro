@@ -1639,13 +1639,13 @@ xml = ["lxml (>=4.9.2)"]
 
 [[package]]
 name = "pandas-market-calendars"
-version = "4.5.1"
+version = "4.6.0"
 description = "Market and exchange trading calendars for pandas"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pandas_market_calendars-4.5.1-py3-none-any.whl", hash = "sha256:7b4f3478cc18f44d6ce7d62fbac847b9b7b53bd6fd9d2d06cd76551112cc0bfd"},
-    {file = "pandas_market_calendars-4.5.1.tar.gz", hash = "sha256:7fdd6f054645e7a2676e0a3fd84d05ee8a5075554e9995cd9e208e45a62aceb1"},
+    {file = "pandas_market_calendars-4.6.0-py3-none-any.whl", hash = "sha256:9f35fbfca6233716861f614e8e3d5b83790ecb3cf038384d5939b57097d32cd6"},
+    {file = "pandas_market_calendars-4.6.0.tar.gz", hash = "sha256:ca8dbc15434e9eda7c076bb6a456f696be93d1cbd487c02e7c9838907d84a4d5"},
 ]
 
 [package.dependencies]
@@ -1655,7 +1655,7 @@ python-dateutil = "*"
 pytz = "*"
 
 [package.extras]
-dev = ["black", "pre-commit", "pytest"]
+dev = ["black", "build", "pre-commit", "pytest"]
 
 [[package]]
 name = "pathspec"
@@ -5511,4 +5511,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13,!=3.12.5"
-content-hash = "f2b806b1ee0a449f3c4933279e2fb2d21a1da6ee075601e77cda6b91ff793e92"
+content-hash = "e5b058ef41b713174a6cd4c48654c88682cc78417c77b420a0795856d8c51932"
