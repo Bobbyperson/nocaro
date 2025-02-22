@@ -12,10 +12,10 @@ class Muter(commands.Cog):
     @commands.command()
     @commands.has_permissions(moderate_members=True)
     async def muteall(self, ctx, channel: discord.VoiceChannel = None, delay: int = 10):
-        if not channel:
+        if not channel and ctx.author.voice:
             channel = ctx.author.voice.channel
-        if not channel:
-            await ctx.send("You are not in a voice channel nor did you specify one..")
+        else:
+            await ctx.send("You are not in a voice channel nor did you specify one.")
             return
         self.monitors.append(channel.id)
         await ctx.send(
@@ -30,10 +30,10 @@ class Muter(commands.Cog):
     @commands.command()
     @commands.has_permissions(moderate_members=True)
     async def unmuteall(self, ctx, channel: discord.VoiceChannel = None):
-        if not channel:
+        if not channel and ctx.author.voice:
             channel = ctx.author.voice.channel
-        if not channel:
-            await ctx.send("You are not in a voice channel nor did you specify one..")
+        else:
+            await ctx.send("You are not in a voice channel nor did you specify one.")
             return
         if channel.id not in self.monitors:
             await ctx.send(f"{channel.mention} is not being monitored.")
@@ -41,7 +41,8 @@ class Muter(commands.Cog):
         self.monitors.remove(channel.id)
         await ctx.send(f"Unmuting all members in {channel.mention}.")
         for member in channel.members:
-            await member.edit(mute=False)
+            if not member.voice.self_mute and member.voice.mute:
+                await member.edit(mute=False)
         await ctx.send("Done")
 
     @commands.Cog.listener()
@@ -50,6 +51,7 @@ class Muter(commands.Cog):
             if before.channel.id in self.monitors:
                 await member.edit(mute=False)
         if after.channel.id in self.monitors:
+            await asyncio.sleep(5)
             if not member.voice.self_mute:
                 await member.edit(mute=True)
 
