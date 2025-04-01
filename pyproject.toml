@@ -10,7 +10,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13,!=3.12.5"
 aiosqlite = "^0.21.0"
-pillow = "^11.1.0"
+pillow = "^11.2.0"
 "discord.py" = {extras = ["voice"], version = "^2.5.2"}
 discord-pretty-help = "^2.0.7"
 requests = "^2.32.3"
