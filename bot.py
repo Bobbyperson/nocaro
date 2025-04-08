@@ -88,6 +88,7 @@ async def on_ready():
 
 
 if not os.path.exists("data/database.sqlite"):
+    os.makedirs("data")
     open("data/database.sqlite", "w").close()
 
 discord.utils.setup_logging()
