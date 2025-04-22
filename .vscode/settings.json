@@ -1,10 +1,7 @@
 {
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true
-    },
-    "flake8.args": [
-        "--ignore=E501,E203,W503"
-    ]
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "files.insertFinalNewline": true,
+        "editor.formatOnSave": true
+    }
 }
