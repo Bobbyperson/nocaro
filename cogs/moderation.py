@@ -4,6 +4,7 @@ import time
 import tomllib
 from datetime import timedelta
 
+import anyio
 import discord
 from discord.ext import commands
 
@@ -19,12 +20,12 @@ def array_to_string(arr):
 
 
 async def get_json():
-    with open("automod.json") as f:
+    async with await anyio.open_file("automod.json") as f:
         return json.load(f)
 
 
 async def save_json(data):
-    with open("automod.json", "w") as f:
+    async with await anyio.open_file("automod.json", "w") as f:
         json.dump(data, f, indent=4)
 
 
@@ -36,7 +37,7 @@ async def send_webhook(ctx, name, avatar, message):
         else:
             webhook = await ctx.create_webhook(name="Nocaro_NPC", reason="TEEHEE")
         msg = await webhook.send(content=message, avatar_url=avatar, username=name)
-    except:  # noqa: E722
+    except:
         msg = await ctx.send(f"{name}: {message}")
     return msg
 
@@ -114,7 +115,7 @@ class Moderation(commands.Cog):
 
         try:
             await self.client.wait_for("message", check=check, timeout=30)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("You took too long to confirm.")
             return
         await mf.blacklist_user(ctx.author.id, int(time.time()) + length)

@@ -201,7 +201,7 @@ class osu(commands.Cog):
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def invest(self, ctx, osu_id: int = 0, amount: str = None):
+    async def invest(self, ctx, osu_id: int = 0, amount: str | None = None):
         """Invest in an osu player."""
         if osu_id == 0:
             return await ctx.send("Please enter a valid user id.")

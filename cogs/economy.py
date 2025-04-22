@@ -4,16 +4,16 @@ import datetime
 import io
 import math
 import os
-import os.path
 import random as rd
 import sys
 import time
 import tomllib
 import traceback
 from collections import Counter
-from typing import Optional, Tuple
+from typing import ClassVar
 
 import aiosqlite
+import anyio
 import asyncpg
 import discord
 import matplotlib.pyplot as plt
@@ -170,8 +170,7 @@ class Card:
 
 
 class Deck:
-    cards = []
-    suits = ["♤", "♡", "♧", "♢"]
+    suits: ClassVar[list[str]] = ["♤", "♡", "♧", "♢"]
 
     def __init__(self):
         self.cards = []
@@ -204,9 +203,6 @@ class Deck:
 
 
 class Hand:
-    cards = []
-    stood = False
-
     def __init__(self, *args):
         self.stood = False
         self.cards = [arg for arg in args]
@@ -367,7 +363,7 @@ class Economy(commands.Cog):
     @commands.hybrid_command(aliases=["graph", "timeline"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def history(
-        self, ctx, user: Optional[discord.User] = None, *, timeframe: str = "1 day"
+        self, ctx, user: discord.User | None = None, *, timeframe: str = "1 day"
     ):
         """Check your Bouge Buck history/trends."""
         if not user:
@@ -458,7 +454,9 @@ class Economy(commands.Cog):
 
     @commands.hybrid_command()
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
-    async def bougegram(self, ctx, difficulty: str = None, bet: str = None):
+    async def bougegram(
+        self, ctx, difficulty: str | None = None, bet: str | None = None
+    ):
         """Typing game. VC required."""
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
@@ -613,7 +611,7 @@ Example command: `,bougegram normal 100`"""
                 join_msg = await self.client.wait_for(
                     "message", check=joingame, timeout=1
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             if (
                 join_msg is not None
@@ -666,7 +664,7 @@ Example command: `,bougegram normal 100`"""
                     skip_msg = await self.client.wait_for(
                         "message", check=skipcheck, timeout=20
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     skip_msg = None
                     while vc.is_playing():
                         await asyncio.sleep(0.1)
@@ -931,7 +929,7 @@ Example command: `,bougegram normal 100`"""
                 moosage = await self.client.wait_for(
                     "message", check=check_yes, timeout=30
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await peppy_say(
                     f"{ctx.author.mention}! What a shame... I guess I'll just have to finish my map without you. <:POUT:847472552393179182>"
                 )
@@ -972,7 +970,7 @@ Example command: `,bougegram normal 100`"""
                 moosage = await self.client.wait_for(
                     "message", check=check_wallet, timeout=30
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await webhook.send(
                     content=f"{ctx.author.mention} uhhhh ok I guess I'll keep it for myself...",
                     username="Peppy",
@@ -1040,7 +1038,7 @@ Example command: `,bougegram normal 100`"""
                     moosage = await self.client.wait_for(
                         "message", check=check_offer, timeout=30
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await peppy_say(
                         f"{ctx.author.mention}! Fine. I'll sell it to someone else."
                     )
@@ -1091,7 +1089,7 @@ Example command: `,bougegram normal 100`"""
                 moosage = await self.client.wait_for(
                     "message", check=check_yes, timeout=30
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await peppy_say(
                     f"{ctx.author.mention}! Nevermind I guess I'll keep it."
                 )
@@ -1178,11 +1176,11 @@ Example command: `,bougegram normal 100`"""
     async def tradein(
         self,
         ctx,
-        map1: str = None,
-        map2: str = None,
-        map3: str = None,
-        map4: str = None,
-        map5: str = None,
+        map1: str | None = None,
+        map2: str | None = None,
+        map3: str | None = None,
+        map4: str | None = None,
+        map5: str | None = None,
     ):
         """Trade-in 5 maps for 1 banana."""
         blacklisted = await misc.is_blacklisted(ctx.author.id)
@@ -1250,7 +1248,7 @@ Example command: `,bougegram normal 100`"""
             msg = await self.client.wait_for(
                 "message", check=check, timeout=15
             )  # 15 seconds to reply
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("Timeout...")
             return
         if msg.content.lower() == "yes":
@@ -1374,7 +1372,7 @@ Example command: `,bougegram normal 100`"""
             response1 = await self.client.wait_for(
                 "message", check=authorcheck, timeout=60
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.reply("Timeout, cancelling...")
             return None
         args1 = response1.content.split("|")
@@ -1385,7 +1383,7 @@ Example command: `,bougegram normal 100`"""
             response2 = await self.client.wait_for(
                 "message", check=invitedcheck, timeout=60
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.reply("Timeout, cancelling...")
             return None
         args2 = response2.content.split("|")
@@ -1400,7 +1398,7 @@ Example command: `,bougegram normal 100`"""
                 check=lambda msg: msg.author == ctx.author and msg.content == "confirm",
                 timeout=60,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.reply("Timeout, cancelling...")
             return None
         await ctx.send(f"{member.mention} please type `confirm`")
@@ -1410,7 +1408,7 @@ Example command: `,bougegram normal 100`"""
                 check=lambda msg: msg.author == member and msg.content == "confirm",
                 timeout=60,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.reply("Timeout, cancelling...")
             return None
 
@@ -1479,7 +1477,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command()
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def mapinfo(self, ctx, id: str = None):
+    async def mapinfo(self, ctx, id: str | None = None):
         """Check a map's info."""
         if not id:
             await ctx.send("Please specify an ID.")
@@ -1495,7 +1493,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.command(aliases=["spl"], hidden=True)
     @commands.is_owner()
-    async def sql(self, ctx, command: str = None):
+    async def sql(self, ctx, command: str | None = None):
         if not command:
             await ctx.send("Please provide an SQL command to run.")
             return
@@ -1528,19 +1526,19 @@ Example command: `,bougegram normal 100`"""
                         else:
                             await cursor.execute("ROLLBACK;")
                             await ctx.send("Changes rolled back.")
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         await cursor.execute("ROLLBACK;")
                         await ctx.send("Confirmation timeout. Changes rolled back.")
 
         except Exception as e:
             print(e)
-            await ctx.send(f"Error: {str(e)}")
+            await ctx.send(f"Error: {e!s}")
 
         # Note: With the use of context managers, we don't need to manually close the db and cursor anymore.
 
     @commands.hybrid_command()
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def delete(self, ctx, item: int = None):
+    async def delete(self, ctx, item: int | None = None):
         """Delete a map from your inventory."""
         inventory = econ.get_inv(ctx.author)
         if not item:
@@ -1855,12 +1853,12 @@ Example command: `,bougegram normal 100`"""
             return
         if earnings == 1:
             await ctx.reply(
-                f"you maped for money but got {str(earnings)} bouge buck instead."
+                f"you maped for money but got {earnings!s} bouge buck instead."
             )
             await econ.update_amount(user, earnings, tracker_reason="map")
             return
         await ctx.reply(
-            f"you maped for money but got {str(earnings)} bouge bucks instead."
+            f"you maped for money but got {earnings!s} bouge bucks instead."
         )
         await econ.update_amount(user, earnings, tracker_reason="map")
 
@@ -1971,7 +1969,7 @@ Example command: `,bougegram normal 100`"""
     # look i did the rewrite
     @commands.hybrid_command(aliases=["bj", "b", "blowjob", "bjrw"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
-    async def blackjack(self, ctx, amountstr: str = None):
+    async def blackjack(self, ctx, amountstr: str | None = None):
         """Blackjack with some special rules"""
         blacklisted = await misc.is_blacklisted(ctx.author.id)
         if blacklisted[0]:
@@ -2216,7 +2214,7 @@ Example command: `,bougegram normal 100`"""
                 insurance = await self.client.wait_for(
                     "message", check=yes_no_check, timeout=25
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.reply(
                     "You didn't respond in time! Assuming **No**. Continue playing normally."
                 )
@@ -2269,7 +2267,7 @@ Example command: `,bougegram normal 100`"""
                 pippi_msg = await self.client.wait_for(
                     "message", check=yes_no_check, timeout=25
                 )  # 15 seconds to reply
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pippi_msg = None
                 await pippi_say(ctx, "Fuck you. I didn't want to help anyways.")
                 options = get_options()
@@ -2284,7 +2282,7 @@ Example command: `,bougegram normal 100`"""
                         pippi_msg = await self.client.wait_for(
                             "message", check=ability_check, timeout=25
                         )  # 15 seconds to reply
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         pippi_msg = None
                         await pippi_say(
                             ctx,
@@ -2313,7 +2311,7 @@ Example command: `,bougegram normal 100`"""
                                 pippi_msg = await self.client.wait_for(
                                     "message", check=power_check, timeout=25
                                 )  # 15 seconds to reply
-                            except asyncio.TimeoutError:
+                            except TimeoutError:
                                 pippi_msg = None
                                 await pippi_say(
                                     ctx,
@@ -2376,7 +2374,7 @@ Example command: `,bougegram normal 100`"""
             await update_game()
             try:
                 msg = await self.client.wait_for("message", check=check, timeout=25)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.reply(
                     "Sorry, you didn't reply in time! Standing automatically."
                 )
@@ -2479,7 +2477,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["pay", "give", "g"])
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def gift(self, ctx, member: discord.Member = None, amount: str = None):
+    async def gift(self, ctx, member: discord.Member = None, amount: str | None = None):
         """Gift someone bouge bucks"""
         amount = econ.moneyfy(amount)
         if isinstance(ctx.channel, discord.channel.DMChannel):
@@ -2680,7 +2678,7 @@ Example command: `,bougegram normal 100`"""
             msg = await self.client.wait_for(
                 "message", check=check, timeout=15
             )  # 30 seconds to reply
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return
         if msg.content.lower() == "yes":
             if current > unix:
@@ -2697,7 +2695,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def agive(self, ctx, member: discord.Member = None, amount: str = None):
+    async def agive(
+        self, ctx, member: discord.Member = None, amount: str | None = None
+    ):
         if not member or not amount:
             return await ctx.reply("idiot")
         amount = econ.moneyfy(amount)
@@ -2714,7 +2714,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["don"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
-    async def doubleornothing(self, ctx, amount: str = None):
+    async def doubleornothing(self, ctx, amount: str | None = None):
         """Play a chance game to win bouge bucks."""
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
@@ -2775,7 +2775,7 @@ Example command: `,bougegram normal 100`"""
                 msg = await self.client.wait_for(
                     "message", check=check, timeout=15
                 )  # 30 seconds to reply
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.reply(
                     "Sorry, you didn't reply in time! Cashing out automatically."
                 )
@@ -2843,12 +2843,12 @@ Example command: `,bougegram normal 100`"""
                                 await econ.update_amount(
                                     user, 100, tracker_reason="idle map"
                                 )
-                        except:  # noqa: E722
+                        except:
                             return
 
     @commands.command(aliases=["fof"], hidden=True)
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
-    async def floporfire(self, ctx, amount: int = 0, bet: str = None):
+    async def floporfire(self, ctx, amount: int = 0, bet: str | None = None):
         def check(moosage):
             return (
                 moosage.author == ctx.author
@@ -2897,8 +2897,8 @@ Example command: `,bougegram normal 100`"""
             if bet != "flop" and bet != "fire":
                 await ctx.send("Please specify `flop` or `fire`")
                 return
-            with open("lastgame.txt") as f:
-                last_game = int(f.read())
+            async with await anyio.open_file("lastgame.txt") as f:
+                last_game = await int(f.read())
             if last_game > unix:
                 await ctx.send("A game is already in progress!")
                 return
@@ -2910,15 +2910,15 @@ Example command: `,bougegram normal 100`"""
                     msg = await self.client.wait_for(
                         "message", check=check, timeout=15
                     )  # 15 seconds to reply
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await ctx.reply("You didn't respond in 15 seconds, cancelling.")
                     return
                 if msg.content.lower() == "yes":
                     if last_game > unix:
                         await ctx.send("A game is already in progress!")
                         return
-                    with open("lastgame.txt", "w") as f:
-                        f.write(str(unix + 1260))
+                    async with await anyio.open_file("lastgame.txt", "w") as f:
+                        await f.write(str(unix + 1260))
                     await ctx.send("Starting game...")
                     game_channel = self.client.get_channel(962154552583401512)
                     await game_channel.send("mystery pattern")
@@ -2926,7 +2926,7 @@ Example command: `,bougegram normal 100`"""
                         await self.client.wait_for(
                             "message", check=cheek, timeout=10
                         )  # 5 seconds to reply
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         await ctx.reply("olcode is down, cancelling")
                         await game_channel.send(
                             "<:WTF:871245957168246835><:WTF:871245957168246835><:WTF:871245957168246835><:WTF:871245957168246835><:WTF:871245957168246835>"
@@ -3049,8 +3049,8 @@ Example command: `,bougegram normal 100`"""
     async def quickdraw(self, ctx, member: discord.Member = None, amount: str = "0"):
         """Play a reaction based game against someone."""
         amount = econ.moneyfy(amount)
-        with open("templates/words.txt") as file:
-            all_text = file.read()
+        async with await anyio.open_file("templates/words.txt") as file:
+            all_text = await file.read()
             words = list(map(str, all_text.split()))
             word = rd.choice(words)
         if await econ.checkmax(ctx.author):
@@ -3120,7 +3120,7 @@ Example command: `,bougegram normal 100`"""
                 msg = await self.client.wait_for(
                     "message", check=check, timeout=30
                 )  # 30 seconds to reply
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.send("No one accepted your duel! Cancelling.")
             if msg.content.lower() == "i accept":
                 if amount > await econ.get_bal(msg.author):
@@ -3157,7 +3157,7 @@ Example command: `,bougegram normal 100`"""
                     msg2 = await self.client.wait_for(
                         "message", check=check_game, timeout=120
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await ctx.send("you both suck, you both lose bouge bucks.")
                     return
                 if msg2.content.lower() == str.lower(word):
@@ -3180,7 +3180,7 @@ Example command: `,bougegram normal 100`"""
                 msg = await self.client.wait_for(
                     "message", check=invited_give_bal_check, timeout=30
                 )  # 30 seconds to reply
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.send(f"{member} did not accept your duel! Cancelling.")
             if msg.content.lower() == "i accept":
                 await econ.update_amount(
@@ -3215,7 +3215,7 @@ Example command: `,bougegram normal 100`"""
                     msg2 = await self.client.wait_for(
                         "message", check=check_game, timeout=120
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await ctx.send("you both suck, you both lose bouge bucks.")
                     return
                 if msg2.content.lower() == str.lower(word):
@@ -3228,7 +3228,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["s"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
-    async def slots(self, ctx, amount: str = None):
+    async def slots(self, ctx, amount: str | None = None):
         """Play a slot machine."""
         if not amount:
             return await ctx.send("Please specify an amount to bet.")
@@ -3324,7 +3324,7 @@ Example command: `,bougegram normal 100`"""
     @commands.hybrid_command(aliases=["sos", "sus"])
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def shareorsteal(
-        self, ctx, member: discord.Member = None, amount: str = None
+        self, ctx, member: discord.Member = None, amount: str | None = None
     ):
         """The worst game. Trust based game."""
         phrases = [
@@ -3404,7 +3404,7 @@ Example command: `,bougegram normal 100`"""
         )
         try:
             await self.client.wait_for("message", check=checkagree, timeout=30)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("cancelling...")
             ctx.command.reset_cooldown(ctx)
             return
@@ -3418,7 +3418,7 @@ Example command: `,bougegram normal 100`"""
             msg2 = await self.client.wait_for(
                 "message", check=author_give_bal_check, timeout=30
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("cancelling...")
             ctx.command.reset_cooldown(ctx)
             return
@@ -3432,7 +3432,7 @@ Example command: `,bougegram normal 100`"""
             msg3 = await self.client.wait_for(
                 "message", check=invited_give_bal_check, timeout=30
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("cancelling...")
             ctx.command.reset_cooldown(ctx)
             return
@@ -3521,7 +3521,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["dnd"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
-    async def dealornodeal(self, ctx, bet: str = None):
+    async def dealornodeal(self, ctx, bet: str | None = None):
         """Play Deal or No Deal just like the gameshow!"""
         # 7, 6, 5, 3, 2, 1, final
         # does monty hall apply to deal or no deal
@@ -3608,7 +3608,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 answer = await self.client.wait_for(
                     "message", check=deal_or_no_deal, timeout=30
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.reply("Timeout! Assuming no deal.")
                 return False
             if answer.content.lower() == "deal":
@@ -3665,7 +3665,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             msg = await self.client.wait_for(
                 "message", check=choose_first_case, timeout=30
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("You didn't choose a case dipshit! Cancelling...")
             return
         chosen_case = int(msg.content)
@@ -3686,7 +3686,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     msg = await self.client.wait_for(
                         "message", check=choose_case, timeout=30
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await ctx.reply(
                         "Ok bro if you're not gonna play im just gonna play for you."
                     )
@@ -3723,7 +3723,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         win_thing = rd.choice(rewards)
         try:
             test = await self.client.wait_for("message", check=final_round, timeout=30)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("You didn't choose! Assuming your original case.")
             await ctx.send(
                 f"Your case had **{econ.unmoneyfy(win_thing)} bouge bucks** in it!"
@@ -3914,7 +3914,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.hybrid_command(aliases=["p"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def poker(self, ctx, bet: str = None):
+    async def poker(self, ctx, bet: str | None = None):
         """Simple comparison poker."""
         blacklisted = await misc.is_blacklisted(ctx.author.id)
         if blacklisted[0]:
@@ -4006,7 +4006,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     formatted_cards.append(str(card))
             return ", ".join(formatted_cards)
 
-        def score(hand) -> Tuple[str, int, int, list, list]:
+        def score(hand) -> tuple[str, int, int, list, list]:
             value_to_int = {
                 "A": 14,
                 "2": 2,
@@ -4202,7 +4202,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 choice = await self.client.wait_for(
                     "message", check=check_yes, timeout=60
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.reply("Ok wow nevermind.")
                 choice = None
             if choice:
@@ -4222,7 +4222,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     await pippi_say(ctx, message="Ok nevermind.")
         try:
             choice = await self.client.wait_for("message", check=check, timeout=60)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.reply("You didn't choose! Assuming none.")
             choice = None
         if choice and choice.content.lower() != "none":
@@ -4338,7 +4338,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.hybrid_command(aliases=["hr", "horcerace", "horcerase", "horserase"])
     @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
-    async def horserace(self, ctx, bet: str = None, horse: int = 0):
+    async def horserace(self, ctx, bet: str | None = None, horse: int = 0):
         emojis = [
             "<:midfire:1235039447347630111>",
             "<:steamhappy:1171603745478545418>",
@@ -4421,7 +4421,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
     @commands.command(hidden=True, aliases=["cf"])
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def coinflip(self, ctx, amount: str = None):
+    async def coinflip(self, ctx, amount: str | None = None):
         """Double your money"""
         if await econ.checkmax(ctx.author):
             await ctx.send("nice try.")
@@ -4456,7 +4456,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def award(self, ctx, user: discord.Member = None, amount: str = None):
+    async def award(self, ctx, user: discord.Member = None, amount: str | None = None):
         if user is None or amount is None:
             await ctx.send("Please supply a user and an amount.")
             return
@@ -4594,7 +4594,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
             try:
                 choice = await self.client.wait_for("message", check=check, timeout=300)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return None
             return choice
 
@@ -4622,7 +4622,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 choice = await self.client.wait_for(
                     "message", check=powercheckbrocheck, timeout=300
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return None
             return choice
 
@@ -4632,7 +4632,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
             try:
                 choice = await self.client.wait_for("message", check=check, timeout=300)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return None
             return choice
 
@@ -4720,7 +4720,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
             try:
                 await self.client.wait_for("message", check=confirm_check, timeout=30)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.send("You didn't respond! Exiting.")
                 return
             skip = False
@@ -4736,7 +4736,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         and m.content.lower() in ["yes", "no"],
                         timeout=30,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await ctx.send("Assuming no.")
                 if msg.content.lower() == "yes":
                     skip = True

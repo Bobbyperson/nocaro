@@ -2,6 +2,7 @@ import csv
 import time as t
 
 import aiosqlite
+import anyio
 import asyncpg
 import discord
 from discord.ext import commands, tasks
@@ -196,7 +197,9 @@ class Fire(commands.Cog):
             done = []
             if channel.id not in done:
                 csvfile = f"{channel.id}.csv"
-                with open(csvfile, "a+", encoding="utf8", newline="") as csvf:
+                async with await anyio.open_file(
+                    csvfile, "a+", encoding="utf8", newline=""
+                ) as csvf:
                     # creating a csv writer object
                     csvwriter = csv.writer(csvf)
                     # writing the fields
@@ -226,7 +229,9 @@ class Fire(commands.Cog):
                     ]
                     rows.append(row)
                     # link = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
-                with open(csvfile, "a+", encoding="utf8", newline="") as csvf:
+                async with await anyio.open_file(
+                    csvfile, "a+", encoding="utf8", newline=""
+                ) as csvf:
                     # creating a csv writer object
                     csvwriter = csv.writer(csvf)
                     # writing the data rows
@@ -389,7 +394,7 @@ class Fire(commands.Cog):
                             try:
                                 user = self.client.get_user(msg[5])
                                 msgtosend += f"{fire} **{msg[1]}** - {user.mention} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
-                            except:  # noqa: E722
+                            except:
                                 print("couldn't get user!!!")
                                 user = msg[5]
                                 msgtosend += f"{fire} **{msg[1]}** - {user} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
@@ -468,7 +473,7 @@ class Fire(commands.Cog):
             )
 
     @commands.hybrid_command()
-    async def fireleaderboard(self, ctx, fire: str = None):
+    async def fireleaderboard(self, ctx, fire: str | None = None):
         # get users, count fire for each, display on leaderboard
         if not fire:
             fire = "fire"
@@ -503,7 +508,7 @@ class Fire(commands.Cog):
             try:
                 username = await self.client.fetch_user(user_id)
                 em.add_field(name=f"{index}. {username}", value=f"{bal}", inline=False)
-            except:  # noqa: E722
+            except:
                 index -= 1
         await ctx.send(embed=em)
 

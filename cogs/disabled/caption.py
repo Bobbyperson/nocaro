@@ -4,6 +4,8 @@ import random
 import shutil
 import subprocess
 
+import aiohttp
+import anyio
 import discord
 import requests
 from discord.ext import commands
@@ -164,7 +166,7 @@ class Caption(commands.Cog):
     @commands.command(hidden=True)
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def caption(self, ctx, *, caption: str = None):
+    async def caption(self, ctx, *, caption: str | None = None):
         if caption is None:
             await ctx.reply("Please provide a caption!")
             return
@@ -262,9 +264,12 @@ class Caption(commands.Cog):
                 await ctx.reply(
                     "ok im workin on it, if this fails you will NOT be alerted. this does NOT mean spam the command."
                 )
-                spliff = requests.get(file.url)
-                with open(f"{ctx.message.author.id}.gif", "wb") as f:
-                    f.write(spliff.content)
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(file.url) as spliff:
+                        async with await anyio.open_file(
+                            f"{ctx.message.author.id}.gif", "wb"
+                        ) as f:
+                            f.write(spliff.content)
                 await self.client.loop.run_in_executor(
                     None,
                     gifCaption,
