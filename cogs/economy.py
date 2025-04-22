@@ -170,7 +170,6 @@ class Card:
 
 
 class Deck:
-    cards = []
     suits = ["♤", "♡", "♧", "♢"]
 
     def __init__(self):
@@ -1140,6 +1139,22 @@ Example command: `,bougegram normal 100`"""
     @commands.is_owner()
     async def rig(self, ctx, game, onoff):
         await ctx.send(f"Rigging {game} set to {onoff}")
+
+    @commands.command(aliases="rtb")
+    async def ridethebus(self, ctx, bet: str = None):
+        if bet is None:
+            await ctx.send("You need to specify a bet!")
+            return
+        bet = econ.moneyfy(bet)
+        if bet < 0:
+            await ctx.send("You can't bet negative bouge bucks!")
+            return
+        if bet > await econ.get_bal(ctx.author):
+            await ctx.send("You don't have enough bouge bucks!")
+            return
+        deck = Deck()
+        deck.shuffle()
+        await ctx.send("Red or black?")
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
