@@ -98,12 +98,22 @@ class Moderation(commands.Cog):
         if msg.content != "yes":
             return
         for channel in ctx.guild.text_channels:
+            await channel.send(f"Now checking {channel.mention}...")
             await channel.purge(
                 limit=None,
                 check=lambda m: m.author == member,
                 bulk=True,
                 reason="Bulk deleted",
             )
+        for vc in ctx.guild.voice_channels:
+            await vc.send(f"Now checking {vc.mention}...")
+            await vc.purge(
+                limit=None,
+                check=lambda m: m.author == member,
+                bulk=True,
+                reason="Bulk deleted",
+            )
+        await ctx.send("Done!")
 
     @commands.hybrid_command()
     async def blacklistme(self, ctx, length: int = 0):
