@@ -98,7 +98,7 @@ class Moderation(commands.Cog):
         if msg.content != "yes":
             return
         for channel in ctx.guild.text_channels:
-            await channel.send(f"Now checking {channel.mention}...")
+            await ctx.channel.send(f"Now checking {channel.mention}...")
             await channel.purge(
                 limit=None,
                 check=lambda m: m.author == member,
@@ -106,7 +106,7 @@ class Moderation(commands.Cog):
                 reason="Bulk deleted",
             )
         for vc in ctx.guild.voice_channels:
-            await vc.send(f"Now checking {vc.mention}...")
+            await ctx.channel.send(f"Now checking {vc.mention}...")
             await vc.purge(
                 limit=None,
                 check=lambda m: m.author == member,
