@@ -1232,6 +1232,16 @@ Example command: `,bougegram normal 100`"""
         except asyncio.TimeoutError:
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
             return
+        for card in cards:
+            match card.name:
+                case "J":
+                    card.value = 11
+                case "Q":
+                    card.value = 12
+                case "K":
+                    card.value = 13
+                case "A":
+                    card.value = 14
         if cards[0].value >= cards[1].value:
             if cards[2].value <= cards[0].value and cards[2].value >= cards[1].value:
                 correct = "in"
