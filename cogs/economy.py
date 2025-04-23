@@ -1161,6 +1161,16 @@ Example command: `,bougegram normal 100`"""
         deck = Deck()
         deck.shuffle()
         cards = [deck.draw(), deck.draw(), deck.draw(), deck.draw()]
+        for card in cards:
+            match card.name:
+                case "J":
+                    card.value = 11
+                case "Q":
+                    card.value = 12
+                case "K":
+                    card.value = 13
+                case "A":
+                    card.value = 14
         await econ.update_amount(ctx.author, -1 * bet, tracker_reason="ridethebus")
         await ctx.send("For double your bet, **red** or **black**?")
         try:
@@ -1232,16 +1242,6 @@ Example command: `,bougegram normal 100`"""
         except asyncio.TimeoutError:
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
             return
-        for card in cards:
-            match card.name:
-                case "J":
-                    card.value = 11
-                case "Q":
-                    card.value = 12
-                case "K":
-                    card.value = 13
-                case "A":
-                    card.value = 14
         if cards[0].value >= cards[1].value:
             if cards[2].value <= cards[0].value and cards[2].value >= cards[1].value:
                 correct = "in"
