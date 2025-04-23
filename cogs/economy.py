@@ -1184,6 +1184,7 @@ Example command: `,bougegram normal 100`"""
             )
         except asyncio.TimeoutError:
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
             return
         if msg.content == "r":
             msg.content = "red"
@@ -1197,6 +1198,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.send(
                 f"Cards: {str(cards[0])}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
             )
+            await econ.update_winloss(ctx.author, "l")
             return
         try:
             msg = await self.client.wait_for(
@@ -1209,6 +1211,7 @@ Example command: `,bougegram normal 100`"""
             )
         except asyncio.TimeoutError:
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
             return
         correct = "higher" if cards[0].value < cards[1].value else "lower"
         if msg.content == "h":
@@ -1220,6 +1223,7 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "cash out":
             await ctx.send(f"You cashed out with {misc.commafy(bet * 2)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 2, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "w")
             return
         if msg.content == correct:
             await ctx.send(
@@ -1229,6 +1233,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.send(
                 f"Cards: {str(cards[0])}, {str(cards[1])}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
             )
+            await econ.update_winloss(ctx.author, "l")
             return
         try:
             msg = await self.client.wait_for(
@@ -1241,6 +1246,7 @@ Example command: `,bougegram normal 100`"""
             )
         except asyncio.TimeoutError:
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
             return
         if cards[0].value >= cards[1].value:
             if cards[2].value <= cards[0].value and cards[2].value >= cards[1].value:
@@ -1261,6 +1267,7 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "cash out":
             await ctx.send(f"You cashed out with {misc.commafy(bet * 3)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 3, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "w")
             return
         if msg.content == correct:
             await ctx.send(
@@ -1270,6 +1277,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.send(
                 f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
             )
+            await econ.update_winloss(ctx.author, "l")
             return
         try:
             msg = await self.client.wait_for(
@@ -1283,12 +1291,14 @@ Example command: `,bougegram normal 100`"""
             )
         except asyncio.TimeoutError:
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
             return
         if msg.content == "c":
             msg.content = "cash out"
         if msg.content == "cash out":
             await ctx.send(f"You cashed out with {misc.commafy(bet * 4)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 4, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "w")
             return
         match cards[3].suit:
             case "♤":
@@ -1304,10 +1314,12 @@ Example command: `,bougegram normal 100`"""
                 f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}, {str(cards[3])}\nCorrect! You win **{misc.commafy(bet * 20)}** bouge bucks!"
             )
             await econ.update_amount(ctx.author, bet * 20, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "b")
         else:
             await ctx.send(
                 f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}, {str(cards[3])}\nIncorrect! You lose **{misc.commafy(bet)}** bouge bucks."
             )
+            await econ.update_winloss(ctx.author, "l")
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
