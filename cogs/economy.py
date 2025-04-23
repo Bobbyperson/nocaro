@@ -1208,7 +1208,7 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "c":
             msg.content = "cash out"
         if msg.content == "cash out":
-            await ctx.send(f"You cashed out with {misc.commafy(bet)} bouge bucks!")
+            await ctx.send(f"You cashed out with {misc.commafy(bet * 2)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 2, tracker_reason="ridethebus")
             return
         if msg.content == correct:
@@ -1259,7 +1259,7 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "c":
             msg.content == "cash out"
         if msg.content == "cash out":
-            await ctx.send(f"You cashed out with {misc.commafy(bet)} bouge bucks!")
+            await ctx.send(f"You cashed out with {misc.commafy(bet * 3)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 3, tracker_reason="ridethebus")
             return
         if msg.content == correct:
@@ -1287,7 +1287,7 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "c":
             msg.content = "cash out"
         if msg.content == "cash out":
-            await ctx.send(f"You cashed out with {misc.commafy(bet)} bouge bucks!")
+            await ctx.send(f"You cashed out with {misc.commafy(bet * 4)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 4, tracker_reason="ridethebus")
             return
         match cards[3].suit:
