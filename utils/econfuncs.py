@@ -404,7 +404,10 @@ def moneyfy(amount):
                     multi_by *= 1e18
                 else:
                     multi_by *= 1
-            total = float(res[0]) * multi_by
+            if "." in res[0]:
+                total = float(res[0]) * multi_by
+            else:
+                total = int(res[0]) * multi_by
             if negative:
                 total = -total
             return int(total)
