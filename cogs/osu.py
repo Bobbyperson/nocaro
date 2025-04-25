@@ -3,6 +3,7 @@ import math
 import time
 import tomllib
 
+import aiohttp
 import aiosqlite
 import discord
 import requests
@@ -120,7 +121,9 @@ class osu(commands.Cog):
             "scope": "public",
         }
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
-        x = requests.post(url, json=myjson, headers=headers)
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=myjson, headers=headers) as x:
+                data = await x.json()
         data = x.json()
         self.osu_token = str(data["access_token"])
 
@@ -133,7 +136,9 @@ class osu(commands.Cog):
             "Authorization": f"Bearer {token}",
         }
         ext = f"users/{id}"
-        x = requests.get(url + ext, headers=headers)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url + ext, headers=headers) as x:
+                data = await x.json()
         data = x.json()
         if x.status_code == 401:  # forbidden (fucked token)
             await self.refresh_token()
@@ -155,7 +160,9 @@ class osu(commands.Cog):
             "Authorization": f"Bearer {token}",
         }
         ext = f"users/{id}"
-        x = requests.get(url + ext, headers=headers)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url + ext, headers=headers) as x:
+                data = await x.json()
         data = x.json()
         if x.status_code == 401:  # forbidden (fucked token)
             await self.refresh_token()

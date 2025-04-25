@@ -1,6 +1,6 @@
 import random as rd
 
-import requests
+import aiohttp
 from discord.ext import commands
 
 
@@ -21,11 +21,15 @@ class Image(commands.Cog):
                 f"{ctx.author.mention} https://www.youtube.com/watch?v=JSZVepiXDek"
             )
         else:
-            dog = requests.get("https://dog.ceo/api/breeds/image/random").json()
-            if dog["status"] == "success":
-                await ctx.reply(dog["message"])
-            else:
-                await ctx.reply(f"Dog API failed. :( `{dog}`")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    "https://dog.ceo/api/breeds/image/random"
+                ) as response:
+                    dog = await response.json()
+                    if dog["status"] == "success":
+                        await ctx.reply(dog["message"])
+                    else:
+                        await ctx.reply(f"Dog API failed. :( `{dog}`")
 
 
 async def setup(client):

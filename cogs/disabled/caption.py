@@ -179,9 +179,13 @@ class Caption(commands.Cog):
                     await ctx.reply(
                         "ok im workin on it, if this fails you will NOT be alerted. this does NOT mean spam the command."
                     )
-                    spliff = requests.get(file.url)
-                    with open(f"{ctx.message.author.id}.gif", "wb") as f:
-                        f.write(spliff.content)
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(file.url) as response:
+                            f.write(spliff)
+                    async with await anyio.open_file(
+                        f"{ctx.message.author.id}.gif", "wb"
+                    ) as f:
+                        await f.write(spliff.content)
                     await self.client.loop.run_in_executor(
                         None,
                         gifCaption,
@@ -205,9 +209,12 @@ class Caption(commands.Cog):
                     await ctx.reply(
                         "ok im workin on it, if this fails you will NOT be alerted. this does NOT mean spam the command."
                     )
-                    spliff = requests.get(file.url)
-                    with open(f"{ctx.message.author.id}.png", "wb") as f:
-                        f.write(spliff.content)
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(file.url) as response:
+                            async with await anyio.open_file(
+                                f"{ctx.message.author.id}.png", "wb"
+                            ) as f:
+                                await f.write(await response.read())
                     await self.client.loop.run_in_executor(
                         None,
                         imageCaption,
@@ -229,7 +236,9 @@ class Caption(commands.Cog):
                 await ctx.reply(
                     "ok im workin on it, if this fails you will NOT be alerted. this does NOT mean spam the command."
                 )
-                res = requests.get(original.content)
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(original.content) as response:
+                        res = await response.text()
                 pq = PyQuery(res.text)
                 jsonData = pq("#store-cache")
                 data = json.loads(jsonData.html())
@@ -237,9 +246,12 @@ class Caption(commands.Cog):
                 id = original.content.split("-")[-1]
                 results = data["gifs"]["byId"][id]["results"][0]
                 url = results["media"][0]["gif"]["url"]
-                spliff = requests.get(url)
-                with open(f"{ctx.message.author.id}.gif", "wb") as f:
-                    f.write(spliff.content)
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as response:
+                        async with await anyio.open_file(
+                            f"{ctx.message.author.id}.gif", "wb"
+                        ) as f:
+                            await f.write(await response.read())
                 await self.client.loop.run_in_executor(
                     None,
                     gifCaption,
