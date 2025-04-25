@@ -87,6 +87,37 @@ class Moderation(commands.Cog):
         await ctx.channel.purge(limit=amount)
 
     @commands.hybrid_command()
+    @commands.has_permissions(ban_members=True, manage_messages=True)
+    async def messageban(self, ctx, member: discord.Member):
+        """Find and delete all messages in a server from one individual"""
+        await ctx.send(
+            "Ok working on it, this will take a long time. Type yes to confirm"
+        )
+        msg = await self.client.wait_for(
+            "message", check=lambda m: m.author == ctx.author
+        )
+        if msg.content != "yes":
+            return
+        main_msg = await ctx.send("Working...")
+        for channel in ctx.guild.text_channels:
+            await main_msg.edit(content=f"Now checking {channel.mention}...")
+            await channel.purge(
+                limit=None,
+                check=lambda m: m.author == member,
+                bulk=True,
+                reason="Bulk deleted",
+            )
+        for vc in ctx.guild.voice_channels:
+            await main_msg.edit(content=f"Now checking {vc.mention}...")
+            await vc.purge(
+                limit=None,
+                check=lambda m: m.author == member,
+                bulk=True,
+                reason="Bulk deleted",
+            )
+        await ctx.send("Done!")
+
+    @commands.hybrid_command()
     async def blacklistme(self, ctx, length: int = 0):
         if length < 0:
             await ctx.send(

@@ -168,6 +168,12 @@ class Card:
     def __str__(self):
         return f"{self.name}{self.suit}"
 
+    def get_color(self):
+        if self.suit in ["♤", "♧"]:
+            return "black"
+        else:
+            return "red"
+
 
 class Deck:
     suits: ClassVar[list[str]] = ["♤", "♡", "♧", "♢"]
@@ -1138,6 +1144,181 @@ Example command: `,bougegram normal 100`"""
     @commands.is_owner()
     async def rig(self, ctx, game, onoff):
         await ctx.send(f"Rigging {game} set to {onoff}")
+
+    @commands.command(aliases=["rtb"])
+    async def ridethebus(self, ctx, bet: str = None):
+        if bet is None:
+            await ctx.send("You need to specify a bet!")
+            return
+        bet = econ.moneyfy(bet)
+        if bet < 0:
+            await ctx.send("You can't bet negative bouge bucks!")
+            return
+        if bet > await econ.get_bal(ctx.author):
+            await ctx.send("You don't have enough bouge bucks!")
+            return
+        deck = Deck()
+        deck.shuffle()
+        cards = [deck.draw(), deck.draw(), deck.draw(), deck.draw()]
+        for card in cards:
+            match card.name:
+                case "J":
+                    card.value = 11
+                case "Q":
+                    card.value = 12
+                case "K":
+                    card.value = 13
+                case "A":
+                    card.value = 14
+        await econ.update_amount(ctx.author, -1 * bet, tracker_reason="ridethebus")
+        await ctx.send("For double your bet, **red** or **black**?")
+        try:
+            msg = await self.client.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content
+                and m.content in ["red", "black", "r", "b"],
+                timeout=30,
+            )
+        except asyncio.TimeoutError:
+            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
+            return
+        if msg.content == "r":
+            msg.content = "red"
+        if msg.content == "b":
+            msg.content = "black"
+        if msg.content == cards[0].get_color():
+            await ctx.send(
+                f"Cards: {str(cards[0])}\nCorrect! For triple your bouge bucks, will the next card be **higher**, **lower**, or would you like to **cash out**?"
+            )
+        else:
+            await ctx.send(
+                f"Cards: {str(cards[0])}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
+            )
+            await econ.update_winloss(ctx.author, "l")
+            return
+        try:
+            msg = await self.client.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content
+                and m.content in ["higher", "lower", "cash out", "h", "l", "c"],
+                timeout=30,
+            )
+        except asyncio.TimeoutError:
+            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
+            return
+        correct = "higher" if cards[0].value < cards[1].value else "lower"
+        if msg.content == "h":
+            msg.content = "higher"
+        if msg.content == "l":
+            msg.content = "lower"
+        if msg.content == "c":
+            msg.content = "cash out"
+        if msg.content == "cash out":
+            await ctx.send(f"You cashed out with {misc.commafy(bet * 2)} bouge bucks!")
+            await econ.update_amount(ctx.author, bet * 2, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "w")
+            return
+        if msg.content == correct:
+            await ctx.send(
+                f"Cards: {str(cards[0])}, {str(cards[1])}\nCorrect! For quadruple your bouge bucks, will the next card be **in**, **out**, or would you like to **cash out**?"
+            )
+        else:
+            await ctx.send(
+                f"Cards: {str(cards[0])}, {str(cards[1])}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
+            )
+            await econ.update_winloss(ctx.author, "l")
+            return
+        try:
+            msg = await self.client.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content
+                and m.content in ["in", "out", "cash out", "i", "o", "c"],
+                timeout=30,
+            )
+        except asyncio.TimeoutError:
+            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
+            return
+        if cards[0].value >= cards[1].value:
+            if cards[2].value <= cards[0].value and cards[2].value >= cards[1].value:
+                correct = "in"
+            else:
+                correct = "out"
+        else:
+            if cards[2].value >= cards[0].value and cards[2].value <= cards[1].value:
+                correct = "in"
+            else:
+                correct = "out"
+        if msg.content == "i":
+            msg.content = "in"
+        if msg.content == "o":
+            msg.content = "out"
+        if msg.content == "c":
+            msg.content == "cash out"
+        if msg.content == "cash out":
+            await ctx.send(f"You cashed out with {misc.commafy(bet * 3)} bouge bucks!")
+            await econ.update_amount(ctx.author, bet * 3, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "w")
+            return
+        if msg.content == correct:
+            await ctx.send(
+                f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}\nCorrect! For twenty times your bet, what is the suit of the next card? (or cash out)"
+            )
+        else:
+            await ctx.send(
+                f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
+            )
+            await econ.update_winloss(ctx.author, "l")
+            return
+        try:
+            msg = await self.client.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content
+                and m.content
+                in ["hearts", "diamonds", "clubs", "spades", "cash out", "c"],
+                timeout=30,
+            )
+        except asyncio.TimeoutError:
+            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await econ.update_winloss(ctx.author, "l")
+            return
+        if msg.content == "c":
+            msg.content = "cash out"
+        if msg.content == "cash out":
+            await ctx.send(f"You cashed out with {misc.commafy(bet * 4)} bouge bucks!")
+            await econ.update_amount(ctx.author, bet * 4, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "w")
+            return
+        match cards[3].suit:
+            case "♤":
+                suit = "spades"
+            case "♡":
+                suit = "hearts"
+            case "♢":
+                suit = "diamonds"
+            case "♧":
+                suit = "clubs"
+        if msg.content == suit:
+            await ctx.send(
+                f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}, {str(cards[3])}\nCorrect! You win **{misc.commafy(bet * 20)}** bouge bucks!"
+            )
+            await econ.update_amount(ctx.author, bet * 20, tracker_reason="ridethebus")
+            await econ.update_winloss(ctx.author, "b")
+        else:
+            await ctx.send(
+                f"Cards: {str(cards[0])}, {str(cards[1])}, {str(cards[2])}, {str(cards[3])}\nIncorrect! You lose **{misc.commafy(bet)}** bouge bucks."
+            )
+            await econ.update_winloss(ctx.author, "l")
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
