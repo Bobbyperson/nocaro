@@ -17,10 +17,8 @@ class wormhole(commands.Cog):
         channel_t = await self.client.fetch_channel(channel_id)
 
         def check(msg):
-            return (
-                msg.channel == channel_t
-                or msg.channel == ctx.channel
-                and msg.author != self.client.user
+            return msg.channel == channel_t or (
+                msg.channel == ctx.channel and msg.author != self.client.user
             )
 
         await ctx.send("Opening wormhole.")

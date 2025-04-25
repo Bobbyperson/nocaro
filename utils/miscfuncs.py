@@ -61,10 +61,10 @@ async def send_webhook(ctx, name, avatar, message):
                 name="Nocaro_NPC", reason="npc event"
             )
         msg = await webhook.send(content=message, avatar_url=avatar, username=name)
-    except:  # noqa: E722
+    except:
         try:
             msg = await ctx.send(f"{name}: {message}")
-        except:  # noqa: E722
+        except:
             msg = await ctx.channel.send(f"{name}: {message}")
     return msg
 
@@ -100,7 +100,7 @@ def draw_rotated_text(image, angle, xy, text, fill, *args, **kwargs):
 
     # crop the mask to match image
     mask_xy = (max_dim - xy[0], max_dim - xy[1])
-    b_box = mask_xy + (mask_xy[0] + width, mask_xy[1] + height)
+    b_box = (*mask_xy, mask_xy[0] + width, mask_xy[1] + height)
     mask = rotated_mask.crop(b_box)
 
     # paste the appropriate color, with the text transparency mask

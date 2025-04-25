@@ -117,7 +117,7 @@ class Stocks(commands.Cog):
             return False
 
     @commands.hybrid_command(aliases=["buystocks"])
-    async def buystock(self, ctx, stock: str = None, amount: str = None):
+    async def buystock(self, ctx, stock: str | None = None, amount: str | None = None):
         """Purchase stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
         if await econ.checkmax(ctx.author):
@@ -158,7 +158,7 @@ class Stocks(commands.Cog):
             )
 
     @commands.hybrid_command(aliases=["sellstocks"])
-    async def sellstock(self, ctx, stock: str = None, amount: str = None):
+    async def sellstock(self, ctx, stock: str | None = None, amount: str | None = None):
         """Sell stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
         if await econ.checkmax(ctx.author):
@@ -204,7 +204,7 @@ class Stocks(commands.Cog):
             )
 
     @commands.hybrid_command()
-    async def stockprice(self, ctx, stock: str = None):
+    async def stockprice(self, ctx, stock: str | None = None):
         """Find the price of a REAL LIFE stock"""
         if not stock:
             return await ctx.send("Please provide a stock ticker")

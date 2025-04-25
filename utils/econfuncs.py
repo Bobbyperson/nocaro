@@ -2,9 +2,9 @@ import os
 import random as rd
 import re
 import time
-from typing import Union
 
 import aiosqlite
+import anyio
 
 import utils.miscfuncs as mf
 
@@ -93,17 +93,17 @@ async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
             new_balance = 9223372036854775807
             excess = bal + change - 9223372036854775807
             await cursor.execute(
-                f"UPDATE main SET balance = '{str(new_balance)}' WHERE user_id={user.id}"
+                f"UPDATE main SET balance = '{new_balance!s}' WHERE user_id={user.id}"
             )
             await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{str(excess)}', '{tracker_reason}', {int(time.time())})"
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{excess!s}', '{tracker_reason}', {int(time.time())})"
             )
         else:
             await cursor.execute(
-                f"UPDATE main SET balance = '{str(new_balance)}' WHERE user_id={user.id}"
+                f"UPDATE main SET balance = '{new_balance!s}' WHERE user_id={user.id}"
             )
             await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{str(change)}', '{tracker_reason}', {int(time.time())})"
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{change!s}', '{tracker_reason}', {int(time.time())})"
             )
         await db.commit()
 
@@ -203,7 +203,7 @@ async def update_immunity(user, change=0):
 
 
 # get user's inventory, returns array
-async def get_inv(user) -> Union[list, None]:
+async def get_inv(user) -> list | None:
     result_userinv = None
     while not result_userinv:
         async with aiosqlite.connect(bank, timeout=10) as db:
@@ -342,8 +342,8 @@ async def formatted_winloss(user):
 # get random map
 async def get_random_item():
     file_path = "maps/maps.txt"
-    with open(file_path) as f:
-        maps = [line.rstrip() for line in f.readlines()]
+    async with await anyio.open_file(file_path) as f:
+        maps = [line.rstrip() for line in await f.readlines()]
         item = rd.choice(maps)
         return item
 
@@ -352,8 +352,8 @@ async def get_random_item():
 async def get_item(item):
     file_path = "maps/maps.txt"
     if os.path.exists(file_path):
-        with open(file_path, encoding="utf-8") as f:
-            maps = [line.rstrip() for line in f.readlines()]
+        async with await anyio.open_file(file_path, encoding="utf-8") as f:
+            maps = [line.rstrip() for line in await f.readlines()]
             for thing in maps:
                 if item in thing:
                     return thing

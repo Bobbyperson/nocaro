@@ -24,6 +24,7 @@ dependencies = [
     "pandas_market_calendars>=5.0.0",
     "pyttsx3>=2.98",
     "discord-ext-menus",
+    "anyio>=4.9.0",
 ]
 
 [dependency-groups]
@@ -37,6 +38,19 @@ package = false
 
 [tool.uv.sources]
 discord-ext-menus = { git = "https://github.com/Rapptz/discord-ext-menus" }
+
+[tool.ruff.lint]
+select = [
+    "A004", # Check for import shadowing builtin functions: https://docs.astral.sh/ruff/rules/builtin-import-shadowing/
+    "RUF",
+    "UP",
+    "I",
+    "ASYNC",
+]
+extend-ignore = [
+    "ASYNC110", # I don't care
+    "ASYNC221"
+]
 
 [build-system]
 requires = ["hatchling"]

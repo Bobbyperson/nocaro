@@ -164,7 +164,7 @@ class UpdateButton(discord.ui.Button):
             if "INVOCATION_ID" in os.environ:  # if running under systemd
                 await self.client.close()
             else:
-                os.execv(sys.executable, [sys.executable] + sys.argv)
+                os.execv(sys.executable, [sys.executable, *sys.argv])
         except subprocess.CalledProcessError as e:
             await interaction.followup.send(
                 f"An error occurred during update: {e}", ephemeral=True
@@ -199,7 +199,7 @@ class RebaseButton(discord.ui.Button):
             if "INVOCATION_ID" in os.environ:  # if running under systemd
                 await self.client.close()
             else:
-                os.execv(sys.executable, [sys.executable] + sys.argv)
+                os.execv(sys.executable, [sys.executable, *sys.argv])
         except subprocess.CalledProcessError as e:
             await interaction.followup.send(
                 f"An error occurred during rebase: {e}", ephemeral=True
