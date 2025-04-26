@@ -134,7 +134,7 @@ class Fun(commands.Cog):
     async def howtosay(self, ctx):
         """How do you pronounce Nocaro?"""
         await ctx.send(
-            "Nocaro: `/noʊ-kə-roʊ/` (noh-cuh-row)\nBouge: `/bu:ʒ/` (booj)\nGIF: /dʒɪf/ (JIF)"  # noqa: RUF001
+            "Nocaro: `/noʊ-kə-roʊ/` (noh-cuh-row)\nBouge: `/bu:ʒ/` (booj)\nGIF: `/dʒɪf/` (JIF)"  # noqa: RUF001
         )
 
 
