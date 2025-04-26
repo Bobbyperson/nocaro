@@ -1212,7 +1212,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("You took too long! I'm keeping your bouge bucks.")
             await econ.update_winloss(ctx.author, "l")
             return
-        correct = "higher" if cards[0].value < cards[1].value else "lower"
+        correct = "higher" if cards[0].value <= cards[1].value else "lower"
         if msg.content == "h":
             msg.content = "higher"
         if msg.content == "l":
@@ -1262,7 +1262,7 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "o":
             msg.content = "out"
         if msg.content == "c":
-            msg.content == "cash out"
+            msg.content = "cash out"
         if msg.content == "cash out":
             await ctx.send(f"You cashed out with {misc.commafy(bet * 3)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 3, tracker_reason="ridethebus")
