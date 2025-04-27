@@ -34,7 +34,7 @@ def get_unix():
 #     ext = "beatmapsets/search?m=0&s=qualified"
 #     x = requests.get(url + ext, headers=headers)
 #     data = x.json()
-#     if x.status_code == 401:  # forbidden (fucked token)
+#     if x.status == 401:  # forbidden (fucked token)
 #         await refresh_token()
 #         await asyncio.sleep(1)
 #         await get_quals()
@@ -53,11 +53,11 @@ def get_unix():
 #     ext = f"beatmapsets/{id}"
 #     x = requests.get(url + ext, headers=headers)
 #     data = x.json()
-#     if x.status_code == 401:  # forbidden (fucked token)
+#     if x.status == 401:  # forbidden (fucked token)
 #         await refresh_token()
 #         await asyncio.sleep(1)
 #         await get_map_data(id)
-#     return data, x.status_code
+#     return data, x.status
 
 
 # async def get_rank_status(
@@ -139,17 +139,16 @@ class osu(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(url + ext, headers=headers) as x:
                 data = await x.json()
-        data = x.json()
-        if x.status_code == 401:  # forbidden (fucked token)
-            await self.refresh_token()
-            await asyncio.sleep(1)
-            return await self.get_user_rank(id)
-        elif x.status_code != 200:
-            return None
-        try:
-            return data["statistics"]["global_rank"]
-        except KeyError:
-            return None
+                if x.status == 401:  # forbidden (fucked token)
+                    await self.refresh_token()
+                    await asyncio.sleep(1)
+                    return await self.get_user_rank(id)
+                elif x.status != 200:
+                    return None
+                try:
+                    return data["statistics"]["global_rank"]
+                except KeyError:
+                    return None
 
     async def get_user_name(self, id: int):
         token = self.osu_token
@@ -163,17 +162,16 @@ class osu(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(url + ext, headers=headers) as x:
                 data = await x.json()
-        data = x.json()
-        if x.status_code == 401:  # forbidden (fucked token)
-            await self.refresh_token()
-            await asyncio.sleep(1)
-            return await self.get_user_name(id)
-        elif x.status_code != 200:
-            return None
-        try:
-            return data["username"]
-        except KeyError:
-            return None
+                if x.status == 401:  # forbidden (fucked token)
+                    await self.refresh_token()
+                    await asyncio.sleep(1)
+                    return await self.get_user_name(id)
+                elif x.status != 200:
+                    return None
+                try:
+                    return data["username"]
+                except KeyError:
+                    return None
 
     @commands.Cog.listener()
     async def on_ready(self):
