@@ -122,10 +122,9 @@ class osu(commands.Cog):
         }
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=myjson, headers=headers) as x:
-                data = await x.json()
-        data = x.json()
-        self.osu_token = str(data["access_token"])
+            async with session.post(url, json=myjson, headers=headers) as resp:
+                data = await resp.json()
+                self.osu_token = str(data["access_token"])
 
     async def get_user_rank(self, id: int):
         token = self.osu_token
@@ -137,13 +136,13 @@ class osu(commands.Cog):
         }
         ext = f"users/{id}"
         async with aiohttp.ClientSession() as session:
-            async with session.get(url + ext, headers=headers) as x:
-                data = await x.json()
-                if x.status == 401:  # forbidden (fucked token)
+            async with session.get(url + ext, headers=headers) as resp:
+                data = await resp.json()
+                if resp.status == 401:  # forbidden (fucked token)
                     await self.refresh_token()
                     await asyncio.sleep(1)
                     return await self.get_user_rank(id)
-                elif x.status != 200:
+                elif resp.status != 200:
                     return None
                 try:
                     return data["statistics"]["global_rank"]
