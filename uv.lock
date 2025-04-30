@@ -790,7 +790,7 @@ wheels = [
 
 [[package]]
 name = "pandas-market-calendars"
-version = "5.0.0"
+version = "5.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "exchange-calendars" },
@@ -798,9 +798,9 @@ dependencies = [
     { name = "python-dateutil" },
     { name = "tzdata" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/c5/d7e3d6a41cfdb8007b19a288c7703cc05cfc0bc57595449a75756b2bb569/pandas_market_calendars-5.0.0.tar.gz", hash = "sha256:8780dd93f7f7d2d92ef40516cc77f00e20a9842bc564442b5c79b74a5591f3cc", size = 158496 }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/dc/11e6084bbf6a0fde640250fde4951163179ef722444e1e54c4afd6b76985/pandas_market_calendars-5.1.0.tar.gz", hash = "sha256:edd3de544e91b339d03aa332e5adcf0c6f425ee7a19100630f27bb6499777afb", size = 160256 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/16/1302d715a52c9612d94e22f5b5fdd515b539e0314cdf7a0fefdc88b03600/pandas_market_calendars-5.0.0-py3-none-any.whl", hash = "sha256:9cf2fb3891892720f7e5ad065152798f63f5511cbb1165de2aa0305f16544e9f", size = 122998 },
+    { url = "https://files.pythonhosted.org/packages/e5/81/6570c4d0549953a5171946fa158f2f1e04ad8ca2c94e13203661ef3067c8/pandas_market_calendars-5.1.0-py3-none-any.whl", hash = "sha256:5cb30c35bb828f25814bed8214be7319e170a644cd14a929edf302334aa208ac", size = 123926 },
 ]
 
 [[package]]
