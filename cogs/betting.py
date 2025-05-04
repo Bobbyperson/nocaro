@@ -16,6 +16,9 @@ class BetNotEnoughBal(Exception):
 class BetNotRunning(Exception):
     pass
 
+class BetMaxxer(Exception):
+    pass
+
 class BetModal(discord.ui.Modal, title='BetModal'):
 
     def __init__(self, cog, index=0):
@@ -32,7 +35,7 @@ class BetModal(discord.ui.Modal, title='BetModal'):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            value = int(self.amount.value)
+            value = econ.moneyfy(self.amount.value)
         except ValueError:
             await interaction.response.send_message(f'{self.amount.value} is not a valid number', ephemeral=True)
             return
@@ -48,6 +51,9 @@ class BetModal(discord.ui.Modal, title='BetModal'):
             return
         except BetNotRunning:
             await interaction.response.send_message(f'No bet is currently running', ephemeral=True)
+            return
+        except BetMaxxer:
+            await interaction.response.send_message(f'The Central Betting Authority has refused to accept your money due to evidence of laundering', ephemeral=True)
             return
 
         await interaction.response.send_message(f'You have bet {value} on {self.option}', ephemeral=True)
@@ -70,7 +76,10 @@ class Betting(commands.Cog):
 
     async def add_bet(self, user: discord.User | discord.Member, index: int, amount: int):
         if not self.update_bet.is_running():
-            raise BetNotRunning("No bet is currently running")
+            raise BetNotRunning()
+
+        if await econ.checkmax(user):
+            raise BetMaxxer()
 
         value = self.bet_values[index]
         if not user.id in value:
@@ -78,7 +87,7 @@ class Betting(commands.Cog):
 
         user_bal = await econ.get_bal(user)
         if user_bal < amount:
-            raise BetNotEnoughBal("Not enough money to place bet")
+            raise BetNotEnoughBal()
 
         option = self.bet_options[index]
 
