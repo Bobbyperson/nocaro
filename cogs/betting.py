@@ -59,6 +59,23 @@ class BetModal(discord.ui.Modal, title='BetModal'):
         await interaction.response.send_message(f'You have bet {value} on {self.option}', ephemeral=True)
 
 
+class PayoutSelection(discord.ui.Select):
+    def __init__(self, cog):
+        self.cog = cog
+        options = [discord.SelectOption(label=option) for option in cog.bet_options]
+        super().__init__(placeholder='Choose the winner', min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        value = self.values[0]
+        try:
+            index = self.cog.bet_options.index(value)
+        except ValueError:
+            await interaction.response.send_message(f"{value} is not a valid bet", ephemeral=True)
+            return
+
+        self.cog.do_payout(index)
+        await interaction.response.send_message(f'The winner is {value}')
+
 class Betting(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -106,8 +123,11 @@ class Betting(commands.Cog):
             return
 
         bet_options = [x.strip() for x in options.split(",")]
-        if leb(bet_options) > 25:
+        if len(bet_options) > 25:
             await ctx.send('only up to 25 bet options can be set')
+            return
+        elif len(bet_options) < 2:
+            await ctx.send('need at least 2 options to bet on')
             return
 
         self.bet_options = options.split(",")
@@ -156,13 +176,41 @@ class Betting(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def payoutbet(self, ctx, index: int):
+    async def payoutbet(self, ctx):
         await ctx.message.delete()
         if self.update_bet.is_running():
             await ctx.send("Bet is still running")
             return
+        elif not self.bet_message:
+            await ctx.send("No bet available")
+            return
 
-        winner = index
+        async def payout_callback(interaction):
+            if not await self.bot.is_owner(interaction.user):
+                await interaction.response.defer()
+                return
+            elif not self.bet_options:
+                await interaction.response.send_message("No bet available", ephemeral=True)
+                return
+
+            view = discord.ui.View()
+            view.add_item(PayoutSelection(self))
+            await interaction.response.send_message(view=view, ephemeral=True)
+
+        view = discord.ui.View()
+        item = discord.ui.Button(
+            style=discord.ButtonStyle.primary,
+            label="Select winning option"
+        )
+        item.callback = payout_callback
+        view.add_item(item)
+
+        await ctx.send(view=view)
+
+    async def do_payout(self, winner):
+        if self.update_bet.is_running():
+            return
+
         option = self.bet_options[winner]
         user_list = []
 
@@ -198,6 +246,7 @@ class Betting(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def cancelbet(self, ctx):
+        await ctx.message.delete()
         if self.update_bet.is_running():
             await ctx.send("Bet is still running")
             return
