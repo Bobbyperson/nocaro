@@ -71,7 +71,10 @@ class Betting(commands.Cog):
 
     def button_callback(self, index):
         async def inner(interaction):
-            await interaction.response.send_modal(BetModal(self, index))
+            if self.update_bet.is_running():
+                await interaction.response.send_modal(BetModal(self, index))
+            else:
+                await interaction.response.send_message(f'No bet is currently running', ephemeral=True)
         return inner
 
     async def add_bet(self, user: discord.User | discord.Member, index: int, amount: int):
