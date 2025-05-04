@@ -207,6 +207,7 @@ class Betting(commands.Cog):
             for user_id, amount in value.items():
                 user = await self.bot.fetch_user(user_id)
                 await econ.update_amount(user, amount, False, f"refunded bet on {option}")
+                await user.send(f"The current bet on {option} has been canceled, you were refunded {amount}")
 
             value.clear()
 
