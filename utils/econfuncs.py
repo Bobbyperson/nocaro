@@ -388,22 +388,38 @@ def moneyfy(amount):
             res = match.groups()
             multi_by = 1  # Start with a multiplier of 1
             for letter in res[1]:
-                if letter == "h":
-                    multi_by *= 1e2
-                elif letter == "k":
-                    multi_by *= 1e3
-                elif letter == "m":
-                    multi_by *= 1e6
-                elif letter == "b":
-                    multi_by *= 1e9
-                elif letter == "t":
-                    multi_by *= 1e12
-                elif letter == "q":
-                    multi_by *= 1e15
-                elif letter == "Q":
-                    multi_by *= 1e18
-                else:
-                    multi_by *= 1
+                match letter:
+                    case "h":
+                        multi_by *= 1e2
+                    case "k":
+                        multi_by *= 1e3
+                    case "m":
+                        multi_by *= 1e6
+                    case "b":
+                        multi_by *= 1e9
+                    case "t":
+                        multi_by *= 1e12
+                    case "q":
+                        multi_by *= 1e15
+                    case "Q":
+                        multi_by *= 1e18
+                    case "s":
+                        multi_by *= 1e21
+                    case "S":
+                        multi_by *= 1e24
+                    case "o":
+                        multi_by *= 1e27
+                    case "n":
+                        multi_by *= 1e30
+                    case "d":
+                        multi_by *= 1e33
+                    case "u":
+                        multi_by *= 1e36
+                    case "D":
+                        multi_by *= 1e39
+                    # have to stop here because there become too many repeating first letters
+                    case _:
+                        multi_by *= 1
             if "." in res[0]:
                 total = float(res[0]) * multi_by
             else:
