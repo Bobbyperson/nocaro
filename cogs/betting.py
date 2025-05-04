@@ -164,11 +164,13 @@ class Betting(commands.Cog):
 
         winner = index
         option = self.bet_options[winner]
+        user_list = []
 
         total_pot = 0
         for a in self.bet_values:
-            for b in a.values():
-                total_pot += b
+            for user_id, bal in a.items():
+                user_list.append(user_id)
+                total_pot += bal
 
         winner_pot = 0
         # Calculate how big the winner pot was
@@ -179,6 +181,17 @@ class Betting(commands.Cog):
             winnings = total_pot * (b / winner_pot)
             user = await self.bot.fetch_user(user_id)
             await econ.update_amount(user, winnings, False, f"won bet on {option}")
+            await user.send(f"Your bet on {option} payed out {winnings}")
+
+            try:
+                user_list.remove(user_id)
+            except ValueError:
+                pass
+
+        for user_id in user_list:
+            user = await self.bot.fetch_user(user_id)
+            await user.send(f"You lost your bets")
+
 
         await ctx.send(f"{option} has won, winners have received their share of the payout")        
 
