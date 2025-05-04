@@ -99,10 +99,14 @@ class Betting(commands.Cog):
     async def createbet(self, ctx, *, options: str):
         await ctx.message.delete()
         if self.update_bet.is_running():
-            await ctx.send('a bet is still running', ephemeral=True)
+            await ctx.send('a bet is still running')
             return
 
-        """Create a poll for an event"""
+        bet_options = [x.strip() for x in options.split(",")]
+        if leb(bet_options) > 25:
+            await ctx.send('only up to 25 bet options can be set')
+            return
+
         self.bet_options = options.split(",")
         self.bet_values = []
         self.bet_view = discord.ui.View()
