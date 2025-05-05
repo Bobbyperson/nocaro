@@ -46,6 +46,7 @@ select = [
     "UP",
     "I",
     "ASYNC",
+    "F"
 ]
 extend-ignore = [
     "ASYNC110", # I don't care

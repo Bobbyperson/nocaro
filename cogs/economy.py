@@ -1150,6 +1150,11 @@ Example command: `,bougegram normal 100`"""
         if bet is None:
             await ctx.send("You need to specify a bet!")
             return
+        if econ.checkmax(ctx.author):
+            await ctx.send(
+                "You attempt to ride the bus but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
+            )
+            return
         bet = econ.moneyfy(bet)
         if bet < 0:
             await ctx.send("You can't bet negative bouge bucks!")
