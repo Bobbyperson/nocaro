@@ -89,7 +89,16 @@ async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
         if prestieges is not None:
             uncapped = True if prestieges[3] else False
         new_balance = bal + change
-        if not uncapped and new_balance > 9223372036854775807:
+        if new_balance > 1e100:
+            new_balance = 1e100
+            excess = bal + change - 1e100
+            await cursor.execute(
+                f"UPDATE main SET balance = '{new_balance!s}' WHERE user_id={user.id}"
+            )
+            await cursor.execute(
+                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{excess!s}', '{tracker_reason}', {int(time.time())})"
+            )
+        elif not uncapped and new_balance > 9223372036854775807:
             new_balance = 9223372036854775807
             excess = bal + change - 9223372036854775807
             await cursor.execute(
