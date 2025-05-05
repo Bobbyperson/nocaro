@@ -6,7 +6,6 @@ import tomllib
 import aiohttp
 import aiosqlite
 import discord
-import requests
 from discord.ext import commands
 
 import utils.econfuncs as econ
