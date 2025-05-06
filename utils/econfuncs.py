@@ -2,6 +2,7 @@ import os
 import random as rd
 import re
 import time
+from decimal import Decimal, getcontext
 
 import aiosqlite
 import anyio
@@ -14,6 +15,8 @@ if __name__ == "__main__":
     )
 
 bank = "./data/database.sqlite"
+
+getcontext().prec = 200  # crank precision way up
 
 
 # insert new row into database
@@ -370,77 +373,51 @@ async def get_item(item):
         return None
 
 
+SUFFIX_EXP = {
+    "h": 2,
+    "k": 3,
+    "m": 6,
+    "b": 9,
+    "t": 12,
+    "q": 15,
+    "Q": 18,
+    "s": 21,
+    "S": 24,
+    "o": 27,
+    "n": 30,
+    "d": 33,
+    "u": 36,
+    "D": 39,
+}
+
+
 def moneyfy(amount):
-    try:
-        # Check if amount is None or not a string or number
-        if amount is None:
-            return 0
-
-        if isinstance(amount, str):
-            amount = amount.replace(",", "").replace(" ", "")
-
-        # Try converting directly to float then to int
-        try:
-            return int(float(amount))
-        except ValueError:
-            pass  # If it fails, move on to the string handling part
-
-        # String handling for suffixes
-        negative = False
-        if str(amount)[0] == "-":
-            amount = str(amount)[1:]
-            negative = True
-
-        temp = re.compile(r"((?:\d*\.)?\d+)([a-zA-Z]+)")
-        match = temp.match(str(amount))
-        if match:
-            res = match.groups()
-            multi_by = 1  # Start with a multiplier of 1
-            for letter in res[1]:
-                match letter:
-                    case "h":
-                        multi_by *= 1e2
-                    case "k":
-                        multi_by *= 1e3
-                    case "m":
-                        multi_by *= 1e6
-                    case "b":
-                        multi_by *= 1e9
-                    case "t":
-                        multi_by *= 1e12
-                    case "q":
-                        multi_by *= 1e15
-                    case "Q":
-                        multi_by *= 1e18
-                    case "s":
-                        multi_by *= 1e21
-                    case "S":
-                        multi_by *= 1e24
-                    case "o":
-                        multi_by *= 1e27
-                    case "n":
-                        multi_by *= 1e30
-                    case "d":
-                        multi_by *= 1e33
-                    case "u":
-                        multi_by *= 1e36
-                    case "D":
-                        multi_by *= 1e39
-                    # have to stop here because there become too many repeating first letters
-                    case _:
-                        multi_by *= 1
-            if "." in res[0]:
-                total = float(res[0]) * multi_by
-            else:
-                total = int(res[0]) * multi_by
-            if negative:
-                total = -total
-            return int(total)
-    except Exception as e:
-        print(f"Caught an unexpected error: {e}")
+    if amount is None:
         return 0
 
-    return 0
+    if isinstance(amount, int):
+        return amount
+
+    if isinstance(amount, str):
+        amount = amount.replace(",", "").replace(" ", "")
+
+    if str(amount).lstrip("-").isdigit():
+        return int(amount)
+
+    neg = str(amount).startswith("-")
+    if neg:
+        amount = str(amount)[1:]
+
+    m = re.fullmatch(r"((?:\d*\.)?\d+)([a-zA-Z]+)", str(amount))
+    if not m:
+        return 0
+
+    num, letters = m.groups()
+    exp = sum(SUFFIX_EXP.get(ch, 0) for ch in letters)  # total exponent
+    total = Decimal(num) * (Decimal(10) ** exp)
+    if neg:
+        total = -total
+    return int(total)
 
 
 def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
@@ -448,18 +425,32 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
         amount = amount.strip(",")
         amount = int(amount)
 
-    if amount >= 1_000_000_000_000_000_000:
-        return f"{amount / 1_000_000_000_000_000_000:.2f}".rstrip("0").rstrip(".") + "Q"
-    if amount >= 1_000_000_000_000_000:
-        return f"{amount / 1_000_000_000_000_000:.2f}".rstrip("0").rstrip(".") + "q"
-    if amount >= 1_000_000_000_000:
-        return f"{amount / 1_000_000_000_000:.2f}".rstrip("0").rstrip(".") + "t"
-    if amount >= 1_000_000_000:
-        return f"{amount / 1_000_000_000:.2f}".rstrip("0").rstrip(".") + "b"
-    if amount >= 1_000_000:
-        return f"{amount / 1_000_000:.2f}".rstrip("0").rstrip(".") + "m"
-    if amount >= 1_000:
-        return f"{amount / 1_000:.2f}".rstrip("0").rstrip(".") + "k"
+    if amount >= 1e39:
+        return f"{amount / 1e39:.2f}".rstrip("0").rstrip(".") + "D"
+    if amount >= 1e36:
+        return f"{amount / 1e36:.2f}".rstrip("0").rstrip(".") + "u"
+    if amount >= 1e33:
+        return f"{amount / 1e33:.2f}".rstrip("0").rstrip(".") + "d"
+    if amount >= 1e30:
+        return f"{amount / 1e30:.2f}".rstrip("0").rstrip(".") + "n"
+    if amount >= 1e27:
+        return f"{amount / 1e27:.2f}".rstrip("0").rstrip(".") + "o"
+    if amount >= 1e24:
+        return f"{amount / 1e24:.2f}".rstrip("0").rstrip(".") + "S"
+    if amount >= 1e21:
+        return f"{amount / 1e21:.2f}".rstrip("0").rstrip(".") + "s"
+    if amount >= 1e18:
+        return f"{amount / 1e18:.2f}".rstrip("0").rstrip(".") + "Q"
+    if amount >= 1e15:
+        return f"{amount / 1e15:.2f}".rstrip("0").rstrip(".") + "q"
+    if amount >= 1e12:
+        return f"{amount / 1e12:.2f}".rstrip("0").rstrip(".") + "t"
+    if amount >= 1e9:
+        return f"{amount / 1e9:.2f}".rstrip("0").rstrip(".") + "b"
+    if amount >= 1e6:
+        return f"{amount / 1e6:.2f}".rstrip("0").rstrip(".") + "m"
+    if amount >= 1e3:
+        return f"{amount / 1e3:.2f}".rstrip("0").rstrip(".") + "k"
 
     return amount
 
