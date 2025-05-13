@@ -104,16 +104,16 @@ class Stocks(commands.Cog):
         return open_today
 
     async def verify_stock_ticker(self, stock_ticker):
-        stock = yf.Ticker(stock_ticker)
-        # Try fetching the info to see if the ticker exists
         try:
+            stock = yf.Ticker(stock_ticker)
+            # Try fetching the info to see if the ticker exists
             info = stock.info
             # A valid ticker will have a 'longName' field populated
             if "longName" in info:
                 return True
             else:
                 return False
-        except ValueError:
+        except:
             return False
 
     @commands.hybrid_command(aliases=["buystocks"])
