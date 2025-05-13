@@ -86,9 +86,15 @@ async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
         prestieges = await get_prestiege(user)
         if prestieges is not None and bonuses:
             if change > 0:
-                change = int(change + (change * (0.025 * prestieges[0])))
+                change = int(
+                    Decimal(change)
+                    + (Decimal(change) * (Decimal("0.025") * Decimal(prestieges[0])))
+                )
             else:
-                change = int(change - (change * (0.05 * prestieges[2])))
+                change = int(
+                    Decimal(change)
+                    - (Decimal(change) * (Decimal("0.05") * Decimal(prestieges[2])))
+                )
         if prestieges is not None:
             uncapped = True if prestieges[3] else False
         new_balance = bal + change
