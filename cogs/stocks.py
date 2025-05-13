@@ -117,6 +117,7 @@ class Stocks(commands.Cog):
             return False
 
     @commands.hybrid_command(aliases=["buystocks"])
+    @commands.cooldown(5, 60, commands.BucketType.user)
     async def buystock(self, ctx, stock: str | None = None, amount: str | None = None):
         """Purchase stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
@@ -158,6 +159,7 @@ class Stocks(commands.Cog):
             )
 
     @commands.hybrid_command(aliases=["sellstocks"])
+    @commands.cooldown(5, 60, commands.BucketType.user)
     async def sellstock(self, ctx, stock: str | None = None, amount: str | None = None):
         """Sell stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
@@ -204,6 +206,7 @@ class Stocks(commands.Cog):
             )
 
     @commands.hybrid_command()
+    @commands.cooldown(5, 60, commands.BucketType.user)
     async def stockprice(self, ctx, stock: str | None = None):
         """Find the price of a REAL LIFE stock"""
         if not stock:
@@ -223,6 +226,7 @@ class Stocks(commands.Cog):
                 )
 
     @commands.hybrid_command()
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def portfolio(self, ctx, user: discord.Member = None):
         """List all currently owned stocks"""
         async with ctx.typing():
