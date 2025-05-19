@@ -2788,16 +2788,21 @@ Example command: `,bougegram normal 100`"""
             )
             rows = await cursor.fetchall()
 
-        server_rows = [(uid, int(bal)) for uid, bal in rows if uid in guild_member_ids][
-            :top_n
-        ]
+        top_n = 10
+        top_users = dict(
+            sorted(
+                ((row[0], int(row[1])) for row in rows if row[0] in guild_member_ids),
+                key=lambda kv: kv[1],
+                reverse=True,
+            )[:top_n]
+        )
 
         embed = discord.Embed(
             title=f"Top {top_n} Bouge Buck Owners",
             color=discord.Color(0xFA43EE),
         )
 
-        for rank, (user_id, balance) in enumerate(server_rows, start=1):
+        for rank, (user_id, balance) in enumerate(top_users.items(), start=1):
             member = self.client.get_user(user_id) or await self.client.fetch_user(
                 user_id
             )
