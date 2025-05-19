@@ -282,13 +282,15 @@ async def remove_item(user, item):
 async def checkmax(user):
     amnt = await get_bal(user)
     prestieges = await get_prestiege(user)
-    if prestieges and prestieges[3]:
-        return False
-    if amnt > 9223372036854775807:  # int limt
-        dif = amnt - 9223372036854775807
+    if amnt >= 1e100:
+        dif = amnt - 1e100
         await update_amount(user, amnt - dif)
         return True
-    if amnt == 9223372036854775807:
+    if prestieges and prestieges[3]:  # this order is intentional
+        return False
+    if amnt >= 9223372036854775807:  # int limt
+        dif = amnt - 9223372036854775807
+        await update_amount(user, amnt - dif)
         return True
     return False
 

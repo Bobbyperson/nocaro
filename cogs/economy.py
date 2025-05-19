@@ -2735,58 +2735,79 @@ Example command: `,bougegram normal 100`"""
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
             return
-        amount = 10
         async with aiosqlite.connect(bank) as db:
             cursor = await db.cursor()
             await cursor.execute(
-                "SELECT * FROM main ORDER BY CAST(balance AS INTEGER) DESC"
+                "SELECT user_id, balance FROM main ORDER BY CAST(balance AS INTEGER) DESC"
             )
-            users = await cursor.fetchall()
-            em = discord.Embed(
-                title=f"Top {amount} Bouge Buck Owners", color=discord.Color(0xFA43EE)
-            )
-            index = 0
-            # create a dictionary of the users, name: balance
-            for user in users:
-                if index == amount:
-                    break
-                index += 1
-                bal = misc.commafy(user[1])
-                user_id = user[3]
+            rows = await cursor.fetchall()
+        top_n = 10
+        top_users = dict(
+            sorted(
+                ((row[0], int(row[1])) for row in rows),
+                key=lambda kv: kv[1],
+                reverse=True,
+            )[:top_n]
+        )
+
+        embed = discord.Embed(
+            title=f"Top {top_n} Bouge Buck Owners",
+            color=discord.Color(0xFA43EE),
+        )
+
+        for rank, (user_id, balance) in enumerate(top_users.items(), start=1):
+            try:
                 username = await self.client.fetch_user(user_id)
-                em.add_field(name=f"{index}. {username}", value=f"{bal}", inline=False)
-        await ctx.send(embed=em)
+            except discord.NotFound:
+                username = "Unknown User"
+            embed.add_field(
+                name=f"{rank}. {username}",
+                value=misc.commafy(balance),
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
 
     @commands.hybrid_command(aliases=["slb", "sbaltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def serverleaderboard(self, ctx):
-        """View the leaderboard."""
-        if isinstance(ctx.channel, discord.channel.DMChannel):
+    async def serverleaderboard(self, ctx: commands.Context):
+        """View the server-only leaderboard."""
+        if isinstance(ctx.channel, discord.DMChannel):
             await ctx.send("Command may not be used in a DM.")
             return
-        amount = 10
+
+        top_n = 10
+        guild_member_ids: set[int] = {m.id for m in ctx.guild.members}
+
         async with aiosqlite.connect(bank, timeout=10) as db:
             cursor = await db.cursor()
             await cursor.execute(
-                "SELECT * FROM main ORDER BY CAST(balance AS INTEGER) DESC"
+                "SELECT user_id, balance "
+                "FROM   main "
+                "ORDER  BY CAST(balance AS INTEGER) DESC"
             )
-            users = await cursor.fetchall()
-        em = discord.Embed(
-            title=f"Top {amount} Bouge Buck Owners", color=discord.Color(0xFA43EE)
+            rows = await cursor.fetchall()
+
+        server_rows = [(uid, int(bal)) for uid, bal in rows if uid in guild_member_ids][
+            :top_n
+        ]
+
+        embed = discord.Embed(
+            title=f"Top {top_n} Bouge Buck Owners",
+            color=discord.Color(0xFA43EE),
         )
-        index = 0
-        found = self.client.get_guild(ctx.guild.id)
-        member_ids = [member.id for member in found.members]
-        for user in users:
-            if index == amount:
-                break
-            if user[3] in member_ids:
-                index += 1
-                bal = misc.commafy(user[1])
-                user_id = user[3]
-                username = await self.client.fetch_user(user_id)
-                em.add_field(name=f"{index}. {username}", value=f"{bal}", inline=False)
-        await ctx.send(embed=em)
+
+        for rank, (user_id, balance) in enumerate(server_rows, start=1):
+            member = self.client.get_user(user_id) or await self.client.fetch_user(
+                user_id
+            )
+            embed.add_field(
+                name=f"{rank}. {member}",
+                value=misc.commafy(balance),
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
 
     # @commands.command(aliases=["lolboard", "balbottom", "brokeboard", "bottomboard"])
     # async def lboard(self, ctx):
@@ -4836,6 +4857,27 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         tracker_reason="caveundo",
                     )
                 return True
+
+        bal = await econ.get_bal(ctx.author)
+        if worthy and bal >= 1e100:
+            async with ctx.typing():
+                await narrator("You attempt to approach...", 3)
+                await narrator(
+                    "Upon reaching it, you find it completely caved in. There's a decomposed hand just barely visible crushed under a rock.",
+                    6,
+                )
+                return await narrator(
+                    "Horrified, you freeze in complete shock. Before returning to the bouge casino, you decide to take a walk.\n(This ending is still in development)",
+                )
+                await narrator("You return to the bouge casino...", 3)
+                await narrator(
+                    "It remains how you left it, completely empty. Your footsteps echo as you enter.",
+                    4,
+                )
+                await narrator(
+                    "You wander around randomly, remembering what this place used to be. Its once bustling energy is now a dead silence.",
+                    3,
+                )
 
         prestieges = await econ.get_prestiege(ctx.author)
         if prestieges is not None and prestieges[3] > 0:
