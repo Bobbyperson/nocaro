@@ -5278,7 +5278,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         5,
                     )
                     await narrator(
-                        'Strangely enough, in one corner of the tavern, you spot three pictures with a giant "WANTED" sign below it. You barely make out the names etched onto the picture: "x3Karma", "kolpy__", and "Heatwave".',
+                        'Strangely enough, in one corner of the tavern, you spot three pictures with a giant "WANTED" sign below it. You barely make out the names etched onto the picture: "Heatwave", "x3Karma", "kolpy__", "Wyit", and "Walm".',
                         5,
                     )
                     # todo: add more options to explore, add more world building
@@ -5442,7 +5442,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         5,
                     )
                     await narrator(
-                        f"Due to discord limitations, there must be a 30 second wait here. This will resume in <t:{int(time.time() + 60)}:R>",
+                        f"Due to discord limitations, there must be a 60 second wait here. This will resume in <t:{int(time.time() + 60)}:R>",
                         60,
                     )
                     await pishifat(ctx, "Hello there!", 5)
@@ -5578,6 +5578,10 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         ctx,
                         "What is your favorite map? (If this isn't applicable to you, what's your max bench?)",
                     )
+                    a = await pask(ctx)
+                    if await afk_check(a):
+                        return
+                    await pishifat(ctx, "Are any of your gains ill gotten?")
                     a = await pask(ctx)
                     if await afk_check(a):
                         return
