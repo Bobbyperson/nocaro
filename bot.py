@@ -6,12 +6,21 @@ import tomllib
 import discord
 from discord.ext import commands, tasks
 from pretty_help import PrettyHelp
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+from models import Base
 
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
 
 async def main():
+    if not os.path.exists("data/database.sqlite"):
+        os.makedirs("data", exist_ok=True)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
     # start the client
     async with client:
         for filename in os.listdir("./cogs"):
@@ -19,6 +28,9 @@ async def main():
                 await client.load_extension(f"cogs.{filename[:-3]}")
         await client.start(config["general"]["token"])
 
+
+engine = create_async_engine("sqlite+aiosqlite:///data/database.sqlite", echo=None)
+Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 intents = discord.Intents().all()
 client = commands.Bot(
@@ -87,9 +99,6 @@ async def on_ready():
         print(e)
 
 
-if not os.path.exists("data/database.sqlite"):
-    os.makedirs("data")
-    open("data/database.sqlite", "w").close()
-
-discord.utils.setup_logging()
-asyncio.run(main())
+if __name__ == "__main__":
+    discord.utils.setup_logging()
+    asyncio.run(main())

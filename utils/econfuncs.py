@@ -4,10 +4,13 @@ import re
 import time
 from decimal import Decimal, getcontext
 
-import aiosqlite
 import anyio
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+import models
 import utils.miscfuncs as mf
+from bot import Session
 
 if __name__ == "__main__":
     print(
@@ -18,285 +21,242 @@ bank = "./data/database.sqlite"
 
 getcontext().prec = 200  # crank precision way up
 
+# max 64 bit signed integer
+MAX_INT = (2 ** (64 - 1)) - 1
+
+
+# TODO update every callsite to pass sessions explicitly
+# until then this will be used as a stop-gap solution
+def session_decorator(func):
+    async def wrapped(*args, **kwargs):
+        session = None
+        if not isinstance(args[0], AsyncSession):
+            session = Session()
+            args = list(args)
+            args.insert(0, session)
+
+        try:
+            retval = await func(*args, **kwargs)
+        except:
+            if session is not None:
+                await session.rollback()
+            raise
+        else:
+            if session is not None:
+                await session.commit()
+        finally:
+            if session is not None:
+                await session.close()
+
+        return retval
+
+    return wrapped
+
 
 # insert new row into database
-async def new_account(user):
-    async with aiosqlite.connect(bank) as db:
-        cursor = await db.cursor()
-        USER_ID = user.id
-        await cursor.execute(
-            f'INSERT INTO main(balance, bananas, user_ID, immunity, level, inventory, winloss, invested) values("0", 0, {USER_ID}, 0, 0, NULL, "XXXXXXXXXXXXXXXXXXX", 0)'
-        )
-        await db.commit()
+@session_decorator
+async def new_account(session, user):
+    acc = models.economy.Main(
+        balance="0",
+        bananas=0,
+        user_ID=user.id,
+        immunity=0,
+        level=0,
+        inventory=None,
+        winloss="XXXXXXXXXXXXXXXXXXX",
+        invested=0,
+    )
+    session.add(acc)
+
+    return acc
+
+
+@session_decorator
+async def get_or_create_account(session, user):
+    result = await session.execute(
+        select(models.economy.Main).where(models.economy.Main.user_ID == user.id)
+    )
+    user_main = result.scalars().first()
+    if user_main is None:
+        user_main = await new_account(session, user)
+    return user_main
 
 
 # get uer's balance, returns int
-async def get_bal(user):
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={user.id}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(
-                    f"SELECT balance FROM main WHERE user_id={user.id}"
-                )
-                result_userbal = await cursor.fetchone()
-                return int(result_userbal[0])
-
-
-async def get_history(user):
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                return None
-            await cursor.execute(f"SELECT balance FROM main WHERE user_id={USER_ID}")
-            result_userbal = await cursor.fetchone()
-            data = [result_userbal]
-            for i in range(1, 10):
-                await cursor.execute(
-                    f"SELECT user_id FROM old{i} WHERE user_id={USER_ID}"
-                )
-                result_userid = await cursor.fetchone()
-                if not result_userid:
-                    return None
-                await cursor.execute(
-                    f"SELECT balance FROM old{i} WHERE user_id={USER_ID}"
-                )
-                result = await cursor.fetchone()
-                data.append(result)
-    return data
+@session_decorator
+async def get_bal(session, user):
+    user_main = await get_or_create_account(session, user)
+    return int(user_main.balance)
 
 
 # update user's balance
-async def update_amount(user, change=0, bonuses=True, tracker_reason="unknown"):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        bal = await get_bal(user)
-        cursor = await db.cursor()
-        change = int(change)
-        uncapped = False
-        prestieges = await get_prestiege(user)
-        if prestieges is not None and bonuses:
-            if change > 0:
-                change = int(
-                    Decimal(change)
-                    + (Decimal(change) * (Decimal("0.025") * Decimal(prestieges[0])))
-                )
-            else:
-                change = int(
-                    Decimal(change)
-                    - (Decimal(change) * (Decimal("0.05") * Decimal(prestieges[2])))
-                )
-        if prestieges is not None:
-            uncapped = True if prestieges[3] else False
-        new_balance = bal + change
-        if new_balance > 1e100:
-            new_balance = 1e100
-            excess = bal + change - 1e100
-            await cursor.execute(
-                f"UPDATE main SET balance = '{new_balance!s}' WHERE user_id={user.id}"
-            )
-            await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{excess!s}', '{tracker_reason}', {int(time.time())})"
-            )
-        elif not uncapped and new_balance > 9223372036854775807:
-            new_balance = 9223372036854775807
-            excess = bal + change - 9223372036854775807
-            await cursor.execute(
-                f"UPDATE main SET balance = '{new_balance!s}' WHERE user_id={user.id}"
-            )
-            await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{excess!s}', '{tracker_reason}', {int(time.time())})"
+@session_decorator
+async def update_amount(
+    session, user, change=0, bonuses=True, tracker_reason="unknown"
+):
+    user_main = await get_or_create_account(session, user)
+    bal = int(user_main.balance)
+    change = int(change)
+    uncapped = False
+    prestieges = await get_prestiege(session, user)
+    if prestieges is not None and bonuses:
+        if change > 0:
+            change = int(
+                Decimal(change)
+                + (Decimal(change) * (Decimal("0.025") * Decimal(prestieges[0])))
             )
         else:
-            await cursor.execute(
-                f"UPDATE main SET balance = '{new_balance!s}' WHERE user_id={user.id}"
+            change = int(
+                Decimal(change)
+                - (Decimal(change) * (Decimal("0.05") * Decimal(prestieges[2])))
             )
-            await cursor.execute(
-                f"INSERT INTO history(user_id, amount, reason, time) values({user.id}, '{change!s}', '{tracker_reason}', {int(time.time())})"
+    if prestieges is not None:
+        uncapped = True if prestieges[3] else False
+    new_balance = bal + change
+    if new_balance > 1e100:
+        new_balance = 1e100
+        excess = bal + change - 1e100
+        user_main.balance = new_balance
+        session.add(
+            models.economy.History(
+                user_id=user.id,
+                amount=excess,
+                reason=tracker_reason,
+                time=int(time.time()),
             )
-        await db.commit()
+        )
+    elif not uncapped and new_balance > MAX_INT:
+        new_balance = MAX_INT
+        excess = bal + change - MAX_INT
+        user_main.balance = new_balance
+        session.add(
+            models.economy.History(
+                user_id=user.id,
+                amount=excess,
+                reason=tracker_reason,
+                time=int(time.time()),
+            )
+        )
+    else:
+        user_main.balance = new_balance
+        session.add(
+            models.economy.History(
+                user_id=user.id,
+                amount=change,
+                reason=tracker_reason,
+                time=int(time.time()),
+            )
+        )
 
 
 # get user's level, returns int
-async def get_level(user):
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(f"SELECT level FROM main WHERE user_id={USER_ID}")
-                result_userbal = await cursor.fetchone()
-                return result_userbal[0]
+@session_decorator
+async def get_level(session, user):
+    user_main = await get_or_create_account(session, user)
+    return user_main.level
 
 
 # update user's level
-async def update_level(user, change=0):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        USER_ID = user.id
-        cursor = await db.cursor()
-        if change == 0:
-            return
-        await cursor.execute(
-            f"UPDATE main SET level = level + {change} WHERE user_id={USER_ID}"
-        )
-        await db.commit()
+@session_decorator
+async def update_level(session, user, change=0):
+    if change == 0:
+        return
+
+    user_main = await get_or_create_account(session, user)
+    user_main.level += change
 
 
 # get user's bananas, returns int
-async def get_banana(user):
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(
-                    f"SELECT bananas FROM main WHERE user_id={USER_ID}"
-                )
-                result_userbal = await cursor.fetchone()
-                return result_userbal[0]
+@session_decorator
+async def get_banana(session, user):
+    user_main = await get_or_create_account(session, user)
+    return user_main.bananas
 
 
 # update user's bananas
-async def update_banana(user, change=0):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        USER_ID = user.id
-        cursor = await db.cursor()
-        if change == 0:
-            return
-        await cursor.execute(
-            f"UPDATE main SET bananas = bananas + {change} WHERE user_id={USER_ID}"
-        )
-        await db.commit()
+@session_decorator
+async def update_banana(session, user, change=0):
+    user_main = await get_or_create_account(session, user)
+    user_main.bananas = change
 
 
 # get user's immunity, return int
-async def get_immunity(user):
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(
-                    f"SELECT immunity FROM main WHERE user_id={USER_ID}"
-                )
-                result_user_immunity = await cursor.fetchone()
-                return result_user_immunity[0]
+@session_decorator
+async def get_immunity(session, user):
+    user_main = await get_or_create_account(session, user)
+    return user_main.immunity
 
 
 # update user's immunity
-async def update_immunity(user, change=0):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        USER_ID = user.id
-        cursor = await db.cursor()
-        if change == 0:
-            return
-        await cursor.execute(
-            f"UPDATE main SET immunity = {change} WHERE user_id={USER_ID}"
-        )
-        await db.commit()
+@session_decorator
+async def update_immunity(session, user, change=0):
+    user_main = await get_or_create_account(session, user)
+    user_main.immunity = change
 
 
 # get user's inventory, returns array
-async def get_inv(user) -> list | None:
-    result_userinv = None
-    while not result_userinv:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(
-                    f"SELECT inventory FROM main WHERE user_id={USER_ID}"
-                )
-                result_userinv = await cursor.fetchone()
-                if not result_userinv[0]:
-                    return None
-                c_inv = result_userinv[0].split(",")
-                return c_inv
+@session_decorator
+async def get_inv(session, user) -> list | None:
+    user_main = await get_or_create_account(session, user)
+    userinv = user_main.inventory
+    if not userinv:
+        return None
+    return userinv[0].split(",")
 
 
 # add item to user's inventory
-async def add_item(user, item):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        USER_ID = user.id
-        inventory = await get_inv(user)
-        if not inventory:
-            inventory = []
-        items = item.split()
-        for thing in items:
-            inventory.append(thing)
-        if len(inventory) > 1:
-            c_inv = ",".join(str(x) for x in inventory).strip("[]")
-        else:
-            c_inv = inventory[0]
-        await cursor.execute(
-            f'UPDATE main SET inventory = "{c_inv}" WHERE user_id={USER_ID}'
-        )
-        await db.commit()
+@session_decorator
+async def add_item(session, user, item):
+    inventory = await get_inv(session, user)
+    if not inventory:
+        inventory = []
+    items = item.split()
+    for thing in items:
+        inventory.append(thing)
+    if len(inventory) > 1:
+        c_inv = ",".join(str(x) for x in inventory).strip("[]")
+    else:
+        c_inv = inventory[0]
+
+    user_main = await get_or_create_account(session, user)
+    user_main.inventory = c_inv
 
 
 # remove item from user's inventory
-async def remove_item(user, item):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        USER_ID = user.id
-        inventory = await get_inv(user)
-        if not inventory:
-            inventory = []
-        inventory.remove(item)
-        c_inv = ",".join(str(x) for x in inventory).strip("[]")
-        await cursor.execute(
-            f'UPDATE main SET inventory = "{c_inv}" WHERE user_id={USER_ID}'
-        )
-        await db.commit()
+@session_decorator
+async def remove_item(session, user, item):
+    inventory = await get_inv(session, user)
+    if not inventory:
+        inventory = []
+    inventory.remove(item)
+    c_inv = ",".join(str(x) for x in inventory).strip("[]")
+
+    user_main = await get_or_create_account(session, user)
+    user_main.inventory = c_inv
 
 
-async def checkmax(user):
-    amnt = await get_bal(user)
-    prestieges = await get_prestiege(user)
+@session_decorator
+async def checkmax(session, user):
+    amnt = await get_bal(session, user)
+    prestieges = await get_prestiege(session, user)
     if amnt >= 1e100:
         dif = amnt - 1e100
-        await update_amount(user, amnt - dif)
+        await update_amount(session, user, amnt - dif)
         return True
-    if prestieges and prestieges[3]:  # this order is intentional
+    if prestieges and prestieges[3]:
         return False
-    if amnt >= 9223372036854775807:  # int limt
-        dif = amnt - 9223372036854775807
-        await update_amount(user, amnt - dif)
+    if amnt >= MAX_INT:  # int limt
+        dif = amnt - MAX_INT
+        await update_amount(session, user, amnt - dif)
+        return True
+    if amnt == MAX_INT:
         return True
     return False
 
 
 # get winloss, returns string
-async def get_winloss(user):
+@session_decorator
+async def get_winloss(session, user):
     """_summary_
 
     Args:
@@ -305,43 +265,28 @@ async def get_winloss(user):
     Returns:
         string: wllw
     """
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(
-                    f"SELECT winloss FROM main WHERE user_id={USER_ID}"
-                )
-                result_userbal = await cursor.fetchone()
-                return result_userbal[0]
+    user_main = await get_or_create_account(session, user)
+    return user_main.winloss
 
 
 # update winloss, expects only one letter, anything else will do nothing
-async def update_winloss(user, wl):
+@session_decorator
+async def update_winloss(session, user, wl):
     if len(wl) > 1:  # idiot proofing
         return
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        USER_ID = user.id
-        current = str(await get_winloss(user))
-        if len(current) >= 20:
-            current = current[1:]
-        current = current + wl
-        await cursor.execute(
-            f'UPDATE main SET winloss = "{current}" WHERE user_id={USER_ID}'
-        )
-        await db.commit()
+
+    current = str(await get_winloss(session, user))
+    if len(current) >= 20:
+        current = current[1:]
+    current = current + wl
+    user_main = await get_or_create_account(session, user)
+    user_main.winloss = current
 
 
 # returns X,X,X,X,etc... as str
-async def formatted_winloss(user):
-    current = await get_winloss(user)
+@session_decorator
+async def formatted_winloss(session, user):
+    current = await get_winloss(session, user)
     formatted = []
     for i in range(len(current)):
         if current[i] == "w":
@@ -463,60 +408,54 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
     return amount
 
 
-async def get_investment(user):
-    result_userbal = None
-    while not result_userbal:
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            USER_ID = user.id
-            await cursor.execute(f"SELECT user_id FROM main WHERE user_id={USER_ID}")
-            result_userid = await cursor.fetchone()
-            if not result_userid:
-                await new_account(user)
-            else:
-                await cursor.execute(
-                    f"SELECT invested FROM main WHERE user_id={USER_ID}"
-                )
-                result_userbal = await cursor.fetchone()
-                return result_userbal[0]
+@session_decorator
+async def get_investment(session, user):
+    user_main = await get_or_create_account(session, user)
+    return user_main.invested
 
 
-async def add_investment(user, amount):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        USER_ID = user.id
-        await cursor.execute(
-            f"UPDATE main SET invested = invested + {amount} WHERE user_id={USER_ID}"
+@session_decorator
+async def add_investment(session, user, amount):
+    user_main = await get_or_create_account(session, user)
+    user_main.invested += amount
+
+
+@session_decorator
+async def log_prestiege(session, user, pres):
+    result = await session.execute(
+        select(models.economy.Prestiege).where(
+            models.economy.Prestiege.user_id == user.id
         )
-        await db.commit()
+    )
+    user_prestige = result.scalars().first()
+    if user_prestige is None:
+        user_prestige = models.economy.Prestiege(
+            user_id=user.id,
+            pres1=0,
+            pres2=0,
+            pres3=0,
+            pres4=0,
+            pres5=0,
+        )
+        session.add(user_prestige)
+    else:
+        setattr(user_prestige, f"pres{pres}", getattr(user_prestige, f"pres{pres+1}"))
 
 
-async def log_prestiege(user, pres):
-    async with aiosqlite.connect(bank) as db:
-        async with db.cursor() as cursor:
-            await cursor.execute(
-                f"SELECT user_id FROM prestiege WHERE user_id = {user.id}"
-            )
-            exists = await cursor.fetchone()
-            if not exists:
-                await cursor.execute(
-                    f"INSERT INTO prestiege(user_id, pres1, pres2, pres3, pres4, pres5) values({user.id}, 0, 0, 0, 0, 0)"
-                )
-            await cursor.execute(
-                f"UPDATE prestiege SET pres{pres} = pres{pres} + 1 WHERE user_id = {user.id}"
-            )
-        await db.commit()
-
-
-async def get_prestiege(user):
-    async with aiosqlite.connect(bank) as db:
-        async with db.cursor() as cursor:
-            await cursor.execute(
-                f"SELECT user_id FROM prestiege WHERE user_id = {user.id}"
-            )
-            exists = await cursor.fetchone()
-            if exists is None:
-                return None
-            await cursor.execute(f"SELECT * FROM prestiege WHERE user_id = {user.id}")
-            results = await cursor.fetchone()
-            return [results[2], results[3], results[4], results[5], results[6]]
+@session_decorator
+async def get_prestiege(session, user):
+    result = await session.execute(
+        select(models.economy.Prestiege).where(
+            models.economy.Prestiege.user_id == user.id
+        )
+    )
+    user_prestige = result.scalars().first()
+    if user_prestige is None:
+        return [0, 0, 0, 0, 0]
+    return [
+        user_prestige.pres1,
+        user_prestige.pres2,
+        user_prestige.pres3,
+        user_prestige.pres4,
+        user_prestige.pres5,
+    ]
