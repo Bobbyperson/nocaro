@@ -5278,7 +5278,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         5,
                     )
                     await narrator(
-                        'Strangely enough, in one corner of the tavern, you spot some pictures with a giant "WANTED" sign below it. You barely make out the names etched onto the picture: "Heatwave", "x3Karma", "kolpy__", "Wyit", and "Walm".',
+                        'Strangely enough, in one corner of the tavern, you spot three pictures with a giant "WANTED" sign below it. You barely make out the names etched onto the picture: "Heatwave", "x3Karma", "kolpy__", "Wyit", and "Walm".',
                         5,
                     )
                     # todo: add more options to explore, add more world building
