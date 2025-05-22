@@ -1,0 +1,4 @@
+# git config --global blame.ignoreRevsFile .git-blame-ignore-revs
+
+# CRLF -> LF Commit
+cba4cef747569479f49cd403c99609c726009bbd
