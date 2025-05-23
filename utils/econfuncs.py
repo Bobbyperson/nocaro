@@ -129,14 +129,18 @@ async def update_amount(
         new_balance = MAX_INT
         excess = bal + change - MAX_INT
         user_main.balance = new_balance
-        session.add(
-            models.economy.History(
-                user_id=user.id,
-                amount=excess,
-                reason=tracker_reason,
-                time=int(time.time()),
+
+        while excess > 0:
+            amount = min(MAX_INT, excess)
+            excess -= amount
+            session.add(
+                models.economy.History(
+                    user_id=user.id,
+                    amount=amount,
+                    reason=tracker_reason,
+                    time=int(time.time()),
+                )
             )
-        )
     else:
         user_main.balance = new_balance
         session.add(
