@@ -1927,6 +1927,18 @@ Example command: `,bougegram normal 100`"""
             return
         amount = await econ.get_bal(member)
         img = Image.open("templates/balance.png")
+        if member.id == 248984895940984832:  # wyit
+            if amount == 1:
+                await ctx.send(
+                    file=discord.File(fp="templates/wyit.gif", filename="bal.gif"),
+                    content=f"{member} has {misc.commafy(amount)} bogue buck",
+                )
+            else:
+                await ctx.send(
+                    file=discord.File(fp="templates/wyit.gif", filename="bal.gif"),
+                    content=f"{member} has {misc.commafy(amount)} bouge bucks",
+                )
+            return
         if member.id == 263126803780993024:  # ralkinson
             if amount == 1:
                 await ctx.send(
