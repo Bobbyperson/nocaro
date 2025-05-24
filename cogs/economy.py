@@ -2709,7 +2709,7 @@ Example command: `,bougegram normal 100`"""
         top_n = 10
         top_users = dict(
             sorted(
-                ((row[0], int(row[1])) for row in rows),
+                ((row.user_id, int(row.balance)) for row in rows),
                 key=lambda kv: kv[1],
                 reverse=True,
             )[:top_n]
