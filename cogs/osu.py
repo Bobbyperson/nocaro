@@ -196,7 +196,7 @@ class osu(commands.Cog):
             results = (
                 await session.execute(
                     select(models.osu.Osu).where(
-                        models.osu.Osu.osu_id == osu_id,
+                        models.osu.Osu.osu_user == osu_id,
                         models.osu.Osu.user_id == ctx.author.id,
                     )
                 )
