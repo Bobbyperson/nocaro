@@ -1,8 +1,12 @@
 import random as rd
 import time
 
-import aiosqlite
 from PIL import Image, ImageDraw
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+import models
+from __main__ import Session
 
 if __name__ == "__main__":
     print(
@@ -10,6 +14,34 @@ if __name__ == "__main__":
     )
 
 bank = "./data/database.sqlite"
+
+
+# TODO update every callsite to pass sessions explicitly
+# until then this will be used as a stop-gap solution
+def session_decorator(func):
+    async def wrapped(*args, **kwargs):
+        session = None
+        if not isinstance(args[0], AsyncSession):
+            session = Session()
+            args = list(args)
+            args.insert(0, session)
+
+        try:
+            retval = await func(*args, **kwargs)
+        except:
+            if session is not None:
+                await session.rollback()
+            raise
+        else:
+            if session is not None:
+                await session.commit()
+        finally:
+            if session is not None:
+                await session.close()
+
+        return retval
+
+    return wrapped
 
 
 def clean_username(name):  # fuck you ralkinson!!!!!!!!!
@@ -108,27 +140,31 @@ def draw_rotated_text(image, angle, xy, text, fill, *args, **kwargs):
     image.paste(color_image, mask)
 
 
-async def is_blacklisted(*args):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        current_time = get_unix()
-        for user_id in args:
-            await cursor.execute(
-                f"SELECT * FROM blacklist WHERE user_id={user_id} AND (timestamp > {current_time} OR timestamp = 0)"
+@session_decorator
+async def is_blacklisted(session, *args):
+    current_time = get_unix()
+    for user_id in args:
+        result = (
+            await session.execute(
+                select(models.database.Blacklist).where(
+                    models.database.Blacklist.user_id == user_id,
+                    or_(
+                        models.database.Blacklist.timestamp > current_time,
+                        models.database.Blacklist.timestamp == 0,
+                    ),
+                )
             )
-            result = await cursor.fetchone()
-            if result:
-                return True, result[1]
+        ).scalar_one_or_none()
+        if result:
+            return True, result.user_id
     return False, 0
 
 
-async def blacklist_user(user_id, timestamp):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        await cursor.execute(
-            f"INSERT INTO blacklist (user_id, timestamp) VALUES ({user_id}, {timestamp})"
-        )
-        await db.commit()
+@session_decorator
+async def blacklist_user(session, user_id, timestamp):
+    async with session.begin():
+        session.add(models.database.Blacklist(user_id=user_id, timestamp=timestamp))
+        pass
 
 
 def human_time_to_seconds(*args) -> int:
