@@ -16,6 +16,8 @@ class Fire(Base):
     message = Column(String)
     attachments = Column(String)
     timestamp = Column(Integer, nullable=False)
+    fb_msg_id = Column(Integer)
+    emoji = Column(String)
 
 
 class Misc(Base):

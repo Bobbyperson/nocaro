@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
 import utils.miscfuncs as mf
-from bot import Session
+from __main__ import Session
 
 if __name__ == "__main__":
     print(
