@@ -2051,7 +2051,7 @@ Example command: `,bougegram normal 100`"""
     # uhhhh i fwuckwed up the ocmmand for hte billionth time... :WAAH: could you pwweettyyywww pweaseewewe fix the cooldown????
     @commands.hybrid_command(aliases=["rob"])
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def steal(self, ctx, member: discord.Member = None):
+    async def steal(self, ctx, member: discord.Member):
         """Steal up to 500 bouge bucks from someone."""
         user = ctx.author
         if isinstance(ctx.channel, discord.channel.DMChannel):
