@@ -14,6 +14,8 @@ class GM(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.author.bot:
+            return
         if message.content:
             msg = str.lower(message.content)
             gm = rd.randint(1, 12)
