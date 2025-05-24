@@ -116,11 +116,11 @@ async def update_amount(
     if new_balance > 1e100:
         new_balance = 1e100
         excess = bal + change - 1e100
-        user_main.balance = new_balance
+        user_main.balance = str(new_balance)
         session.add(
             models.economy.History(
                 user_id=user.id,
-                amount=excess,
+                amount=str(excess),
                 reason=tracker_reason,
                 time=int(time.time()),
             )
@@ -128,21 +128,21 @@ async def update_amount(
     elif not uncapped and new_balance > MAX_INT:
         new_balance = MAX_INT
         excess = bal + change - MAX_INT
-        user_main.balance = new_balance
+        user_main.balance = str(new_balance)
         session.add(
             models.economy.History(
                 user_id=user.id,
-                amount=excess,
+                amount=str(excess),
                 reason=tracker_reason,
                 time=int(time.time()),
             )
         )
     else:
-        user_main.balance = new_balance
+        user_main.balance = str(new_balance)
         session.add(
             models.economy.History(
                 user_id=user.id,
-                amount=change,
+                amount=str(change),
                 reason=tracker_reason,
                 time=int(time.time()),
             )
@@ -421,41 +421,34 @@ async def add_investment(session, user, amount):
 
 
 @session_decorator
-async def log_prestiege(session, user, pres):
+async def get_or_create_prestiege(session, user):
     result = await session.execute(
         select(models.economy.Prestiege).where(
-            models.economy.Prestiege.user_id == user.id
+            models.economy.Prestiege.user_id == user.id,
         )
     )
-    user_prestige = result.scalars().first()
-    if user_prestige is None:
-        user_prestige = models.economy.Prestiege(
-            user_id=user.id,
-            pres1=0,
-            pres2=0,
-            pres3=0,
-            pres4=0,
-            pres5=0,
+    row = result.scalars().first()
+    if row is None:
+        row = models.economy.Prestiege(
+            user_id=user.id, pres1=0, pres2=0, pres3=0, pres4=0, pres5=0
         )
-        session.add(user_prestige)
-    else:
-        setattr(user_prestige, f"pres{pres}", getattr(user_prestige, f"pres{pres+1}"))
+        session.add(row)
+    return row
+
+
+@session_decorator
+async def log_prestiege(session, user, pres):
+    entry = await get_or_create_prestiege(session, user)
+    setattr(entry, f"pres{pres}", getattr(entry, f"pres{pres}") + 1)
 
 
 @session_decorator
 async def get_prestiege(session, user):
-    result = await session.execute(
-        select(models.economy.Prestiege).where(
-            models.economy.Prestiege.user_id == user.id
-        )
-    )
-    user_prestige = result.scalars().first()
-    if user_prestige is None:
-        return [0, 0, 0, 0, 0]
+    user_main = await get_or_create_prestiege(session, user)
     return [
-        user_prestige.pres1,
-        user_prestige.pres2,
-        user_prestige.pres3,
-        user_prestige.pres4,
-        user_prestige.pres5,
+        user_main.pres1,
+        user_main.pres2,
+        user_main.pres3,
+        user_main.pres4,
+        user_main.pres5,
     ]

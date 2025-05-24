@@ -361,7 +361,7 @@ class Economy(commands.Cog):
                 "CREATE TABLE IF NOT EXISTS misc(num INTEGER NOT NULL PRIMARY KEY, pointer TEXT NOT NULL, data INTEGER NOT NULL)"
             )
             await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS history(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, amount INTEGER NOT NULL, reason TEXT NOT NULL, time INTEGER NOT NULL)"
+                "CREATE TABLE IF NOT EXISTS history(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, amount TEXT NOT NULL, reason TEXT NOT NULL, time INTEGER NOT NULL)"
             )
             await db.commit()
         print("Economy ready")
@@ -5691,7 +5691,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 await cursor.execute(
                     f"SELECT user_id FROM prestiege WHERE user_id = {user.id}"
                 )
-                exists = cursor.fetchone()
+                exists = await cursor.fetchone()
                 if exists:
                     await cursor.execute(
                         f"DELETE FROM prestiege WHERE user_id = {user.id}"
@@ -5704,6 +5704,30 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     async def getprestiege(self, ctx, user: discord.Member = None):
         if user is None:
             user = ctx.author
+        await ctx.send(await econ.get_prestiege(user))
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def updateprestiege(
+        self, ctx, user: discord.Member = None, which: int = 0, amount: int = 0
+    ):
+        if user is None:
+            user = ctx.author
+        async with aiosqlite.connect(bank) as db:
+            # check if exists first
+            cursor = await db.cursor()
+            await cursor.execute(
+                f"SELECT user_id FROM prestiege WHERE user_id = {user.id}"
+            )
+            result = await cursor.fetchone()
+            if not result:
+                await cursor.execute(
+                    f"INSERT INTO prestiege (user_id) VALUES ({user.id})"
+                )
+            await cursor.execute(
+                f"UPDATE prestiege SET pres{which} = {amount} WHERE user_id = {user.id}"
+            )
+            await db.commit()
         await ctx.send(await econ.get_prestiege(user))
 
     @commands.Cog.listener()
