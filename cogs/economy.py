@@ -1656,7 +1656,7 @@ Example command: `,bougegram normal 100`"""
 
         try:
             async with self.client.session as session:
-                result = await session.execute(text(command)).fetchall()
+                result = (await session.execute(text(command))).fetchall()
 
                 # Ask user if they want to commit the changes
                 await ctx.send(
