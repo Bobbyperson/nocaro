@@ -20,7 +20,7 @@ class Main(Base):
 class Prestiege(Base):
     __tablename__ = "prestiege"
 
-    num = Column(Integer, primary_key=True, autoincrement=True)
+    num = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False, unique=True, index=True)
     pres1 = Column(Integer, default=0)
     pres2 = Column(Integer, default=0)
@@ -32,7 +32,7 @@ class Prestiege(Base):
 class History(Base):
     __tablename__ = "history"
 
-    num = Column(Integer, primary_key=True, autoincrement=True)
+    num = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False, index=True)
     amount = Column(String, nullable=False)
     reason = Column(String, nullable=False)
