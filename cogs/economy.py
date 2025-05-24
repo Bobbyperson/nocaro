@@ -1927,7 +1927,7 @@ Example command: `,bougegram normal 100`"""
             return
         amount = await econ.get_bal(member)
         img = Image.open("templates/balance.png")
-        if member.id == 248984895940984832:  # wyit
+        if member.id == 351048216348721155:  # wyit
             if amount == 1:
                 await ctx.send(
                     file=discord.File(fp="templates/wyit.gif", filename="bal.gif"),
