@@ -4878,23 +4878,23 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         bal = await econ.get_bal(ctx.author)
         if worthy and bal >= 1e100:
             async with ctx.typing():
-                await narrator("You attempt to approach...", 3)
+                await narrator("You attempt to approach the cave...", 3)
                 await narrator(
                     "Upon reaching it, you find it completely caved in. There's a decomposed hand just barely visible crushed under a rock.",
                     6,
                 )
-                return await narrator(
-                    "Horrified, you freeze in complete shock. Before returning to the bouge casino, you decide to take a walk.\n(This ending is still in development)",
+                await narrator("Horrified, you freeze in complete shock.", 3)
+                await ctx.send(
+                    misc.starspeak(
+                        [
+                            "There's nothing left for you here...",
+                            "You are a fool for returning...",
+                            "",
+                            ",ASCEND to realize your destiny",
+                        ]
+                    )
                 )
-                await narrator("You return to the bouge casino...", 3)
-                await narrator(
-                    "It remains how you left it, completely empty. Your footsteps echo as you enter.",
-                    4,
-                )
-                await narrator(
-                    "You wander around randomly, remembering what this place used to be. Its once bustling energy is now a dead silence.",
-                    3,
-                )
+                return
 
         prestieges = await econ.get_prestiege(ctx.author)
         if prestieges is not None and prestieges[3] > 0:
@@ -5666,6 +5666,22 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 current_bal = await econ.get_bal(ctx.author)
                 if current_bal != 0:
                     await econ.update_amount(ctx.author, -current_bal)
+
+    @commands.command(hidden=True, aliases=["ASCEND"])
+    async def ascend(self, ctx):
+        bal = await econ.get_bal(ctx.author)
+        if bal < 1e100:
+            return
+        await ctx.send(
+            misc.starspeak(
+                [
+                    "The acension process is not ready yet",
+                    "Return to me in the future",
+                    "",
+                    "Good things come to those who wait.",
+                ]
+            )
+        )
 
     ###############################################################
     # ███████ ██████   ██████  ██ ██      ███████ ██████  ███████

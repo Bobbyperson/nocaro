@@ -7,6 +7,8 @@ import tomllib
 import discord
 from discord.ext import commands
 
+import utils.miscfuncs as mf
+
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
@@ -141,6 +143,11 @@ class Example(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"An error occurred: {e}")
+
+    @commands.command()
+    @commands.is_owner()
+    async def startalk(self, ctx, *args):
+        await ctx.send(mf.starspeak([*args]))
 
 
 class UpdateButton(discord.ui.Button):

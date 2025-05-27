@@ -185,3 +185,42 @@ def human_time_to_seconds(*args) -> int:
                 value += float(time) * 60 * 60 * 24 * 365
 
     return int(value)
+
+
+# input: ["string1", "string2", "string3"]
+# output: a formatted string with stars
+def starspeak(strings, max_width=64, min_stars=3, max_stars=6) -> str:
+    stars = ["*", ".", "˚", ".", "✦", ".", "˳", "·", "˖", "✶", "⋆", ".", "✧̣̇", "˚", "."]
+    final = []
+    final.append(" " * max_width)
+    final.append(" " * max_width)
+    for string in strings:
+        if max_width < len(string):
+            raise ValueError("Text is longer than maximum width.")
+
+        # left / right padding
+        left = (max_width - len(string)) // 2
+        right = max_width - len(string) - left
+        final.append(f"{' ' * left}{string}{' ' * right}")
+    final.append(" " * max_width)
+    final.append(" " * max_width)
+    for i, string in enumerate(final):
+        amount_of_spaces = string.count(" ")
+        if amount_of_spaces <= 3:
+            continue
+        for char in string:
+            if char != " ":
+                stars_to_make = min(
+                    rd.randint(min_stars // 2, max_stars // 2), amount_of_spaces
+                )
+                break
+        else:
+            stars_to_make = min(rd.randint(min_stars, max_stars), amount_of_spaces)
+        for _ in range(stars_to_make):
+            index = rd.randint(0, len(string) - 1)
+            while string[index] != " ":
+                index = rd.randint(0, len(string) - 1)
+            string = string[:index] + rd.choice(stars) + string[index + 1 :]
+        final[i] = string
+
+    return "```\n" + "\n".join(final) + "```"
