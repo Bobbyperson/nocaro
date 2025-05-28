@@ -190,7 +190,7 @@ def human_time_to_seconds(*args) -> int:
 # input: ["string1", "string2", "string3"]
 # output: a formatted string with stars
 def starspeak(strings, max_width=64, min_stars=3, max_stars=6) -> str:
-    stars = ["*", ".", "˚", ".", "✦", ".", "˳", "·", "˖", "✶", "⋆", ".", "✧̣̇", "˚", "."]
+    stars = ["*", ".", "˚", "☆", "✦", "˳", "·", "˖", "✶", "⋆", "✧̣̇"]
     final = []
     final.append(" " * max_width)
     final.append(" " * max_width)
