@@ -4,14 +4,13 @@ import time
 import tomllib
 
 import aiohttp
-import aiosqlite
 import discord
 from discord.ext import commands
+from sqlalchemy import select
 
+import models
 import utils.econfuncs as econ
 import utils.miscfuncs as mf
-
-bank = "./data/database.sqlite"
 
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
@@ -112,10 +111,15 @@ class osu(commands.Cog):
     #     self.give_rewards.cancel()
 
     async def refresh_token(self):  # token lasts for one day
+        client_id = config["osu"]["client_id"]
+        client_secret = config["osu"]["client_secret"]
+        if not client_secret or not client_secret:
+            raise Exception("Client ID or Secret not set")
+
         url = "https://osu.ppy.sh/oauth/token"
         myjson = {
-            "client_id": config["osu"]["client_id"],
-            "client_secret": config["osu"]["client_secret"],
+            "client_id": client_id,
+            "client_secret": client_secret,
             "grant_type": "client_credentials",
             "scope": "public",
         }
@@ -123,7 +127,10 @@ class osu(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=myjson, headers=headers) as resp:
                 data = await resp.json()
-                self.osu_token = str(data["access_token"])
+                try:
+                    self.osu_token = str(data["access_token"])
+                except KeyError:
+                    raise Exception(data["error_description"])
 
     async def get_user_rank(self, id: int):
         token = self.osu_token
@@ -174,29 +181,6 @@ class osu(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Osu ready")
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "CREATE TABLE IF NOT EXISTS osu("
-                    "num INTEGER NOT NULL PRIMARY KEY,"
-                    "user_id INTEGER NOT NULL,"
-                    "score INTEGER NOT NULL,"
-                    "timestamp INTEGER NOT NULL,"
-                    "amount INTEGER NOT NULL,"
-                    "osu_user INTEGER NOT NULL"
-                    ")"
-                )
-            await db.commit()
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "CREATE TABLE IF NOT EXISTS osu_users("
-                    "num INTEGER NOT NULL PRIMARY KEY,"
-                    "osu_username TEXT NOT NULL,"
-                    "osu_id INTEGER NOT NULL"
-                    ")"
-                )
-            await db.commit()
 
     @commands.command(hidden=True)
     async def getrank(self, ctx, id):
@@ -216,68 +200,78 @@ class osu(commands.Cog):
         total_bal = await econ.get_bal(ctx.author)
         if total_bal < amount:
             return await ctx.send("You don't have that many bouge bucks! Go `,map`")
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                # first check if user already has entry for osu user
-                await cursor.execute(
-                    "SELECT * FROM osu WHERE osu_user = ? AND user_id = ?",
-                    (osu_id, ctx.author.id),
-                )
-                if await cursor.fetchone():
+        async with self.client.session as session:
+            async with session.begin():
+                results = (
+                    await session.scalars(
+                        select(models.osu.Osu).where(
+                            models.osu.Osu.osu_user == osu_id,
+                            models.osu.Osu.user_id == ctx.author.id,
+                        )
+                    )
+                ).one_or_none()
+
+                if results is not None:
                     await ctx.send(
                         "You already invested in that user! Please sell first."
                     )
-                else:
-                    osu_score = await self.get_user_rank(osu_id)
-                    if not osu_score:
-                        return await ctx.send(
-                            "That user doesn't exist! Please go to osu.ppy.sh and find a valid user id!"
-                        )
-                    osu_name = await self.get_user_name(osu_id)
-                    await cursor.execute(
-                        "INSERT INTO osu(user_id, score, timestamp, amount, osu_user) VALUES(?, ?, ?, ?, ?)",
-                        (ctx.author.id, osu_score, int(time.time()), amount, osu_id),
+                    return
+
+                osu_score = await self.get_user_rank(osu_id)
+                if not osu_score:
+                    return await ctx.send(
+                        "That user doesn't exist! Please go to osu.ppy.sh and find a valid user id!"
                     )
-                    await db.commit()
-                    await ctx.send(
-                        f"You have successfully invested {amount} bouge bucks in {osu_name}."
+                osu_name = await self.get_user_name(osu_id)
+
+                session.add(
+                    models.osu.Osu(
+                        user_id=ctx.author.id,
+                        score=osu_score,
+                        timestamp=int(time.time()),
+                        amount=amount,
+                        osu_user=osu_id,
                     )
-                    await econ.update_amount(
-                        ctx.author, -1 * amount, tracker_reason="osuinvest"
-                    )
+                )
+
+            await ctx.send(
+                f"You have successfully invested {amount} bouge bucks in {osu_name}."
+            )
+            await econ.update_amount(
+                ctx.author, -1 * amount, tracker_reason="osuinvest"
+            )
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def sell(self, ctx, id):
         """Sell your investment on an osu player."""
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT * FROM osu WHERE osu_user = ? AND user_id = ?",
-                    (id, ctx.author.id),
-                )
-                results = await cursor.fetchone()
-                if not results:
+        async with self.client.session as session:
+            async with session.begin():
+                results = (
+                    await session.scalars(
+                        select(models.osu.Osu).where(
+                            models.osu.Osu.osu_user == id,
+                            models.osu.Osu.user_id == ctx.author.id,
+                        )
+                    )
+                ).one_or_none()
+
+                if results is None:
                     await ctx.send("You haven't invested in that user!")
-                else:
-                    new_score = await self.get_user_rank(id)
-                    osu_name = await self.get_user_name(id)
-                    old_score = results[2]
-                    investment = results[4]
-                    await cursor.execute(
-                        "DELETE FROM osu WHERE osu_user = ? AND user_id = ?",
-                        (id, ctx.author.id),
-                    )
-                    await db.commit()
-                    reward, mult = await calculate_reward(
-                        investment, old_score, new_score
-                    )
-                    await ctx.send(
-                        f"You just sold your investment {osu_name} for {mf.commafy(int(reward))} bouge bucks (~{round(mult, 3)}x {old_score} -> {new_score})!"
-                    )
-                    await econ.update_amount(
-                        ctx.author, reward, tracker_reason="osusell"
-                    )
+                    return
+
+                new_score = await self.get_user_rank(id)
+                osu_name = await self.get_user_name(id)
+                old_score = results.score
+                investment = results.amount
+
+                await session.delete(results)
+
+            reward, mult = await calculate_reward(investment, old_score, new_score)
+            await ctx.send(
+                f"You just sold your investment {osu_name} for {mf.commafy(int(reward))} bouge bucks (~{round(mult, 3)}x {old_score} -> {new_score})!"
+            )
+            await econ.update_amount(ctx.author, reward, tracker_reason="osusell")
 
     @commands.hybrid_command(aliases=["investments", "checkinvestment"])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -286,28 +280,29 @@ class osu(commands.Cog):
         if not user:
             user = ctx.author
         async with ctx.typing():
-            async with aiosqlite.connect(bank) as db:
-                async with db.cursor() as cursor:
-                    await cursor.execute(
-                        "SELECT * FROM osu WHERE user_id = ?",
-                        (user.id,),
+            async with self.client.session as session:
+                results = (
+                    await session.scalars(
+                        select(models.osu.Osu).where(models.osu.Osu.user_id == user.id)
                     )
-                    results = await cursor.fetchall()
-                    if not results:
-                        await ctx.send("You haven't invested yet!")
-                    else:
-                        message = ""
-                        for result in results:
-                            osu_name = await self.get_user_name(result[5])
-                            new_score = await self.get_user_rank(result[5])
-                            initial_investment = result[4]
-                            reward, mult = await calculate_reward(
-                                initial_investment, result[2], new_score
-                            )
-                            profit = reward - initial_investment
-                            pos = "+" if new_score < result[2] else ""
-                            message += f"{osu_name} ({result[5]}) | {pos}{mf.commafy(int(profit))} (~{round(mult, 3)}x {result[2]} -> {new_score})\n"
-                        await ctx.send(message)
+                ).all()
+
+                if not results:
+                    await ctx.send("You haven't invested yet!")
+                    return
+
+                message = ""
+                for result in results:
+                    osu_name = await self.get_user_name(result.osu_user)
+                    new_score = await self.get_user_rank(result.osu_user)
+                    initial_investment = result.amount
+                    reward, mult = await calculate_reward(
+                        initial_investment, result.score, new_score
+                    )
+                    profit = reward - initial_investment
+                    pos = "+" if new_score < result.score else ""
+                    message += f"{osu_name} ({result.osu_user}) | {pos}{mf.commafy(int(profit))} (~{round(mult, 3)}x {result.score} -> {new_score})\n"
+                await ctx.send(message)
 
     @commands.command(hidden=True)
     async def rewardtest(self, ctx, old: int = 1, new: int = 1):

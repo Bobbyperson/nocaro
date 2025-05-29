@@ -1,11 +1,11 @@
 import asyncio
 from collections import Counter
 
-import aiosqlite
 import discord
 from discord.ext import commands, tasks
+from sqlalchemy import delete, select
 
-bank = "./data/database.sqlite"
+import models
 
 
 class Poll(commands.Cog):
@@ -16,29 +16,8 @@ class Poll(commands.Cog):
         self.poll_emojis = []
         self.votes = Counter()
         self.update_poll.start()
-        self.bot.loop.create_task(self.initialize_db())
         self.update_poll.add_exception_type(asyncio.TimeoutError)
         self.update_poll.add_exception_type(discord.errors.DiscordServerError)
-
-    async def initialize_db(self):
-        async with aiosqlite.connect(bank) as db:
-            await db.execute(
-                """
-                CREATE TABLE IF NOT EXISTS vote_multipliers (
-                    user_id INTEGER PRIMARY KEY,
-                    multiplier INTEGER
-                )
-            """
-            )
-            await db.execute(
-                """
-                CREATE TABLE IF NOT EXISTS poll_state (
-                    message_id INTEGER,
-                    options TEXT
-                )
-            """
-            )
-            await db.commit()
 
     @commands.command(aliases=["cep"])
     @commands.is_owner()
@@ -70,13 +49,15 @@ class Poll(commands.Cog):
         self.votes = Counter()
 
         # Save poll state to the database
-        async with aiosqlite.connect(bank) as db:
-            await db.execute("DELETE FROM poll_state")
-            await db.execute(
-                "INSERT INTO poll_state (message_id, options) VALUES (?, ?)",
-                (self.poll_message.id, options),
-            )
-            await db.commit()
+        async with self.bot.session as session:
+            async with session.begin():
+                await session.execute(delete(models.poll.PollState))
+                session.add(
+                    models.poll.PollState(
+                        message_id=self.poll_message.id,
+                        options=options,
+                    )
+                )
 
     @tasks.loop(seconds=10.0)
     async def update_poll(self):
@@ -103,45 +84,53 @@ class Poll(commands.Cog):
                 await self.poll_message.edit(content=message)
 
     async def get_vote_multiplier(self, user_id):
-        async with aiosqlite.connect(bank) as db:
-            async with db.execute(
-                "SELECT multiplier FROM vote_multipliers WHERE user_id = ?", (user_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
-                if row:
-                    return row[0]
-                return 1
+        async with self.bot.session as session:
+            result = (
+                await session.scalars(
+                    select(models.poll.VoteMultipliers).where(
+                        models.poll.VoteMultipliers.user_id == user_id
+                    )
+                )
+            ).one_or_none()
+
+            if result is not None:
+                return result.multiplier
+            return 1
 
     @commands.command(aliases=["pullup"])
     @commands.is_owner()
     async def addmultiplier(self, ctx, user: discord.User, multiplier: int = 2):
         """Add or update a user's vote multiplier"""
-        async with aiosqlite.connect(bank) as db:
-            await db.execute(
-                "INSERT OR REPLACE INTO vote_multipliers (user_id, multiplier) VALUES (?, ?)",
-                (user.id, multiplier),
-            )
-            await db.commit()
+        async with self.bot.session as session:
+            async with session.begin():
+                await session.merge(
+                    models.poll.VoteMultipliers(
+                        user_id=user.id,
+                        multiplier=multiplier,
+                    )
+                )
         await ctx.send(f"Vote multiplier for {user.name} has been set to {multiplier}.")
 
     @commands.command(aliases=["pullout"])
     @commands.is_owner()
     async def removemultiplier(self, ctx, user: discord.User):
         """Remove a user's vote multiplier"""
-        async with aiosqlite.connect(bank) as db:
-            await db.execute(
-                "DELETE FROM vote_multipliers WHERE user_id = ?", (user.id,)
-            )
-            await db.commit()
+        async with self.bot.session as session:
+            async with session.begin():
+                await session.execute(
+                    delete(models.poll.VoteMultipliers).where(
+                        models.poll.VoteMultipliers.user_id == user.id
+                    )
+                )
         await ctx.send(f"Vote multiplier for {user.name} has been removed.")
 
     @commands.command()
     @commands.is_owner()
     async def clearmultipliers(self, ctx):
         """Clear all vote multipliers"""
-        async with aiosqlite.connect(bank) as db:
-            await db.execute("DELETE FROM vote_multipliers")
-            await db.commit()
+        async with self.bot.session as session:
+            async with session.begin():
+                await session.execute(delete(models.poll.VoteMultipliers))
         await ctx.send("All vote multipliers have been cleared.")
 
     @commands.command()
@@ -155,36 +144,35 @@ class Poll(commands.Cog):
     @commands.is_owner()
     async def resumepoll(self, ctx):
         """Resume a poll after bot shutdown"""
-        async with aiosqlite.connect(bank) as db:
-            async with db.execute(
-                "SELECT message_id, options FROM poll_state"
-            ) as cursor:
-                row = await cursor.fetchone()
-                if row:
-                    self.poll_message = await ctx.fetch_message(row[0])
-                    self.poll_options = row[1].split(",")
-                    self.poll_emojis = [
-                        "1️⃣",
-                        "2️⃣",
-                        "3️⃣",
-                        "4️⃣",
-                        "5️⃣",
-                        "6️⃣",
-                        "7️⃣",
-                        "8️⃣",
-                        "9️⃣",
-                        "0️⃣",
-                    ][: len(self.poll_options)]
-                    self.votes = Counter()
-                    # if update_poll isn't running, start it
-                    if not self.update_poll.is_running():
-                        self.update_poll.start()
-                    confirmmessage = await ctx.send("Poll has been resumed.")
-                    await ctx.message.delete()
-                    await asyncio.sleep(5)
-                    await confirmmessage.delete()
-                else:
-                    await ctx.send("No poll found to resume.")
+        async with self.client.session as session:
+            result = (
+                await session.scalars(select(models.poll.PollState))
+            ).one_or_none()
+            if result:
+                self.poll_message = await ctx.fetch_message(result.message_id)
+                self.poll_options = result.options.split(",")
+                self.poll_emojis = [
+                    "1️⃣",
+                    "2️⃣",
+                    "3️⃣",
+                    "4️⃣",
+                    "5️⃣",
+                    "6️⃣",
+                    "7️⃣",
+                    "8️⃣",
+                    "9️⃣",
+                    "0️⃣",
+                ][: len(self.poll_options)]
+                self.votes = Counter()
+                # if update_poll isn't running, start it
+                if not self.update_poll.is_running():
+                    self.update_poll.start()
+                confirmmessage = await ctx.send("Poll has been resumed.")
+                await ctx.message.delete()
+                await asyncio.sleep(5)
+                await confirmmessage.delete()
+            else:
+                await ctx.send("No poll found to resume.")
 
     @update_poll.before_loop
     async def before_update_poll(self):
