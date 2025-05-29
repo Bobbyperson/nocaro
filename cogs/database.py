@@ -2,11 +2,12 @@ import asyncio
 import random
 import time
 
-import aiosqlite
 import discord
 import discord.ext
 from discord.ext import commands
+from sqlalchemy import delete, select
 
+import models
 import utils.miscfuncs as mf
 
 bank = "./data/database.sqlite"
@@ -22,54 +23,27 @@ class database(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS messages("
-                "num INTEGER NOT NULL PRIMARY KEY,"
-                ""
-                "messageID INTEGER NOT NULL,"
-                "channelID INTEGER NOT NULL,"
-                "guildID INTEGER NOT NULL"
-                ")"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS ignore("
-                "num INTEGER NOT NULL PRIMARY KEY,"
-                ""
-                "channelID INTEGER NOT NULL,"
-                "guildID INTEGER NOT NULL"
-                ")"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS blacklist(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, timestamp INTEGER NOT NULL)"
-            )
-            await db.commit()
-
         print("Database ready")
 
     async def check_ignored(self, channel):
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT * FROM ignore WHERE channelID = ?", (channel.id,)
-            )
-            result = await cursor.fetchone()
-            if result is not None:
-                return True
-            else:
-                return False
+        async with self.client.session as session:
+            return (
+                await session.scalars(
+                    select(models.database.Ignore).where(
+                        models.database.Ignore.channelID == channel.id
+                    )
+                )
+            ).one_or_none() is not None
 
     @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
     async def ignore(self, ctx, channel: discord.TextChannel):
         """Make Nocaro ignore a channel"""
-        async with aiosqlite.connect(bank) as db:
-            await db.execute(
-                "INSERT INTO ignore (channelID, guildID) VALUES (?, ?)",
-                (channel.id, ctx.guild.id),
-            )
-            await db.commit()
+        async with self.client.session as session:
+            async with session.begin():
+                session.add(
+                    models.database.Ignore(channelID=channel.id, guildID=ctx.guild.id)
+                )
 
         await ctx.reply(f"Ignored {channel.mention}.")
 
@@ -77,29 +51,35 @@ class database(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def unignore(self, ctx, channel: discord.TextChannel):
         """Make Nocaro not ignore a channel"""
-        async with aiosqlite.connect(bank) as db:
-            await db.execute("DELETE FROM ignore WHERE channelID = ?", (channel.id,))
-            await db.commit()
+        async with self.client.session as session:
+            async with session.begin():
+                await session.execute(
+                    delete(models.database.Ignore).where(
+                        models.database.Ignore.channelID == channel.id
+                    )
+                )
 
         await ctx.reply(f"Unignored {channel.mention}.")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "DELETE FROM messages WHERE messageID = ?", (message.id,)
-            )
-            await db.commit()
+        async with self.client.session as session:
+            async with session.begin():
+                await session.execute(
+                    delete(models.database.Messages).where(
+                        models.database.Messages.messageID == message.id
+                    )
+                )
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "DELETE FROM messages WHERE channelID = ?", (channel.id,)
-            )
-            await db.commit()
+        async with self.client.session as session:
+            async with session.begin():
+                await session.execute(
+                    delete(models.database.Messages).where(
+                        models.database.Messages.channelID == channel.id
+                    )
+                )
 
     @commands.hybrid_command(aliases=["privacy", "policy", "pp", "dinfo"])
     async def privacypolicy(self, ctx):
@@ -158,30 +138,34 @@ class database(commands.Cog):
                 and current_time - self.nocaro_cooldowns[user_id] < cooldown_period
             ):
                 return
-            async with aiosqlite.connect(bank) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    "SELECT * FROM messages WHERE channelID = ?", (message.channel.id,)
-                )
-                rows = await cursor.fetchall()
-                if not rows:
-                    return
+            async with self.client.session as session:
+                rows = (
+                    await session.scalars(
+                        select(models.database.Messages).where(
+                            models.database.Messages.channelID == message.channel.id
+                        )
+                    )
+                ).all()
+            if not rows:
+                return
             for _ in range(10):
                 chosen = random.choice(rows)
                 orgchannel = await self.client.fetch_channel(
-                    chosen[2]
+                    chosen.channelID
                 )  # lookup channel
                 try:
                     message_to_send = await orgchannel.fetch_message(
-                        chosen[1]
+                        chosen.messageID
                     )  # lookup message
                 except discord.NotFound:
-                    async with aiosqlite.connect(bank) as db:
-                        cursor = await db.cursor()
-                        await cursor.execute(
-                            "DELETE FROM messages WHERE messageID = ?", (chosen[1],)
-                        )
-                        await db.commit()
+                    async with self.client.session as session:
+                        async with session.begin():
+                            await session.execute(
+                                delete(models.database.Messages).where(
+                                    models.database.Messages.messageID
+                                    == chosen.messageID
+                                )
+                            )
                     continue
                 mentions = message_to_send.role_mentions
                 if not any(role in mentions for role in message.guild.roles):
@@ -192,12 +176,15 @@ class database(commands.Cog):
             )  # send that bitch
             self.nocaro_cooldowns[user_id] = current_time
         else:
-            async with aiosqlite.connect(bank) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"INSERT INTO messages(messageID, channelID, guildID) values({message.id}, {message.channel.id}, {message.guild.id})"
-                )
-                await db.commit()
+            async with self.client.session as session:
+                async with session.begin():
+                    session.add(
+                        models.database.Messages(
+                            messageID=message.id,
+                            channelID=message.channel.id,
+                            guildID=message.guild.id,
+                        )
+                    )
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
             "fixupx.com" not in msg
             and "fixvx.com" not in msg
@@ -222,28 +209,33 @@ class database(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.user)
     async def rmessage(self, ctx):
         """Send a random message."""
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT * FROM messages WHERE channelID = ?", (ctx.channel.id,)
-            )
-            rows = await cursor.fetchall()
-            if not rows:
-                return
+        async with self.client.session as session:
+            rows = (
+                await session.scalars(
+                    select(models.database.Messages).where(
+                        models.database.Messages.channelID == ctx.channel.id
+                    )
+                )
+            ).all()
+        if not rows:
+            return
         for _ in range(10):
             chosen = random.choice(rows)
-            orgchannel = await self.client.fetch_channel(chosen[2])  # lookup channel
+            orgchannel = await self.client.fetch_channel(
+                chosen.channelID
+            )  # lookup channel
             try:
                 message_to_send = await orgchannel.fetch_message(
-                    chosen[1]
+                    chosen.messageID
                 )  # lookup message
             except discord.NotFound:
-                async with aiosqlite.connect(bank) as db:
-                    cursor = await db.cursor()
-                    await cursor.execute(
-                        "DELETE FROM messages WHERE messageID = ?", (chosen[1],)
-                    )
-                    await db.commit()
+                async with self.client.session as session:
+                    async with session.begin():
+                        await session.execute(
+                            delete(models.database.Messages).where(
+                                models.database.Messages.messageID == chosen.messageID
+                            )
+                        )
                 continue
             mentions = message_to_send.role_mentions
             if not any(role in mentions for role in ctx.guild.roles):
@@ -261,29 +253,34 @@ class database(commands.Cog):
         """Generate a whole conversation between random users."""
         if number > 10:
             number = 10
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT * FROM messages WHERE channelID = ?", (ctx.channel.id,)
-            )
-            rows = await cursor.fetchall()
-            if not rows:
-                return
+        async with self.client.session as session:
+            rows = (
+                await session.scalars(
+                    select(models.database.Messages).where(
+                        models.database.Messages.channelID == ctx.channel.id
+                    )
+                )
+            ).all()
+        if not rows:
+            return
         for _ in range(number):
             message_to_send = random.choice(rows)
             chosen = random.choice(rows)
-            orgchannel = await self.client.fetch_channel(chosen[2])  # lookup channel
+            orgchannel = await self.client.fetch_channel(
+                chosen.channelID
+            )  # lookup channel
             try:
                 message_to_send = await orgchannel.fetch_message(
-                    chosen[1]
+                    chosen.messageID
                 )  # lookup message
             except discord.NotFound:
-                async with aiosqlite.connect(bank) as db:
-                    cursor = await db.cursor()
-                    await cursor.execute(
-                        "DELETE FROM messages WHERE messageID = ?", (chosen[1],)
-                    )
-                    await db.commit()
+                async with self.client.session as session:
+                    async with session.begin():
+                        await session.execute(
+                            delete(models.database.Messages).where(
+                                models.database.Messages.messageID == chosen.messageID
+                            )
+                        )
                 continue
             mentions = message_to_send.role_mentions
             if any(role in mentions for role in ctx.guild.roles):

@@ -7,7 +7,7 @@ class VoteMultipliers(Base):
     __tablename__ = "vote_multipliers"
 
     user_id = Column(Integer, primary_key=True)
-    multiplier = Column(Integer)
+    multiplier = Column(Integer, nullable=False)
 
 
 class PollState(Base):

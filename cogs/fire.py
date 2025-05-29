@@ -1,83 +1,17 @@
 import csv
 import time as t
 
-import aiosqlite
 import anyio
 import asyncpg
 import discord
 from discord.ext import commands, tasks
+from sqlalchemy import delete, select, update
+
+import models
 
 bank = "./data/database.sqlite"
 
 fire = "🔥"
-
-
-async def add_msg(reacts, msg, fb_msg_id, fbid, emoji):
-    cid = msg.channel.id
-    mid = msg.id
-    gid = msg.guild.id
-    uid = msg.author.id
-    message = msg.content
-    insane = msg.created_at
-    unix = insane.timestamp()
-
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-
-        query = """
-            INSERT INTO fire(
-                reacts, channel_id, message_id, guild_id, user_id, fb_id,
-                message, attachments, timestamp, fb_msg_id, emoji
-            )
-            values(?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)
-        """
-        parameters = (
-            reacts,
-            cid,
-            mid,
-            gid,
-            uid,
-            fbid,
-            message,
-            int(unix),
-            fb_msg_id,
-            emoji,
-        )
-
-        await cursor.execute(query, parameters)
-        await db.commit()
-
-
-async def edit_msg(reacts, msg):
-    mid = msg.id
-    message = msg.content
-    message = message.replace(r"'", r"''")
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        await cursor.execute(
-            f"UPDATE fire SET message = '{message}' WHERE message_id={mid}"
-        )
-        await cursor.execute(
-            f"UPDATE fire SET reacts = {reacts} WHERE message_id={mid}"
-        )
-        await db.commit()
-
-
-async def get_element(element, value_name, value):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        await cursor.execute(f"SELECT {element} FROM fire WHERE {value_name}={value}")
-        result = await cursor.fetchone()
-    if result:
-        return result[0]
-    return None
-
-
-async def delete_element(valuename, value):
-    async with aiosqlite.connect(bank, timeout=10) as db:
-        cursor = await db.cursor()
-        await cursor.execute(f"DELETE FROM fire WHERE {valuename}={value}")
-        await db.commit()
 
 
 class Fire(commands.Cog):
@@ -91,8 +25,76 @@ class Fire(commands.Cog):
     def cog_unload(self):
         self.weekly.cancel()
 
+    async def add_msg(self, reacts, msg, fb_msg_id, fbid, emoji):
+        cid = msg.channel.id
+        mid = msg.id
+        gid = msg.guild.id
+        uid = msg.author.id
+        message = msg.content
+        insane = msg.created_at
+        unix = insane.timestamp()
+
+        async with self.client.session as session:
+            async with session.begin():
+                session.add(
+                    models.fire.Fire(
+                        reacts=reacts,
+                        channel_id=cid,
+                        message_id=mid,
+                        guild_id=gid,
+                        user_id=uid,
+                        fb_id=fbid,
+                        message=message,
+                        attachments=None,
+                        timestamp=int(unix),
+                        fb_msg_id=fb_msg_id,
+                        emoji=emoji,
+                    )
+                )
+
+    async def edit_msg(self, reacts, msg):
+        mid = msg.id
+        message = msg.content
+        message = message.replace(r"'", r"''")
+        async with self.client.session as session:
+            async with session.begin():
+                await session.execute(
+                    update(models.fire.Fire)
+                    .where(models.fire.Fire.message_id == mid)
+                    .values(message=message, reacts=reacts)
+                )
+
+    async def get_element(self, element, value_name, value):
+        try:
+            value_attr = getattr(models.fire.Fire, value_name)
+        except AttributeError:
+            return None
+
+        async with self.client.session as session:
+            result = (
+                await session.scalars(
+                    select(models.fire.Fire).where(value_attr == value)
+                )
+            ).one_or_none()
+
+        if result:
+            return getattr(result, element)
+        return None
+
+    async def delete_element(self, value_name, value):
+        try:
+            value_attr = getattr(models.fire.Fire, value_name)
+        except AttributeError:
+            return None
+
+        async with self.client.session as session:
+            async with session.begin():
+                await session.execute(
+                    delete(models.fire.Fire).where(value_attr == value)
+                )
+
     async def add_to_board(self, added_msg, fireboard, total_reacts, emoji):
-        exists = await get_element("fb_msg_id", "message_id", added_msg.id)
+        exists = await self.get_element("fb_msg_id", "message_id", added_msg.id)
         if not exists:
             em = discord.Embed(
                 color=discord.Color(0xFA43EE), description=added_msg.content
@@ -133,46 +135,22 @@ class Fire(commands.Cog):
                     content=f"{fire} **{total_reacts}**", embed=em
                 )
             # newfb = await fireboard.send(f"{added_msg.author.name}'s message '{added_msg.content}' has {total_reacts} {fire}.")
-            await add_msg(total_reacts, added_msg, newfb.id, fireboard.id, emoji)
+            await self.add_msg(total_reacts, added_msg, newfb.id, fireboard.id, emoji)
         else:
             existing_message = await fireboard.fetch_message(exists)
-            emoji = await get_element("emoji", "message_id", added_msg.id)
+            emoji = await self.get_element("emoji", "message_id", added_msg.id)
             if emoji == "unfire":
                 await existing_message.edit(
                     content=f"<:unfire:1128853116129923093> **{total_reacts}**"
                 )
             else:
                 await existing_message.edit(content=f"{fire} **{total_reacts}**")
-            await edit_msg(total_reacts, added_msg)
+            await self.edit_msg(total_reacts, added_msg)
 
     # events
     @commands.Cog.listener()
     async def on_ready(self):
         print("Fire ready")
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS fire("
-                "num INTEGER NOT NULL PRIMARY KEY,"
-                ""
-                "reacts INTEGER NOT NULL,"
-                "channel_id INTEGER NOT NULL,"
-                "message_id INTEGER NOT NULL,"
-                "guild_id INTEGER NOT NULL,"
-                "user_id INTEGER NOT NULL,"
-                "fb_id INTEGER NOT NULL,"
-                "message TEXT,"
-                "attachments TEXT,"
-                "timestamp INTEGER NOT NULL"
-                ")"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS misc("
-                "num INTEGER NOT NULL PRIMARY KEY,"
-                "pointer TEXT NOT NULL,"
-                "data INTEGER NOT NULL)"
-            )
-            await db.commit()
 
     @commands.hybrid_command()
     async def howtofire(self, ctx):
@@ -336,36 +314,49 @@ class Fire(commands.Cog):
     @tasks.loop(seconds=30)
     async def weekly(self):
         async def getfuckingdata():
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute("SELECT data FROM misc WHERE pointer='weeklyFire'")
-                result = await cursor.fetchone()
-                if result is not None:
-                    old = int(result[0])
-                else:
-                    await cursor.execute(
-                        f'INSERT INTO misc (pointer, data) VALUES ("weeklyFire", {int(t.time()) + 604800})'
-                    )
-                    await db.commit()
-                    old = None
+            async with self.client.session as session:
+                async with session.begin():
+                    result = (
+                        await session.scalars(
+                            select(models.fire.Misc).where(
+                                models.fire.Misc.pointer == "weeklyFire"
+                            )
+                        )
+                    ).one_or_none()
+
+                    if result is not None:
+                        old = int(result.data)
+                    else:
+                        session.add(
+                            models.fire.Misc(
+                                pointer="weeklyFire",
+                                data=int(t.time()) + 604800,
+                            )
+                        )
+                        old = None
             return old
 
         async def setfuckingdata(old):
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"UPDATE misc SET data = {old + 604800} WHERE pointer='weeklyFire'"
-                )
-                await db.commit()
+            async with self.client.session as session:
+                async with session.begin():
+                    await session.execute(
+                        update(models.fire.Misc)
+                        .where(models.fire.Misc.pointer == "weeklyFire")
+                        .values(data=(old + 604800))
+                    )
 
         async def getmessages(unix):
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"SELECT * FROM fire WHERE timestamp > {unix - 604800} AND emoji = 'fire' ORDER BY reacts DESC"
-                )
-                result = await cursor.fetchall()
-            return result
+            async with self.client.session as session:
+                return (
+                    await session.scalars(
+                        select(models.fire.Fire)
+                        .where(
+                            models.fire.Fire.timestamp > (unix - 604800),
+                            models.fire.Fire.emoji == "fire",
+                        )
+                        .order_by(models.fire.Fire.reacts.desc())
+                    )
+                ).all()
 
         old = await getfuckingdata()
         unix = int(t.time())
@@ -409,67 +400,91 @@ class Fire(commands.Cog):
     @commands.hybrid_command()
     async def highestfire(self, ctx, channel: discord.TextChannel = None):
         if not channel:
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"SELECT * FROM fire WHERE guild_id = {ctx.guild.id} AND emoji = 'fire' ORDER BY reacts DESC LIMIT 1"
-                )
-                result = await cursor.fetchone()
+            async with self.client.session as session:
+                result = (
+                    await session.scalars(
+                        select(models.fire.Fire)
+                        .where(
+                            models.fire.Fire.guild_id == ctx.guild.id,
+                            models.fire.Fire.emoji == "fire",
+                        )
+                        .order_by(models.fire.Fire.reacts.desc())
+                        .limit(1)
+                    )
+                ).one_or_none()
             if not result:
                 await ctx.send(
                     "something went wrong, either there are no fire reacts in this server, or my creator is a dumbass. the latter is more likely."
                 )
                 return
             await ctx.send(
-                f"https://discord.com/channels/{result[4]}/{result[2]}/{result[3]}"
+                f"https://discord.com/channels/{result.guild_id}/{result.channel_id}/{result.message_id}"
             )
         else:
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"SELECT * FROM fire WHERE channel_id = {channel.id} AND emoji = 'fire' ORDER BY reacts DESC LIMIT 1"
-                )
-                result = await cursor.fetchone()
+            async with self.client.session as session:
+                result = (
+                    await session.scalars(
+                        select(models.fire.Fire)
+                        .where(
+                            models.fire.Fire.channel_id == channel.id,
+                            models.fire.Fire.emoji == "fire",
+                        )
+                        .order_by(models.fire.Fire.reacts.desc())
+                        .limit(1)
+                    )
+                ).one_or_none()
             if not result:
                 await ctx.send(
-                    "something went wrong, either there are no fire reacts in this channel, or my creator is a dumbass. the latter is more likely."
+                    "something went wrong, either there are no fire reacts in this server, or my creator is a dumbass. the latter is more likely."
                 )
                 return
             await ctx.send(
-                f"https://discord.com/channels/{result[4]}/{result[2]}/{result[3]}"
+                f"https://discord.com/channels/{result.guild_id}/{result.channel_id}/{result.message_id}"
             )
 
     @commands.hybrid_command()
     async def highestunfire(self, ctx, channel: discord.TextChannel = None):
         if not channel:
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"SELECT * FROM fire WHERE guild_id = {ctx.guild.id} AND emoji = 'unfire' ORDER BY reacts DESC LIMIT 1"
-                )
-                result = await cursor.fetchone()
+            async with self.client.session as session:
+                result = (
+                    await session.scalars(
+                        select(models.fire.Fire)
+                        .where(
+                            models.fire.Fire.guild_id == ctx.guild.id,
+                            models.fire.Fire.emoji == "unfire",
+                        )
+                        .order_by(models.fire.Fire.reacts.desc())
+                        .limit(1)
+                    )
+                ).one_or_none()
             if not result:
                 await ctx.send(
                     "something went wrong, either there are no fire reacts in this server, or my creator is a dumbass. the latter is more likely."
                 )
                 return
             await ctx.send(
-                f"https://discord.com/channels/{result[4]}/{result[2]}/{result[3]}"
+                f"https://discord.com/channels/{result.guild_id}/{result.channel_id}/{result.message_id}"
             )
         else:
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                cursor = await db.cursor()
-                await cursor.execute(
-                    f"SELECT * FROM fire WHERE channel_id = {channel.id} AND emoji = 'unfire' ORDER BY reacts DESC LIMIT 1"
-                )
-                result = await cursor.fetchone()
+            async with self.client.session as session:
+                result = (
+                    await session.scalars(
+                        select(models.fire.Fire)
+                        .where(
+                            models.fire.Fire.channel_id == channel.id,
+                            models.fire.Fire.emoji == "unfire",
+                        )
+                        .order_by(models.fire.Fire.reacts.desc())
+                        .limit(1)
+                    )
+                ).one_or_none()
             if not result:
                 await ctx.send(
-                    "something went wrong, either there are no fire reacts in this channel, or my creator is a dumbass. the latter is more likely."
+                    "something went wrong, either there are no fire reacts in this server, or my creator is a dumbass. the latter is more likely."
                 )
                 return
             await ctx.send(
-                f"https://discord.com/channels/{result[4]}/{result[2]}/{result[3]}"
+                f"https://discord.com/channels/{result.guild_id}/{result.channel_id}/{result.message_id}"
             )
 
     @commands.hybrid_command()
@@ -479,19 +494,15 @@ class Fire(commands.Cog):
             fire = "fire"
         data = {}
         messageids = []
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT * FROM fire"
-            )  # num, reacts, channel_id, message_id, guild_id, user_id, fb_id, message, attachments, timestamp, x, emoji
-            results = await cursor.fetchall()
+        async with self.client.session as session:
+            results = (await session.scalars(select(models.fire.Fire))).all()
         for result in results:
-            if result[3] not in messageids and result[11] == fire:
-                messageids.append(result[3])
+            if result.message_id not in messageids and result.emoji == fire:
+                messageids.append(result.message_id)
                 try:
-                    data[f"{result[5]}"] += result[1]
+                    data[f"{result.user_id}"] += result.reacts
                 except KeyError:
-                    data[f"{result[5]}"] = result[1]
+                    data[f"{result.user_id}"] = result.reacts
         # sort dictionary by value
         sorted_data = {
             k: v

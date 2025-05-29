@@ -6,7 +6,7 @@ from . import Base
 class Osu(Base):
     __tablename__ = "osu"
 
-    num = Column(Integer, nullable=False, primary_key=True)
+    num = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)
     score = Column(Integer, nullable=False)
     timestamp = Column(Integer, nullable=False)
@@ -17,6 +17,6 @@ class Osu(Base):
 class OsuUsers(Base):
     __tablename__ = "osu_users"
 
-    num = Column(Integer, nullable=False, primary_key=True)
+    num = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     osu_username = Column(String, nullable=False)
     osu_id = Column(Integer, nullable=False)

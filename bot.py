@@ -32,8 +32,15 @@ async def main():
 engine = create_async_engine("sqlite+aiosqlite:///data/database.sqlite", echo=None)
 Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
+
+class Bot(commands.Bot):
+    @property
+    def session(self):
+        return Session()
+
+
 intents = discord.Intents().all()
-client = commands.Bot(
+client = Bot(
     command_prefix=config["general"]["prefix"],
     intents=intents,
     help_command=PrettyHelp(),

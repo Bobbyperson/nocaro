@@ -1,13 +1,12 @@
 import random
 
-import aiosqlite
 import discord
 import emoji
 from discord.ext import commands
+from sqlalchemy import select
 
+import models
 from utils.miscfuncs import is_blacklisted
-
-bank = "./data/database.sqlite"
 
 
 class Autoresponse(commands.Cog):
@@ -20,16 +19,14 @@ class Autoresponse(commands.Cog):
         print("autoresponse ready")
 
     async def check_ignored(self, channel):
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT * FROM ignore WHERE channelID = ?", (channel.id,)
-            )
-            result = await cursor.fetchone()
-            if result is not None:
-                return True
-            else:
-                return False
+        async with self.client.session as session:
+            return (
+                await session.scalars(
+                    select(models.database.Ignore).where(
+                        models.database.Ignore.channelID == channel.id
+                    )
+                )
+            ).one_or_none() is not None
 
     @commands.Cog.listener()
     async def on_message(self, message):

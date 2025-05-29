@@ -1,17 +1,16 @@
 import asyncio
 import math
 
-import aiosqlite
 import discord
 import pandas as pd
 import pandas_market_calendars as mcal
 import yfinance as yf
 from discord.ext import commands
+from sqlalchemy import select
 
+import models
 import utils.econfuncs as econ
 import utils.miscfuncs as mf
-
-bank = "./data/database.sqlite"
 
 
 class Stocks(commands.Cog):
@@ -24,58 +23,41 @@ class Stocks(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Stock market loaded")
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "CREATE TABLE IF NOT EXISTS stocks("
-                    "num INTEGER NOT NULL PRIMARY KEY,"
-                    ""
-                    "user_ID INTEGER NOT NULL,"
-                    "ticker TEXT NOT NULL,"
-                    "amount INTEGER NOT NULL,"
-                    "purchase_price INTEGER NOT NULL"
-                    ")"
-                )
-            await db.commit()
 
     async def add_to_db(self, user_id, ticker, amount, purchase_price):
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "INSERT INTO stocks(user_ID, ticker, amount, purchase_price) VALUES(?, ?, ?, ?)",
-                    (user_id, ticker, amount, purchase_price),
+        async with self.client.session as session:
+            async with session.begin():
+                session.add(
+                    models.stocks.Stocks(
+                        user_id=user_id,
+                        ticker=ticker,
+                        amount=amount,
+                        purchase_price=purchase_price,
+                    )
                 )
-            await db.commit()
 
     async def remove_from_db(self, user_id: int, ticker: str, amount: int):
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT rowid, amount FROM stocks WHERE user_ID = ? AND ticker = ?",
-                    (user_id, ticker),
+        if amount <= 0:
+            return
+
+        async with self.client.session as session:
+            async with session.begin():
+                results = await session.scalars(
+                    select(models.stocks.Stocks).where(
+                        models.stocks.Stocks.user_id == user_id
+                    )
                 )
-                results = await cursor.fetchall()
 
                 for row in results:
-                    rowid, current_amount = row
                     if amount <= 0:
                         break
 
-                    if current_amount <= amount:
-                        await cursor.execute(
-                            "DELETE FROM stocks WHERE rowid = ?",
-                            (rowid,),
-                        )
-                        amount -= current_amount
+                    if row.amount <= amount:
+                        await session.delete(row)
+                        amount -= row.amount
                     else:
-                        new_amount = current_amount - amount
-                        await cursor.execute(
-                            "UPDATE stocks SET amount = ? WHERE rowid = ?",
-                            (new_amount, rowid),
-                        )
+                        row.amount = amount
                         amount = 0
-
-            await db.commit()
 
     async def fetch_stock_price(self, stock_ticker):
         loop = asyncio.get_event_loop()
@@ -183,20 +165,26 @@ class Stocks(commands.Cog):
         async with ctx.typing():
             stock = stock.upper()
             stock_price = await self.fetch_stock_price(stock)
-            async with aiosqlite.connect(bank) as db:
-                async with db.cursor() as cursor:
-                    await cursor.execute(
-                        "SELECT * FROM stocks WHERE user_ID = ? AND ticker = ?",
-                        (ctx.author.id, stock),
+
+            async with self.client.session as session:
+                results = (
+                    await session.scalars(
+                        select(models.stocks.Stocks).where(
+                            models.stocks.Stocks.user_id == ctx.author.id,
+                            models.stocks.Stocks.ticker == stock,
+                        )
                     )
-                    result = await cursor.fetchall()
-                    if not result:
-                        return await ctx.send("You don't have any stocks of that type")
-                    total_stocks = 0
-                    for thing in result:
-                        total_stocks += thing[3]
-                    if total_stocks < amount:
-                        return await ctx.send("You don't have enough stocks to sell")
+                ).all()
+
+                if not results:
+                    await ctx.send("You don't have any stocks of that type")
+                    return
+
+                total_stocks = sum([stock.amount for stock in results])
+                if total_stocks < amount:
+                    await ctx.send("You don't have enough stocks to sell")
+                    return
+
             await self.remove_from_db(ctx.author.id, stock, amount)
             await econ.update_amount(
                 ctx.author, math.floor(stock_price * amount), tracker_reason="sellstock"
@@ -229,42 +217,41 @@ class Stocks(commands.Cog):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def portfolio(self, ctx, user: discord.Member = None):
         """List all currently owned stocks"""
+        if user is None:
+            user = ctx.author
         async with ctx.typing():
-            async with aiosqlite.connect(bank) as db:
-                async with db.cursor() as cursor:
-                    if not user:
-                        user = ctx.author
-                    await cursor.execute(
-                        "SELECT * FROM stocks WHERE user_ID = ?", (user.id,)
+            stocktable = {}
+            async with self.client.session as session:
+                results = (
+                    await session.scalars(
+                        select(models.stocks.Stocks).where(
+                            models.stocks.Stocks.user_id == user.id
+                        )
                     )
-                    result = await cursor.fetchall()
-                    if not result:
-                        return await ctx.send("You don't have any stocks")
-                    stocktable = {}
-                    for stock in result:
-                        if stock[2] not in stocktable:
-                            stocktable[stock[2]] = {
-                                "amount": stock[3],
-                                "purchase_price": stock[4],
-                            }
-                        else:
-                            stocktable[stock[2]]["amount"] += stock[3]
-                            stocktable[stock[2]]["purchase_price"] += stock[4]
-                    stocks = ""
-                    for stock in stocktable.items():
-                        stock_name = stock[0]  # stock name
-                        stock_amount = stock[1]["amount"]  # amount of all stocks
-                        stock_purchase_price = stock[1][
-                            "purchase_price"
-                        ]  # sum of all purchase prices, not the average price
-                        new_stock_price = await self.fetch_stock_price(
-                            stock[0]
-                        )  # current price of a single stock
-                        if new_stock_price > stock_purchase_price / stock_amount:
-                            stocks += f"{stock_name}: {stock_amount} stocks | + {mf.commafy(round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
-                        else:
-                            stocks += f"{stock_name}: {stock_amount} stocks | - {mf.commafy(-1 * round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
-                    await ctx.send(f"{user.name}'s current stocks:\n{stocks}")
+                ).all()
+
+                if not results:
+                    await ctx.send("You don't have any stocks")
+                    return
+
+                for stock in results:
+                    if stock.ticker not in stocktable:
+                        stocktable[stock.ticker] = {
+                            "amount": stock.amount,
+                            "purchase_price": stock.purchase_price,
+                        }
+
+            stocks = ""
+            for stock_name, stock in stocktable.items():
+                stock_amount = stock["amount"]
+                stock_purchase_price = stock["purchase_price"]
+                new_stock_price = await self.fetch_stock_price(stock_name)
+
+                if new_stock_price > stock_purchase_price / stock_amount:
+                    stocks += f"{stock_name}: {stock_amount} stocks | + {mf.commafy(round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
+                else:
+                    stocks += f"{stock_name}: {stock_amount} stocks | - {mf.commafy(-1 * round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
+            await ctx.send(f"{user.name}'s current stocks:\n{stocks}")
 
 
 async def setup(client):

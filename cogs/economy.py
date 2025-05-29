@@ -12,7 +12,6 @@ import traceback
 from collections import Counter
 from typing import ClassVar
 
-import aiosqlite
 import anyio
 import asyncpg
 import discord
@@ -25,12 +24,11 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import FuncFormatter
 from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
+from sqlalchemy import Integer, cast, delete, select, text
 
+import models
 import utils.econfuncs as econ
 import utils.miscfuncs as misc
-
-# main bank file
-bank = "./data/database.sqlite"
 
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
@@ -331,39 +329,6 @@ class Economy(commands.Cog):
     # create database if none exists
     @commands.Cog.listener()
     async def on_ready(self):
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS main("
-                ""
-                "num INTEGER NOT NULL PRIMARY KEY,"
-                "balance TEXT NOT NULL DEFAULT 0,"
-                "bananas INT NOT NULL DEFAULT 0,"
-                "user_ID INTEGER NOT NULL,"
-                "immunity INT NOT NULL DEFAULT 0,"
-                "level INT NOT NULL DEFAULT 0,"
-                "inventory TEXT,"
-                "winloss TEXT,"
-                "invested INT NOT NULL DEFAULT 0)"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS prestiege("
-                ""
-                "num INT PRIMARY KEY,"
-                "user_id INT,"
-                "pres1 INT DEFAULT 0,"
-                "pres2 INT DEFAULT 0,"
-                "pres3 INT DEFAULT 0,"
-                "pres4 INT DEFAULT 0,"
-                "pres5 INT DEFAULT 0)"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS misc(num INTEGER NOT NULL PRIMARY KEY, pointer TEXT NOT NULL, data INTEGER NOT NULL)"
-            )
-            await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS history(num INTEGER NOT NULL PRIMARY KEY, user_id INTEGER NOT NULL, amount TEXT NOT NULL, reason TEXT NOT NULL, time INTEGER NOT NULL)"
-            )
-            await db.commit()
         print("Economy ready")
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
@@ -384,20 +349,23 @@ class Economy(commands.Cog):
 
         current_balance = await econ.get_bal(user)
         async with ctx.typing():
-            async with aiosqlite.connect(bank) as db:
-                async with db.cursor() as cursor:
-                    await cursor.execute(
-                        "SELECT amount, time FROM history WHERE user_id = ? AND time > ? ORDER BY time ASC",
-                        (user.id, int(time.time()) - timeframe_seconds),
+            async with self.client.session as session:
+                result = (
+                    await session.scalars(
+                        select(models.economy.History).where(
+                            models.economy.History.user_id == user.id,
+                            models.economy.History.time
+                            > (int(time.time()) - timeframe_seconds),
+                        )
                     )
-                    result = await cursor.fetchall()
+                ).all()
 
             if not result:
                 return await ctx.send(
                     f"No history found within the last {timeframe}, please try specifying a longer timeframe."
                 )
 
-            last_result_timestamp = result[-1][1]
+            last_result_timestamp = result[-1].time
 
             x = []
             y = []
@@ -409,9 +377,9 @@ class Economy(commands.Cog):
             y.append(balance)
 
             # Process transactions in reverse order to reconstruct balances
-            for amount, timestamp in reversed(result):
-                balance -= int(amount)
-                x.append(datetime.datetime.fromtimestamp(timestamp))
+            for history in reversed(result):
+                balance -= int(history.amount)
+                x.append(datetime.datetime.fromtimestamp(history.time))
                 y.append(balance)
 
             # Reverse the lists to have them in chronological order
@@ -1687,36 +1655,38 @@ Example command: `,bougegram normal 100`"""
         await ctx.send(f"Executing: {command}")
 
         try:
-            async with aiosqlite.connect(bank, timeout=10) as db:
-                async with db.cursor() as cursor:
-                    # Begin the transaction
-                    await cursor.execute("BEGIN TRANSACTION;")
+            async with self.client.session as session:
+                result = await session.execute(text(command))
+                if result.returns_rows:
+                    result = result.all()
+                else:
+                    result = []
 
-                    await cursor.execute(command)
-                    result = await cursor.fetchall()
+                await ctx.send(result)
 
-                    # Ask user if they want to commit the changes
-                    await ctx.send(
-                        "Do you want to commit these changes? Reply with 'yes' or 'no'."
+                # Ask user if they want to commit the changes
+                await ctx.send(
+                    "Do you want to commit these changes? Reply with 'yes' or 'no'."
+                )
+                try:
+                    msg = await self.client.wait_for(
+                        "message",
+                        check=lambda m: m.author == ctx.author
+                        and m.channel == ctx.channel,
+                        timeout=60,
                     )
-                    try:
-                        msg = await self.client.wait_for(
-                            "message",
-                            check=lambda m: m.author == ctx.author
-                            and m.channel == ctx.channel,
-                            timeout=60,
-                        )
-                        if msg.content.lower() == "yes":
-                            await cursor.execute("COMMIT;")
-                            await ctx.send(f"Changes committed!\n{result}")
-                        else:
-                            await cursor.execute("ROLLBACK;")
-                            await ctx.send("Changes rolled back.")
-                    except TimeoutError:
-                        await cursor.execute("ROLLBACK;")
-                        await ctx.send("Confirmation timeout. Changes rolled back.")
+                    if msg.content.lower() == "yes":
+                        await session.commit()
+                        await ctx.send("Changes committed!")
+                    else:
+                        await session.rollback()
+                        await ctx.send("Changes rolled back.")
+                except TimeoutError:
+                    await session.rollback()
+                    await ctx.send("Confirmation timeout. Changes rolled back.")
 
         except Exception as e:
+            print(type(e))
             print(e)
             await ctx.send(f"Error: {e!s}")
 
@@ -2747,16 +2717,18 @@ Example command: `,bougegram normal 100`"""
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
             return
-        async with aiosqlite.connect(bank) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT user_id, balance FROM main ORDER BY CAST(balance AS INTEGER) DESC"
-            )
-            rows = await cursor.fetchall()
+        async with self.client.session as session:
+            rows = (
+                await session.scalars(
+                    select(models.economy.Main).order_by(
+                        cast(models.economy.Main.balance, Integer).desc()
+                    )
+                )
+            ).all()
         top_n = 10
         top_users = dict(
             sorted(
-                ((row[0], int(row[1])) for row in rows),
+                ((row.user_ID, int(row.balance)) for row in rows),
                 key=lambda kv: kv[1],
                 reverse=True,
             )[:top_n]
@@ -2791,19 +2763,23 @@ Example command: `,bougegram normal 100`"""
         top_n = 10
         guild_member_ids: set[int] = {m.id for m in ctx.guild.members}
 
-        async with aiosqlite.connect(bank, timeout=10) as db:
-            cursor = await db.cursor()
-            await cursor.execute(
-                "SELECT user_id, balance "
-                "FROM   main "
-                "ORDER  BY CAST(balance AS INTEGER) DESC"
-            )
-            rows = await cursor.fetchall()
+        async with self.client.session as session:
+            rows = (
+                await session.scalars(
+                    select(models.economy.Main).order_by(
+                        cast(models.economy.Main.balance, Integer).desc()
+                    )
+                )
+            ).all()
 
         top_n = 10
         top_users = dict(
             sorted(
-                ((row[0], int(row[1])) for row in rows if row[0] in guild_member_ids),
+                (
+                    (row.user_ID, int(row.balance))
+                    for row in rows
+                    if row.user_ID in guild_member_ids
+                ),
                 key=lambda kv: kv[1],
                 reverse=True,
             )[:top_n]
@@ -5197,15 +5173,19 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                         False,
                         tracker_reason="transcendence",
                     )
-                    async with aiosqlite.connect(bank) as db:
-                        async with db.cursor() as cursor:
-                            await cursor.execute(
-                                f"DELETE FROM stocks WHERE user_ID = {ctx.author.id}"
+                    async with self.client.session as session:
+                        async with session.begin():
+                            await session.execute(
+                                delete(models.stocks.Stocks).where(
+                                    models.stocks.Stocks.user_id == ctx.author.id
+                                )
                             )
-                            await cursor.execute(
-                                f"DELETE FROM osu WHERE user_id = {ctx.author.id}"
+                            await session.execute(
+                                delete(models.osu.OSU).where(
+                                    models.osu.OSU.user_id == ctx.author.id
+                                )
                             )
-                        await db.commit()
+
                     await narrator(
                         "You shake his hand. Almost immediately, you feel your bouge bucks (and stock portfolio) hit zero.",
                         3,
@@ -5714,17 +5694,14 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         if user is None:
             user = ctx.author
         await ctx.send(await econ.get_prestiege(ctx.author))
-        async with aiosqlite.connect(bank) as db:
-            async with db.cursor() as cursor:
-                await cursor.execute(
-                    f"SELECT user_id FROM prestiege WHERE user_id = {user.id}"
-                )
-                exists = await cursor.fetchone()
-                if exists:
-                    await cursor.execute(
-                        f"DELETE FROM prestiege WHERE user_id = {user.id}"
+        async with self.client.session as session:
+            async with session.begin():
+                await session.execute(
+                    delete(models.economy.Prestiege).where(
+                        models.economy.Prestiege.user_id == user.id
                     )
-            await db.commit()
+                )
+
         await ctx.send("cleared")
 
     @commands.command(hidden=True)
@@ -5741,21 +5718,21 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     ):
         if user is None:
             user = ctx.author
-        async with aiosqlite.connect(bank) as db:
-            # check if exists first
-            cursor = await db.cursor()
-            await cursor.execute(
-                f"SELECT user_id FROM prestiege WHERE user_id = {user.id}"
-            )
-            result = await cursor.fetchone()
-            if not result:
-                await cursor.execute(
-                    f"INSERT INTO prestiege (user_id) VALUES ({user.id})"
-                )
-            await cursor.execute(
-                f"UPDATE prestiege SET pres{which} = {amount} WHERE user_id = {user.id}"
-            )
-            await db.commit()
+        async with self.client.session as session:
+            async with session.begin():
+                result = (
+                    await session.scalars(
+                        select(models.economy.Prestiege).where(
+                            models.economy.Prestiege.user_id == user.id
+                        )
+                    )
+                ).one_or_none()
+
+                if result:
+                    setattr(result, f"pres{which}", amount)
+                else:
+                    session.add(models.economy.Prestiege(user_id=user.id))
+
         await ctx.send(await econ.get_prestiege(user))
 
     @commands.Cog.listener()
