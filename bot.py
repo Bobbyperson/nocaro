@@ -9,18 +9,11 @@ from pretty_help import PrettyHelp
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from models import Base
-
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
 
 async def main():
-    if not os.path.exists("data/database.sqlite"):
-        os.makedirs("data", exist_ok=True)
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
     # start the client
     async with client:
         for filename in os.listdir("./cogs"):

@@ -1,0 +1,25 @@
+alembic is used for database migrations (updates)
+NOTE: all invocations of `alembic` expect you to run it via `uv run`
+
+### Check current revision
+`alembic current`
+
+### List full revision history
+`alembic history`
+
+### Upgrade to latest revision
+`alembic upgrade head`
+
+### Upgrading to specific revision (can be found in their filename and in the script itself)
+`alembic upgrade <revision>`
+`alembic upgrade 2d59d4f0c508`
+
+### Downgrade to the first revision
+`alembic downgrade base`
+
+### Downgrade to specific revision
+`alembic downgrade <revision>`
+`alembic downgrade 2d59d4f0c508`
+
+### Generate new revision (make sure you are on the latest revision)
+`alembic revision --autogenerate -m "revision message"`
