@@ -144,7 +144,7 @@ class Poll(commands.Cog):
     @commands.is_owner()
     async def resumepoll(self, ctx):
         """Resume a poll after bot shutdown"""
-        async with self.client.session as session:
+        async with self.bot.session as session:
             result = (
                 await session.scalars(select(models.poll.PollState))
             ).one_or_none()
