@@ -27,6 +27,7 @@ from pydub import AudioSegment
 from sqlalchemy import Integer, cast, delete, select, text
 
 import models
+import utils.audio as audio
 import utils.econfuncs as econ
 import utils.miscfuncs as misc
 
@@ -4720,6 +4721,15 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await econ.update_winloss(ctx.author, "w")
         else:
             await econ.update_winloss(ctx.author, "l")
+
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
+    async def roulette(ctx):
+        if ctx.author.voice:
+            await audio.join(ctx)
+        else:
+            return await ctx.send("Please join a voice channel.")
+        
 
     ##############################################################
     # ███████ ██████   ██████  ██ ██      ███████ ██████  ███████

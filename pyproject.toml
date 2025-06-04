@@ -26,6 +26,8 @@ dependencies = [
     "discord-ext-menus",
     "anyio>=4.9.0",
     "alembic>=1.16.1",
+    "numpy>=2.2.1",
+    "coqui-tts>=0.26.2",
 ]
 
 [dependency-groups]
