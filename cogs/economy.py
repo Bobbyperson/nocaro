@@ -1562,12 +1562,6 @@ Example command: `,bougegram normal 100`"""
         """Check your inventory."""
         if not member:
             member = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         inventory = await econ.get_inv(member)
         if not inventory:
             await ctx.send("You have no items in your inventory.")
@@ -1682,12 +1676,6 @@ Example command: `,bougegram normal 100`"""
             return
 
         member = member or ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         img = await self.generate_profile_image(member)
 
         with io.BytesIO() as image_binary:
@@ -1748,12 +1736,6 @@ Example command: `,bougegram normal 100`"""
             return
         if not member:
             member = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         level = (
             sum(await econ.get_prestiege(member))
             if await econ.get_prestiege(member)
@@ -2753,10 +2735,6 @@ Example command: `,bougegram normal 100`"""
         unix = int(round(time.time(), 0))
 
         user = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
         totalmoney = await econ.get_bal(user)
         current = await econ.get_immunity(user)
         user_prestieges = await econ.get_prestiege(ctx.author)
@@ -3174,19 +3152,7 @@ Example command: `,bougegram normal 100`"""
                 "More than two people are not supported because that sounds hawd >~<"
             )
             return
-        blacklisted = await misc.is_blacklisted(member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "You or the person you invoked are blacklisted from this bot."
-            )
-            return
         if not member:
-            blacklisted = await misc.is_blacklisted(ctx.author.id)
-            if blacklisted[0]:
-                await ctx.send(
-                    "You or the person you invoked are blacklisted from this bot."
-                )
-                return
             await ctx.send(
                 f'{ctx.author} is challenging someone to a duel for {amount} bouge bucks!!! Respond with "I accept" to start the duel!'
             )
@@ -3199,6 +3165,13 @@ Example command: `,bougegram normal 100`"""
             if msg.content.lower() == "i accept":
                 if amount > await econ.get_bal(msg.author):
                     await ctx.send("Not enough bouge bucks!")
+                    return
+                if await econ.checkmax(msg.author):
+                    await ctx.send("Nice try.")
+                    return
+                blacklisted = await misc.is_blacklisted(msg.author)
+                if blacklisted[0]:
+                    await ctx.send("Nice try.")
                     return
                 await econ.update_amount(
                     ctx.author, -1 * amount, False, tracker_reason="quickdraw"
