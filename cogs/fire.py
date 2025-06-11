@@ -378,7 +378,7 @@ class Fire(commands.Cog):
                     # num, reacts, channel_id, message_id, guild_id, user_id, fb_id, message, attachments, timestamp
                     h = 0
                     for i, msg in enumerate(result):
-                        if msg[6] == fireboard.id:
+                        if msg.fb_id == fireboard.id:
                             h += 1
                             if h == 6:
                                 break
