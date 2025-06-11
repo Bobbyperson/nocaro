@@ -100,13 +100,10 @@ class Stocks(commands.Cog):
 
     @commands.hybrid_command(aliases=["buystocks"])
     @commands.cooldown(5, 60, commands.BucketType.user)
+    @mf.generic_checks()
     async def buystock(self, ctx, stock: str | None = None, amount: str | None = None):
         """Purchase stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
-        if await econ.checkmax(ctx.author):
-            return await ctx.send(
-                "You attempt to buy stocks but you can't. Maybe you should attempt to `,enterthecave`."
-            )
         if not stock:
             return await ctx.send("Please provide a stock ticker")
         if not open_market:
@@ -142,13 +139,10 @@ class Stocks(commands.Cog):
 
     @commands.hybrid_command(aliases=["sellstocks"])
     @commands.cooldown(5, 60, commands.BucketType.user)
+    @mf.generic_checks()
     async def sellstock(self, ctx, stock: str | None = None, amount: str | None = None):
         """Sell stocks from the REAL LIFE stock market"""
         open_market = await self.is_market_open()
-        if await econ.checkmax(ctx.author):
-            return await ctx.send(
-                "You attempt to sell stocks but you can't. Maybe you should attempt to `,enterthecave`."
-            )
         if not stock:
             return await ctx.send("Please provide a stock ticker")
         if not open_market:
@@ -195,6 +189,7 @@ class Stocks(commands.Cog):
 
     @commands.hybrid_command()
     @commands.cooldown(5, 60, commands.BucketType.user)
+    @mf.generic_checks()
     async def stockprice(self, ctx, stock: str | None = None):
         """Find the price of a REAL LIFE stock"""
         if not stock:
@@ -215,6 +210,7 @@ class Stocks(commands.Cog):
 
     @commands.hybrid_command()
     @commands.cooldown(1, 60, commands.BucketType.user)
+    @mf.generic_checks(max_check=False)
     async def portfolio(self, ctx, user: discord.Member = None):
         """List all currently owned stocks"""
         if user is None:

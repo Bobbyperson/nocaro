@@ -207,6 +207,7 @@ class database(commands.Cog):
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
+    @mf.generic_checks()
     async def rmessage(self, ctx):
         """Send a random message."""
         async with self.client.session as session:
@@ -249,6 +250,7 @@ class database(commands.Cog):
 
     @commands.hybrid_command()
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @mf.generic_checks()
     async def conversation(self, ctx, number: int = 5):
         """Generate a whole conversation between random users."""
         if number > 10:

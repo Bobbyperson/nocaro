@@ -333,6 +333,7 @@ class Economy(commands.Cog):
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @misc.generic_checks(max_check=False)
     async def history(
         self, ctx, user: discord.User | None = None, *, timeframe: str = "1 day"
     ):
@@ -428,6 +429,7 @@ class Economy(commands.Cog):
 
     @commands.hybrid_command()
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
+    @misc.generic_checks()
     async def bougegram(
         self, ctx, difficulty: str | None = None, bet: str | None = None
     ):
@@ -436,17 +438,6 @@ class Economy(commands.Cog):
             await ctx.send("Command may not be used in a DM.")
             return
         bet = econ.moneyfy(bet)
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
-        if await econ.checkmax(ctx.author) is True:
-            await ctx.send(
-                "You attempt to play the best game but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
         if difficulty is None:
             await ctx.send(
                 """**Welcome to bougegram!**
@@ -1114,21 +1105,18 @@ Example command: `,bougegram normal 100`"""
         await ctx.send(f"Rigging {game} set to {onoff}")
 
     @commands.command(aliases=["rtb"])
+    @commands.max_concurrency(1, commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def ridethebus(self, ctx, bet: str | None = None):
         if bet is None:
-            await ctx.send("You need to specify a bet!")
-            return
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to ride the bus but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
+            await ctx.reply("You need to specify a bet!")
             return
         bet = econ.moneyfy(bet)
         if bet < 0:
-            await ctx.send("You can't bet negative bouge bucks!")
+            await ctx.reply("You can't bet negative bouge bucks!")
             return
         if bet > await econ.get_bal(ctx.author):
-            await ctx.send("You don't have enough bouge bucks!")
+            await ctx.reply("You don't have enough bouge bucks!")
             return
         deck = Deck()
         deck.shuffle()
@@ -1144,7 +1132,7 @@ Example command: `,bougegram normal 100`"""
                 case "A":
                     card.value = 14
         await econ.update_amount(ctx.author, -1 * bet, tracker_reason="ridethebus")
-        await ctx.send("For double your bet, **red** or **black**?")
+        await ctx.reply("For double your bet, **red** or **black**?")
         try:
             msg = await self.client.wait_for(
                 "message",
@@ -1155,7 +1143,7 @@ Example command: `,bougegram normal 100`"""
                 timeout=30,
             )
         except TimeoutError:
-            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await ctx.reply("You took too long! I'm keeping your bouge bucks.")
             await econ.update_winloss(ctx.author, "l")
             return
         if msg.content == "r":
@@ -1163,11 +1151,11 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "b":
             msg.content = "black"
         if msg.content == cards[0].get_color():
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}\nCorrect! For triple your bouge bucks, will the next card be **higher**, **lower**, or would you like to **cash out**?"
             )
         else:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
             )
             await econ.update_winloss(ctx.author, "l")
@@ -1182,7 +1170,7 @@ Example command: `,bougegram normal 100`"""
                 timeout=30,
             )
         except TimeoutError:
-            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await ctx.reply("You took too long! I'm keeping your bouge bucks.")
             await econ.update_winloss(ctx.author, "l")
             return
         correct = "higher" if cards[0].value <= cards[1].value else "lower"
@@ -1193,16 +1181,16 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "c":
             msg.content = "cash out"
         if msg.content == "cash out":
-            await ctx.send(f"You cashed out with {misc.commafy(bet * 2)} bouge bucks!")
+            await ctx.reply(f"You cashed out with {misc.commafy(bet * 2)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 2, tracker_reason="ridethebus")
             await econ.update_winloss(ctx.author, "w")
             return
         if msg.content == correct:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}\nCorrect! For quadruple your bouge bucks, will the next card be **in**, **out**, or would you like to **cash out**?"
             )
         else:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
             )
             await econ.update_winloss(ctx.author, "l")
@@ -1217,7 +1205,7 @@ Example command: `,bougegram normal 100`"""
                 timeout=30,
             )
         except TimeoutError:
-            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await ctx.reply("You took too long! I'm keeping your bouge bucks.")
             await econ.update_winloss(ctx.author, "l")
             return
         if cards[0].value >= cards[1].value:
@@ -1237,16 +1225,16 @@ Example command: `,bougegram normal 100`"""
         if msg.content == "c":
             msg.content = "cash out"
         if msg.content == "cash out":
-            await ctx.send(f"You cashed out with {misc.commafy(bet * 3)} bouge bucks!")
+            await ctx.reply(f"You cashed out with {misc.commafy(bet * 3)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 3, tracker_reason="ridethebus")
             await econ.update_winloss(ctx.author, "w")
             return
         if msg.content == correct:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}, {cards[2]!s}\nCorrect! For twenty times your bet, what is the suit of the next card? (or cash out)"
             )
         else:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}, {cards[2]!s}\nIncorrect! You lose {misc.commafy(bet)} bouge bucks."
             )
             await econ.update_winloss(ctx.author, "l")
@@ -1262,13 +1250,13 @@ Example command: `,bougegram normal 100`"""
                 timeout=30,
             )
         except TimeoutError:
-            await ctx.send("You took too long! I'm keeping your bouge bucks.")
+            await ctx.reply("You took too long! I'm keeping your bouge bucks.")
             await econ.update_winloss(ctx.author, "l")
             return
         if msg.content == "c":
             msg.content = "cash out"
         if msg.content == "cash out":
-            await ctx.send(f"You cashed out with {misc.commafy(bet * 4)} bouge bucks!")
+            await ctx.reply(f"You cashed out with {misc.commafy(bet * 4)} bouge bucks!")
             await econ.update_amount(ctx.author, bet * 4, tracker_reason="ridethebus")
             await econ.update_winloss(ctx.author, "w")
             return
@@ -1282,26 +1270,23 @@ Example command: `,bougegram normal 100`"""
             case "♧":
                 suit = "clubs"
         if msg.content == suit:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}, {cards[2]!s}, {cards[3]!s}\nCorrect! You win **{misc.commafy(bet * 20)}** bouge bucks!"
             )
             await econ.update_amount(ctx.author, bet * 20, tracker_reason="ridethebus")
             await econ.update_winloss(ctx.author, "b")
         else:
-            await ctx.send(
+            await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}, {cards[2]!s}, {cards[3]!s}\nIncorrect! You lose **{misc.commafy(bet)}** bouge bucks."
             )
             await econ.update_winloss(ctx.author, "l")
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @misc.generic_checks(max_check=False)
     async def unbox(self, ctx, amount: int = 1):
         """Use a banana to unbox a map."""
         banana = await econ.get_banana(ctx.author)
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot!")
-            return
         if amount < 1:
             await ctx.send(
                 "i am going to claw my way down your throat and rip out your very soul"
@@ -1327,6 +1312,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @misc.generic_checks()
     async def tradein(
         self,
         ctx,
@@ -1337,13 +1323,6 @@ Example command: `,bougegram normal 100`"""
         map5: str | None = None,
     ):
         """Trade-in 5 maps for 1 banana."""
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
-        """Trade in 5 maps for 1 banana."""
         if map1 is None or map2 is None or map3 is None or map4 is None or map5 is None:
             await ctx.send("You did not specify a map! You must specify 5.")
             return
@@ -1364,12 +1343,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["levelup", "prestiege"])
     @commands.cooldown(1, 43200, commands.BucketType.user)
+    @misc.generic_checks()
     async def bbtobananapipeline(self, ctx):
         """Prestiege to earn bouge bananas."""
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
 
         def check(moosage):
             return (
@@ -1422,21 +1398,11 @@ Example command: `,bougegram normal 100`"""
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
+    @misc.generic_checks()
     async def trade(self, ctx, member: discord.Member = None):
         """Trade with another user."""
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to trade but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
         if member is None:
             await ctx.send("You need to specify a member to trade with!")
-            return
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
             return
         prestiege = await econ.get_prestiege(ctx.author)
         if prestiege and prestiege[4]:
@@ -1810,20 +1776,16 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command()
     @commands.cooldown(1, 86400, commands.BucketType.user)
+    @misc.generic_checks()
     async def daily(self, ctx):
         """Get bananas."""
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         bananas = rd.randint(2, 4)
         await econ.update_banana(ctx.author, bananas)
         await ctx.reply(f"You just got {bananas} bananas! Come back in 24 hours!")
 
     @commands.hybrid_command(aliases=["bananas"])
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @misc.generic_checks(max_check=False)
     async def banana(self, ctx, member: discord.Member = None):
         """Check how many bananas you have."""
         if isinstance(ctx.channel, discord.channel.DMChannel):
@@ -1831,12 +1793,6 @@ Example command: `,bougegram normal 100`"""
             return
         if not member:
             member = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         amount = await econ.get_banana(member)
         if amount == 1:
             msg = f"{amount} banana"
@@ -1882,6 +1838,7 @@ Example command: `,bougegram normal 100`"""
         name="balance", aliases=["bal", "bank", "money", "bucks", "dosh", "wonga"]
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @misc.generic_checks(max_check=False)
     async def balance(self, ctx, member: discord.Member = None):
         """Check how many bouge bucks you have."""
         if isinstance(ctx.channel, discord.channel.DMChannel):
@@ -1889,12 +1846,6 @@ Example command: `,bougegram normal 100`"""
             return
         if not member:
             member = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         amount = await econ.get_bal(member)
         img = Image.open("templates/balance.png")
         if member.id == 351048216348721155:  # wyit
@@ -1992,19 +1943,11 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command()
     @commands.cooldown(1, 72.7, commands.BucketType.user)
+    @misc.generic_checks()
     async def map(self, ctx):
         """Map for bouge bucks"""
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
-            return
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to map but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
             return
         user = ctx.author
         banger = rd.randint(1, 10)
@@ -2033,28 +1976,18 @@ Example command: `,bougegram normal 100`"""
     # uhhhh i fwuckwed up the ocmmand for hte billionth time... :WAAH: could you pwweettyyywww pweaseewewe fix the cooldown????
     @commands.hybrid_command(aliases=["rob"])
     @commands.cooldown(1, 60, commands.BucketType.user)
+    @misc.generic_checks()
     async def steal(self, ctx, member: discord.Member):
         """Steal up to 500 bouge bucks from someone."""
         user = ctx.author
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
             return
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to steal but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
         if await econ.checkmax(member):
             await ctx.send(
                 f"You attempt to steal from {member.name}. As you approach, you notice the state they're in, a husk of their former self. Unnerved, you run away."
             )
             ctx.command.reset_cooldown(ctx)
-            return
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
             return
         unix = int(round(time.time(), 0))
         current = await econ.get_immunity(member)
@@ -2112,20 +2045,12 @@ Example command: `,bougegram normal 100`"""
                 await ctx.send(f"could not dm {victim}")
 
     @commands.hybrid_command()
+    @misc.generic_checks()
     async def checkimmunity(self, ctx, member: discord.Member = None):
         """Check if someone has immunity."""
-        if isinstance(ctx.channel, discord.channel.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
         unix = int(round(time.time(), 0))
         if not member:
             member = ctx.author
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "Either you or the person you invoked are blacklisted from this bot."
-            )
-            return
         current = await econ.get_immunity(member)
         if current > unix:
             await ctx.reply(
@@ -2137,15 +2062,9 @@ Example command: `,bougegram normal 100`"""
     # look i did the rewrite
     @commands.hybrid_command(aliases=["bj", "b", "blowjob", "bjrw"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def blackjack(self, ctx, amountstr: str | None = None):
         """Blackjack with some special rules"""
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
-        if isinstance(ctx.channel, discord.channel.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
         if await econ.checkmax(ctx.author):
             await ctx.send(
                 "You attempt to gamble but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
@@ -2645,12 +2564,10 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["pay", "give", "g"])
     @commands.cooldown(1, 60, commands.BucketType.user)
+    @misc.generic_checks()
     async def gift(self, ctx, member: discord.Member = None, amount: str | None = None):
         """Gift someone bouge bucks"""
         amount = econ.moneyfy(amount)
-        if isinstance(ctx.channel, discord.channel.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
         if await econ.checkmax(ctx.author):
             await ctx.send(
                 "You attempt to spread goodwill but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
@@ -2685,12 +2602,6 @@ Example command: `,bougegram normal 100`"""
         if member.bot:
             await ctx.send("No droids!")
             return
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "You or the person you invoked are blacklisted from this bot."
-            )
-            return
         gifteebal = await econ.get_bal(member)
         if gifteebal < 0:
             if amount > (gifteebal * -1) + 10_000_000_000:  # 10 trillion
@@ -2712,11 +2623,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["lb", "baltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @misc.generic_checks(max_check=False)
     async def leaderboard(self, ctx):
         """View the leaderboard."""
-        if isinstance(ctx.channel, discord.channel.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
         async with self.client.session as session:
             rows = (
                 await session.scalars(
@@ -2754,11 +2663,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["slb", "sbaltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @misc.generic_checks(max_check=False)
     async def serverleaderboard(self, ctx: commands.Context):
         """View the server-only leaderboard."""
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
 
         top_n = 10
         guild_member_ids: set[int] = {m.id for m in ctx.guild.members}
@@ -2832,16 +2739,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @misc.generic_checks()
     async def immunity(self, ctx):
         """Buy immunity from being stolen from."""
-        if isinstance(ctx.channel, discord.channel.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to purchase immunity but you realize the uselessness of it. No one would dare approach you. Maybe you should attempt to `,enterthecave`."
-            )
-            return
 
         def check(mosage):
             return (
@@ -2914,21 +2814,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["don"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def doubleornothing(self, ctx, amount: str | None = None):
         """Play a chance game to win bouge bucks."""
-        if isinstance(ctx.channel, discord.channel.DMChannel):
-            await ctx.send("Command may not be used in a DM.")
-            return
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to gamble but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
-
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
 
         def check(moosage):
             return (
@@ -3048,6 +2936,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.command(aliases=["fof"], hidden=True)
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
+    @misc.generic_checks()
     async def floporfire(self, ctx, amount: int = 0, bet: str | None = None):
         def check(moosage):
             return (
@@ -3056,19 +2945,8 @@ Example command: `,bougegram normal 100`"""
                 and moosage.content.lower() in ["yes", "no"]
             )
 
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to judge maps but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
-
         def cheek(moosage):
             return moosage.attachments and moosage.channel == game_channel
-
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
 
         unix = int(round(time.time(), 0))
         user = ctx.author
@@ -3246,6 +3124,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["qd"])
     @commands.max_concurrency(1, per=commands.BucketType.channel, wait=False)
+    @misc.generic_checks(max_check=False)
     async def quickdraw(self, ctx, member: discord.Member = None, amount: str = "0"):
         """Play a reaction based game against someone."""
         amount = econ.moneyfy(amount)
@@ -3253,11 +3132,6 @@ Example command: `,bougegram normal 100`"""
             all_text = await file.read()
             words = list(map(str, all_text.split()))
             word = rd.choice(words)
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to play an underappreciated game but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
 
         def check(moosage):
             return (
@@ -3428,6 +3302,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["s"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def slots(self, ctx, amount: str | None = None):
         """Play a slot machine."""
         if not amount:
@@ -3436,9 +3311,6 @@ Example command: `,bougegram normal 100`"""
             return await ctx.send(
                 "You attempt to gamble but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
             )
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            return await ctx.send("You are blacklisted from this bot.")
         amount = econ.moneyfy(amount)
         if amount < 0:
             return await ctx.reply("I will skin you alive.")
@@ -3523,6 +3395,7 @@ Example command: `,bougegram normal 100`"""
     # delete this honestly. unused, not that good.
     @commands.hybrid_command(aliases=["sos", "sus"])
     @commands.cooldown(1, 1800, commands.BucketType.user)
+    @misc.generic_checks()
     async def shareorsteal(
         self, ctx, member: discord.Member = None, amount: str | None = None
     ):
@@ -3552,20 +3425,9 @@ Example command: `,bougegram normal 100`"""
                 "To begin, type `,shareorsteal (amount) (user)`"
             )
             ctx.command.reset_cooldown(ctx)
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to play the worst game but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-            )
-            return
         if not member:
             await ctx.send("Please select a user to compete with!")
             ctx.command.reset_cooldown(ctx)
-            return
-        blacklisted = await misc.is_blacklisted(ctx.author.id, member.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "You or the person you invoked are blacklisted from this bot."
-            )
             return
         if amount < 0:
             await ctx.send("I will skin you alive.")
@@ -3690,13 +3552,9 @@ Example command: `,bougegram normal 100`"""
 
     @commands.command(hidden=True)
     @commands.cooldown(1, 1800, commands.BucketType.user)
+    @misc.generic_checks()
     async def amp(self, ctx):
         amount = await econ.get_bal(ctx.author)
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "Despite typing `,map` incorrectly, your balance remains unchanged. Maybe you should attempt to `,enterthecave`."
-            )
-            return
         if amount <= 0:
             await ctx.reply("You got amp'd!")
         elif rd.randint(1, 10) == 1:
@@ -3709,6 +3567,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.command(hidden=True)
     @commands.cooldown(1, 1800, commands.BucketType.user)
+    @misc.generic_checks()
     async def dialy(self, ctx):
         amount = await econ.get_banana(ctx.author)
         if amount <= 0:
@@ -3721,15 +3580,11 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["dnd"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def dealornodeal(self, ctx, bet: str | None = None):
         """Play Deal or No Deal just like the gameshow!"""
         # 7, 6, 5, 3, 2, 1, final
         # does monty hall apply to deal or no deal
-        if await econ.checkmax(ctx.author):
-            await ctx.send(
-                "You attempt to enter a gameshow but you cannot bring yourself to, your body is too weak from the endless gambling. Maybe you should attempt to `,enterthecave`."
-            )
-            return
         if not bet:
             await ctx.reply(
                 """**Welcome to Deal or No Deal!**
@@ -3750,13 +3605,6 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await ctx.reply("You don't have enough!")
             return
         await econ.update_amount(ctx.author, -1 * bet, tracker_reason="dealornodeal")
-
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send(
-                "You or the person you invoked are blacklisted from this bot."
-            )
-            return
 
         def choose_first_case(moosage):
             try:
@@ -3946,6 +3794,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
     @commands.hybrid_command()
     @commands.cooldown(1, 60, commands.BucketType.user)
+    @misc.generic_checks()
     async def debtrelief(self, ctx):
         """Get out of negative bouge bucks."""
         amount = await econ.get_bal(ctx.author)
@@ -3964,10 +3813,6 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             f"Ok step 1: do the command `,lb`. \nStep 2: Ping the person at the top of the list 3 times in a row. \nStep 3: Beg for {-1 * amount} bouge bucks. \nStep 4: ??? \nStep 5: No more debt",
         )
 
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
         # mapped = 0
         # while amount < 0:
         #     mapped += 1
@@ -4114,17 +3959,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.hybrid_command(aliases=["p"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     @commands.cooldown(1, 1, commands.BucketType.user)
+    @misc.generic_checks()
     async def poker(self, ctx, bet: str | None = None):
         """Simple comparison poker."""
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("You are blacklisted from this bot.")
-            return
-
-        if await econ.checkmax(ctx.author):
-            return await ctx.send(
-                "You attempt to challenge the dealer, but your brain is too rotten. Maybe you should attempt to `,enterthecave`."
-            )
 
         def check_yes(moosage):
             return (
@@ -4538,6 +4375,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.hybrid_command(aliases=["hr", "horcerace", "horcerase", "horserase"])
     @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def horserace(self, ctx, bet: str | None = None, horse: int = 0):
         emojis = [
             "<:midfire:1235039447347630111>",
@@ -4554,10 +4392,6 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             ctx.command.reset_cooldown(ctx)
             return
 
-        if await econ.checkmax(ctx.author):
-            return await ctx.send(
-                "Right as you place your bet, a horse kicks you in the head. Maybe you should attempt to `,enterthecave`."
-            )
         amount = econ.moneyfy(bet)
         if amount < 0:
             await ctx.send("You can't bet negative bouge bucks.")
@@ -4621,15 +4455,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
     @commands.command(hidden=True, aliases=["cf"])
     @commands.cooldown(1, 1, commands.BucketType.user)
+    @misc.generic_checks()
     async def coinflip(self, ctx, amount: str | None = None):
         """Double your money"""
-        if await econ.checkmax(ctx.author):
-            await ctx.send("nice try.")
-            return
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            await ctx.send("nope")
-            return
         if amount is None:
             await ctx.send("Please supply an amount to bet.")
             return
@@ -4677,6 +4505,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.hybrid_command(aliases=["mine", "m"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
+    @misc.generic_checks()
     async def mines(self, ctx, amount: str = ""):
         if amount == "":
             await ctx.send(
@@ -4687,9 +4516,6 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         chance = 8
         amount = econ.moneyfy(amount)
         total = await econ.get_bal(ctx.author)
-        blacklisted = await misc.is_blacklisted(ctx.author.id)
-        if blacklisted[0]:
-            return await ctx.send("NOOOOOO!")
         if amount > total:
             await ctx.send("You can't afford that!")
             return

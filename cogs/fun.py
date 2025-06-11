@@ -44,6 +44,7 @@ class Fun(commands.Cog):
     # commands
 
     @commands.hybrid_command()
+    @mf.generic_checks(max_check=False)
     async def ip(self, ctx, user: discord.Member = None):
         ip1 = random.randint(1, 255)
         ip2 = random.randint(0, 255)
@@ -58,6 +59,7 @@ class Fun(commands.Cog):
             await ctx.send(f"{ip1}.{ip2}.{ip3}.{ip4}")
 
     @commands.command(aliases=["8ball", "ask"], hidden=True)
+    @mf.generic_checks(max_check=False)
     async def _8ball(self, ctx, *, question):
         if not question:
             return await ctx.send("Please ask a question.")
@@ -106,6 +108,7 @@ class Fun(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @mf.generic_checks(max_check=False)
     async def createpoll(self, ctx, amount: int = 0):
         """Make a poll"""
         if amount > 10 or amount < 1:
