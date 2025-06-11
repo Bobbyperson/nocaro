@@ -50,6 +50,7 @@ class Example(commands.Cog):
         await ctx.send(",human")
 
     @commands.command(hidden=True)
+    @mf.generic_checks(max_check=False)
     async def checkcommit(self, ctx):
         try:
             remote_url = (

@@ -3,12 +3,15 @@ import random
 import anyio
 from discord.ext import commands
 
+from utils.miscfuncs import generic_checks
+
 
 class theory(commands.Cog):
     def __init__(self, client):
         self.client = client
 
     @commands.command(hidden=True)
+    @generic_checks(max_check=False)
     async def theory(self, ctx, word=None):
         theories = ["Theory", "Theorem", "Method"]
         if not word:

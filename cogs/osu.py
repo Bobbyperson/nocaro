@@ -188,6 +188,7 @@ class osu(commands.Cog):
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @mf.generic_checks()
     async def invest(self, ctx, osu_id: int = 0, amount: str | None = None):
         """Invest in an osu player."""
         if osu_id == 0:
@@ -243,6 +244,7 @@ class osu(commands.Cog):
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @mf.generic_checks()
     async def sell(self, ctx, id):
         """Sell your investment on an osu player."""
         async with self.client.session as session:
@@ -275,6 +277,7 @@ class osu(commands.Cog):
 
     @commands.hybrid_command(aliases=["investments", "checkinvestment"])
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @mf.generic_checks(max_check=False)
     async def checkinvestments(self, ctx, user: discord.User = None):
         """Check your investments on osu players."""
         if not user:

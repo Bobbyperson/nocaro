@@ -66,6 +66,7 @@ class Moderation(commands.Cog):
 
     @commands.hybrid_command()
     @commands.has_permissions(moderate_members=True)
+    @mf.generic_checks(max_check=False)
     async def timeout(self, ctx, member: discord.Member, length: int = 5):
         """Timeout someone."""
         max_time = 2419200
@@ -81,6 +82,7 @@ class Moderation(commands.Cog):
     # commands
     @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
+    @mf.generic_checks(max_check=False)
     async def clear(self, ctx, amount=5 + 1):
         """Clean messages."""
         await ctx.channel.purge(limit=amount)
@@ -117,6 +119,7 @@ class Moderation(commands.Cog):
         await ctx.send("Done!")
 
     @commands.hybrid_command()
+    @mf.generic_checks(max_check=False)
     async def blacklistme(self, ctx, length: int = 0):
         if length < 0:
             await ctx.send(
@@ -167,6 +170,7 @@ class Moderation(commands.Cog):
 
     @commands.hybrid_command()
     @commands.has_permissions(ban_members=True)
+    @mf.generic_checks(max_check=False)
     async def ban(self, ctx, member: discord.Member, *, reason=None):
         """Ban someone."""
         await member.ban(reason=reason)
@@ -174,6 +178,7 @@ class Moderation(commands.Cog):
 
     @commands.hybrid_command()
     @commands.has_permissions(kick_members=True)
+    @mf.generic_checks(max_check=False)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
         """Kick someone."""
         await member.kick(reason=reason)
