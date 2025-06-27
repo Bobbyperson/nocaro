@@ -81,7 +81,8 @@ def generic_checks(
             if ctx:
                 for arg in args:
                     if isinstance(arg, discord.Member | discord.User):
-                        if blacklist_check and await is_blacklisted(arg.id):
+                        blacklist = await is_blacklisted(arg.id)
+                        if blacklist_check and blacklist[0]:
                             await ctx.send(
                                 "The person you invoked is blacklisted from Nocaro."
                             )
