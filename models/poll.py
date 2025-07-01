@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 
 from . import Base
 
@@ -6,8 +6,12 @@ from . import Base
 class VoteMultipliers(Base):
     __tablename__ = "vote_multipliers"
 
+    # per-event table
     user_id = Column(Integer, primary_key=True)
-    multiplier = Column(Integer, nullable=False)
+    event_id = Column(Integer, primary_key=True)
+    attended = Column(Boolean, nullable=False)
+    voted_for_winner = Column(Boolean, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
 
 
 class PollState(Base):
