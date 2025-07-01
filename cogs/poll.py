@@ -23,7 +23,7 @@ class Poll(commands.Cog):
         self.warned_voters = False
         self.pending_attendance = {}  # user_id -> join_time
         self.showed_up = set()  # user_ids who were present >= 30min
-        self.event_vc = None  # voice channel being monitored
+        self.event_vc = []  # voice channel being monitored
         self.should_end_poll = False  # flag to end the poll
 
     @commands.command(aliases=["cep"])
@@ -253,7 +253,7 @@ class Poll(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def monitorevent(self, ctx, vc: discord.VoiceChannel):
-        self.event_vc = vc
+        self.event_vc.append(vc.id)
         await ctx.send(f"Monitoring voice channel: {vc.name}")
 
     @commands.command()
@@ -316,7 +316,7 @@ class Poll(commands.Cog):
                     )
 
         # tidy up
-        self.event_vc = None
+        self.event_vc = []
         self.winners = []
         self.showed_up.clear()
         self.pending_attendance.clear()
@@ -326,7 +326,7 @@ class Poll(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         if not self.event_vc or not member.voice:
             return
-        if member.bot or member.voice.channel.id != self.event_vc.id:
+        if member.bot or member.voice.channel.id not in self.event_vc:
             return
         # User joins VC
         if before.channel is None and after.channel is not None:
@@ -338,7 +338,7 @@ class Poll(commands.Cog):
                 if (
                     join_time
                     and member.voice
-                    and member.voice.channel.id == self.event_vc.id
+                    and member.voice.channel.id in self.event_vc
                 ):
                     self.showed_up.add(member.id)
                     # await member.send("✅ You've been counted as attending the event.")
