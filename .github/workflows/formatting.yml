@@ -13,5 +13,6 @@ jobs:
   format-check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: jpetrucciani/black-check@25.1.0
+    - uses: astral-sh/ruff-action@v3
+      with:
+        args: "format --check --diff"
