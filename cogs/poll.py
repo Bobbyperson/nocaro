@@ -310,20 +310,24 @@ class Poll(commands.Cog):
                 if not member:
                     continue  # user might have left
 
-                if attended and voted_for_winner:
-                    # showed up and voted for the winner
-                    await member.send(
-                        f"🎉 Thanks for attending! Your voting karma is now {karma}."
-                    )
-                elif attended:
-                    await member.send(
-                        f"Thanks for attending the event! Your voting karma is now {karma}."
-                    )
-                else:  # voted_for_winner but didn't attend
-                    await member.send(
-                        f"You voted for the winner but didn't attend the event. "
-                        f"Your voting karma is now {karma}."
-                    )
+                try:
+                    if attended and voted_for_winner:
+                        # showed up and voted for the winner
+                        await member.send(
+                            f"🎉 Thanks for attending! Your voting karma is now {karma}."
+                        )
+                    elif attended:
+                        await member.send(
+                            f"Thanks for attending the event! Your voting karma is now {karma}."
+                        )
+                    else:  # voted_for_winner but didn't attend
+                        await member.send(
+                            f"You voted for the winner but didn't attend the event. "
+                            f"Your voting karma is now {karma}."
+                        )
+                except discord.Forbidden:
+                    # If the user has DMs disabled, we can't notify them
+                    print(f"[Poll] Could not send DM to {member.display_name}")
 
         # tidy up
         self.event_vcs = []
