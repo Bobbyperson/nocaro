@@ -404,6 +404,24 @@ class Poll(commands.Cog):
             f"Out of the last 10 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma."
         )
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def addtoexpected(self, ctx, user: discord.User):
+        if user.id not in self.winners:
+            self.winners.append(user.id)
+            await ctx.send(f"Added {user.name} to the expected attendees.")
+        else:
+            await ctx.send(f"{user.name} is already in the expected attendees list.")
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def removefromexpected(self, ctx, user: discord.User):
+        if user.id in self.winners:
+            self.winners.remove(user.id)
+            await ctx.send(f"Removed {user.name} from the expected attendees.")
+        else:
+            await ctx.send(f"{user.name} is not in the expected attendees list.")
+
 
 async def setup(client):
     await client.add_cog(Poll(client))
