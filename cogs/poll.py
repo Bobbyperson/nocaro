@@ -23,7 +23,7 @@ class Poll(commands.Cog):
         self.warned_voters = False
         self.pending_attendance = {}  # user_id -> join_time
         self.showed_up = set()  # user_ids who were present >= 30min
-        self.event_vc = []  # voice channel being monitored
+        self.event_vcs = []  # voice channel being monitored
         self.should_end_poll = False  # flag to end the poll
 
     @commands.command(aliases=["cep"])
@@ -174,33 +174,43 @@ class Poll(commands.Cog):
             )
             recent_records = recent_records.scalars().all()
 
-            has_attended_once = (
-                await session.scalar(
-                    select(func.count())
-                    .select_from(models.poll.VoteMultipliers)
-                    .where(
-                        models.poll.VoteMultipliers.user_id == user_id,
-                        models.poll.VoteMultipliers.attended.is_(True),
-                    )
-                )
-            ) > 0
+            # has_attended_once = (
+            #     await session.scalar(
+            #         select(func.count())
+            #         .select_from(models.poll.VoteMultipliers)
+            #         .where(
+            #             models.poll.VoteMultipliers.user_id == user_id,
+            #             models.poll.VoteMultipliers.attended.is_(True),
+            #         )
+            #     )
+            # ) > 0
 
-            has_global_records = (
-                await session.scalar(
-                    select(func.count()).select_from(models.poll.VoteMultipliers)
-                )
-            ) > 0
+            # has_global_records = (
+            #     await session.scalar(
+            #         select(func.count()).select_from(models.poll.VoteMultipliers)
+            #     )
+            # ) > 0
 
-            if not has_attended_once and has_global_records:
-                return 0
+            # if not has_attended_once and has_global_records:
+            #     return 0
+
+            # to be uncommented if whomegalols start swaying votes too hard
 
             attended = sum(1 for r in recent_records if r.attended)
             missed = sum(
                 1 for r in recent_records if r.voted_for_winner and not r.attended
             )
 
+            bonus = (
+                await session.scalar(
+                    select(models.poll.Bonuses.bonus).where(
+                        models.poll.Bonuses.user_id == user_id
+                    )
+                )
+            ) or 0
+
             karma = 50 + attended * 5 - missed * 10
-            return max(0, min(100, karma))
+            return max(0, min(100, karma)) + bonus
 
     @commands.command()
     @commands.is_owner()
@@ -253,13 +263,13 @@ class Poll(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def monitorevent(self, ctx, vc: discord.VoiceChannel):
-        self.event_vc.append(vc.id)
+        self.event_vcs.append(vc.id)
         await ctx.send(f"Monitoring voice channel: {vc.name}")
 
     @commands.command()
     @commands.is_owner()
     async def endevent(self, ctx):
-        if not self.event_vc:
+        if not self.event_vcs:
             return await ctx.send("No voice channel is being monitored.")
 
         timestamp = dt.datetime.now(dt.UTC)
@@ -316,7 +326,7 @@ class Poll(commands.Cog):
                     )
 
         # tidy up
-        self.event_vc = []
+        self.event_vcs = []
         self.winners = []
         self.showed_up.clear()
         self.pending_attendance.clear()
@@ -324,9 +334,9 @@ class Poll(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if not self.event_vc or not member.voice:
+        if not self.event_vcs or not member.voice:
             return
-        if member.bot or member.voice.channel.id not in self.event_vc:
+        if member.bot or member.voice.channel.id not in self.event_vcs:
             return
         # User joins VC
         if before.channel is None and after.channel is not None:
@@ -338,7 +348,7 @@ class Poll(commands.Cog):
                 if (
                     join_time
                     and member.voice
-                    and member.voice.channel.id in self.event_vc
+                    and member.voice.channel.id in self.event_vcs
                 ):
                     self.showed_up.add(member.id)
                     # await member.send("✅ You've been counted as attending the event.")
@@ -351,7 +361,12 @@ class Poll(commands.Cog):
             task.add_done_callback(self.background_tasks.discard)
 
         # User leaves VC
-        elif before.channel is not None and after.channel is None:
+        elif (
+            before.channel.id in self.event_vcs
+            and after.channel is None
+            and member.id in self.pending_attendance
+            and member.id not in self.showed_up
+        ):
             self.pending_attendance.pop(member.id, None)
             self.showed_up.discard(member.id)
             # await member.send("You left the VC. You won't be counted unless you stay 30 minutes next time.")

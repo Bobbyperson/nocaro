@@ -33,6 +33,11 @@ def upgrade() -> None:
     sa.Column('timestamp', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('user_id', 'event_id')
     )
+    op.create_table('bonuses',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('bonus', sa.Float(), nullable=False),
+    sa.PrimaryKeyConstraint('user_id')
+    )
     # ### end Alembic commands ###
 
 
@@ -45,6 +50,7 @@ def downgrade() -> None:
     sa.Column('multiplier', sa.INTEGER(), autoincrement=False, nullable=False),
     sa.PrimaryKeyConstraint('user_id')
     )
+    op.drop_table('bonuses')
     # ### end Alembic commands ###
 
 
