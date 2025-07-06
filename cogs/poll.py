@@ -426,6 +426,82 @@ class Poll(commands.Cog):
         else:
             await ctx.send(f"{user.name} is not in the expected attendees list.")
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def checkevent(self, ctx, event_id):
+        """Check the results of a specific event by ID"""
+        async with self.bot.session as session:
+            results = await session.execute(
+                select(models.poll.VoteMultipliers).where(
+                    models.poll.VoteMultipliers.event_id == event_id
+                )
+            )
+            results = results.scalars().all()
+
+        if not results:
+            return await ctx.send(f"No results found for event ID {event_id}.")
+
+        message = f"Results for event ID {event_id}:\n"
+        for result in results:
+            user = ctx.guild.get_member(result.user_id)
+            if user:
+                status = "Attended" if result.attended else "Did not attend"
+                voted_status = (
+                    "Voted for winner"
+                    if result.voted_for_winner
+                    else "Did not vote for winner"
+                )
+                message += f"{user.name}: {status}, {voted_status}\n"
+            else:
+                message += f"User ID {result.user_id} (not in server): {status}, {voted_status}\n"
+
+        await ctx.send(message)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def updateattendance(
+        self,
+        ctx,
+        user: discord.User,
+        event_id: int,
+        attended: bool,
+        voted_for_winner: bool,
+    ):
+        """Update attendance for a specific user in a specific event"""
+        async with self.bot.session as session:
+            async with session.begin():
+                # Check if the user has already attended this event
+                existing_record = await session.scalar(
+                    select(models.poll.VoteMultipliers).where(
+                        models.poll.VoteMultipliers.user_id == user.id,
+                        models.poll.VoteMultipliers.event_id == event_id,
+                    )
+                )
+
+                if existing_record:
+                    # Update the existing record
+                    existing_record.attended = attended
+                    existing_record.voted_for_winner = voted_for_winner
+                else:
+                    # Create a new record
+                    session.add(
+                        models.poll.VoteMultipliers(
+                            event_id=event_id,
+                            user_id=user.id,
+                            attended=attended,
+                            voted_for_winner=voted_for_winner,
+                            timestamp=dt.datetime.now(dt.UTC),
+                        )
+                    )
+        karma = await self.get_karma(user.id)
+
+        await ctx.send(
+            f"Attendance updated for {user.name} for event ID {event_id}. Their karma is now {karma}."
+        )
+        await user.send(
+            f"Your attendance has been updated for event ID {event_id}. You {'attended' if attended else 'did not attend'} and {'voted for the winner' if voted_for_winner else 'did not vote for the winner'}. Your new karma is {karma}."
+        )
+
 
 async def setup(client):
     await client.add_cog(Poll(client))
