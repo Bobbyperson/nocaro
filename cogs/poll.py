@@ -343,7 +343,7 @@ class Poll(commands.Cog):
         if member.bot or member.voice.channel.id not in self.event_vcs:
             return
         # User joins VC
-        if before.channel is None and after.channel is not None:
+        if after.channel and after.channel.id in self.event_vcs:
             self.pending_attendance[member.id] = dt.datetime.now(dt.UTC)
 
             async def wait_and_mark():
@@ -363,6 +363,7 @@ class Poll(commands.Cog):
             task = asyncio.create_task(wait_and_mark())
             self.background_tasks.add(task)
             task.add_done_callback(self.background_tasks.discard)
+            print("[Poll] added", member.display_name, "to pending attendance")
 
         # User leaves VC
         elif (
@@ -373,6 +374,7 @@ class Poll(commands.Cog):
         ):
             self.pending_attendance.pop(member.id, None)
             self.showed_up.discard(member.id)
+            print("[Poll] removed", member.display_name, "from pending attendance")
             # await member.send("You left the VC. You won't be counted unless you stay 30 minutes next time.")
 
     @update_poll.before_loop
