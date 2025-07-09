@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from sqlalchemy import delete, select, update
 
 import models
+from utils.miscfuncs import generic_checks
 
 bank = "./data/database.sqlite"
 
@@ -153,6 +154,7 @@ class Fire(commands.Cog):
         print("Fire ready")
 
     @commands.hybrid_command()
+    @generic_checks(max_check=False)
     async def howtofire(self, ctx):
         await ctx.send(
             "Create a channel named #fireboard, give me permission to talk there, and then I will automatically post messages with 5 :fire: reactions. Also, once a week I'll list the most fired messages."
@@ -308,6 +310,7 @@ class Fire(commands.Cog):
                     )
 
     @commands.command(hidden=True)
+    @generic_checks(max_check=False)
     async def unix(self, ctx):
         await ctx.send("The current unix time is `" + (str(int(t.time()))) + "`")
 
@@ -378,7 +381,7 @@ class Fire(commands.Cog):
                     # num, reacts, channel_id, message_id, guild_id, user_id, fb_id, message, attachments, timestamp
                     h = 0
                     for i, msg in enumerate(result):
-                        if msg[6] == fireboard.id:
+                        if msg.fb_id == fireboard.id:
                             h += 1
                             if h == 6:
                                 break
@@ -398,6 +401,7 @@ class Fire(commands.Cog):
             await setfuckingdata(old)
 
     @commands.hybrid_command()
+    @generic_checks(max_check=False)
     async def highestfire(self, ctx, channel: discord.TextChannel = None):
         if not channel:
             async with self.client.session as session:
@@ -443,6 +447,7 @@ class Fire(commands.Cog):
             )
 
     @commands.hybrid_command()
+    @generic_checks(max_check=False)
     async def highestunfire(self, ctx, channel: discord.TextChannel = None):
         if not channel:
             async with self.client.session as session:
@@ -488,6 +493,7 @@ class Fire(commands.Cog):
             )
 
     @commands.hybrid_command()
+    @generic_checks(max_check=False)
     async def fireleaderboard(self, ctx, fire: str | None = None):
         # get users, count fire for each, display on leaderboard
         if not fire:

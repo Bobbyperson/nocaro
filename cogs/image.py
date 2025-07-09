@@ -3,6 +3,8 @@ import random as rd
 import aiohttp
 from discord.ext import commands
 
+from utils.miscfuncs import generic_checks
+
 
 class Image(commands.Cog):
     """Commands that send images."""
@@ -14,6 +16,7 @@ class Image(commands.Cog):
     @commands.has_permissions(attach_files=True)
     @commands.cooldown(1, 1, commands.BucketType.default)
     @commands.max_concurrency(1, commands.BucketType.user, wait=True)
+    @generic_checks(max_check=False)
     async def sans(self, ctx):
         """The best command."""
         if rd.randint(1, 100) == 1:

@@ -11,7 +11,6 @@ dependencies = [
     "pillow>=11.2.0",
     "discord.py[voice]>=2.5.2",
     "discord-pretty-help>=2.0.7",
-    "requests>=2.32.3",
     "ffmpy>=0.5.0",
     "pyquery>=2.0.1",
     "asyncio>=3.4.3",
@@ -28,6 +27,7 @@ dependencies = [
     "alembic>=1.16.1",
     "numpy>=2.2.1",
     "coqui-tts>=0.26.2",
+    "aiohttp>=3.11.11",
 ]
 
 [dependency-groups]

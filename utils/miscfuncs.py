@@ -1,12 +1,16 @@
+import functools
 import random as rd
 import time
 
+import discord
+from discord.ext import commands
 from PIL import Image, ImageDraw
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
 from __main__ import Session
+from utils.econfuncs import checkmax
 
 if __name__ == "__main__":
     print(
@@ -42,6 +46,53 @@ def session_decorator(func):
         return retval
 
     return wrapped
+
+
+def generic_checks(
+    blacklist_check=True, max_check=True, ignored_check=True, dm_check=True
+):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapped(*args, **kwargs):
+            ctx = None
+
+            for arg in args:
+                if isinstance(arg, commands.Context):
+                    ctx = arg
+                    blacklist = await is_blacklisted(arg.author.id)
+                    if dm_check and isinstance(arg.channel, discord.channel.DMChannel):
+                        await ctx.send("Command may not be used in a DM.")
+                        return False
+                    if ignored_check and await is_ignored(arg.channel.id):
+                        await arg.author.send(
+                            "The channel you sent that command in is ignored, try a bot channel instead."
+                        )
+                        return False
+                    if blacklist_check and blacklist[0]:
+                        await arg.send("You are blacklisted from Nocaro.")
+                        return False
+                    if max_check and await checkmax(arg.author):
+                        await arg.send(
+                            "Your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
+                        )
+                        return False
+                    break
+
+            if ctx:
+                for arg in args:
+                    if isinstance(arg, discord.Member | discord.User):
+                        blacklist = await is_blacklisted(arg.id)
+                        if blacklist_check and blacklist[0]:
+                            await ctx.send(
+                                "The person you invoked is blacklisted from Nocaro."
+                            )
+                            return False
+
+            return await func(*args, **kwargs)
+
+        return wrapped
+
+    return decorator
 
 
 def clean_username(name):  # fuck you ralkinson!!!!!!!!!
@@ -165,6 +216,17 @@ async def blacklist_user(session, user_id, timestamp):
     async with session.begin():
         session.add(models.database.Blacklist(user_id=user_id, timestamp=timestamp))
         pass
+
+
+@session_decorator
+async def is_ignored(session, channel_id):
+    return (
+        await session.scalars(
+            select(models.database.Ignore).where(
+                models.database.Ignore.channelID == channel_id
+            )
+        )
+    ).one_or_none() is not None
 
 
 def human_time_to_seconds(*args) -> int:
