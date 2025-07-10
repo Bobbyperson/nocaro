@@ -4523,6 +4523,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
+    @misc.generic_checks()
     async def roulette(self, ctx):
         if ctx.guild.voice_client:
             await ctx.guild.voice_client.disconnect(force=True)
@@ -4583,8 +4584,8 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 if bet_msg:
                     if (
                         bet_msg.content == "endroulette"
-                        or len(ctx.guild.voice_client.channel.members) <= 1
-                    ):
+                        and bet_msg.author == ctx.author
+                    ) or len(ctx.guild.voice_client.channel.members) <= 1:
                         betting = False
                         end = True
                         await ctx.send("Roulette will be ending after this round.")
@@ -4600,7 +4601,12 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         if amount > await econ.get_bal(bet_msg.author):
                             await bet_msg.reply("You don't have enough bouge bucks!")
                             continue
+                        blacklisted = await misc.is_blacklisted(bet_msg.author.id)
+                        if blacklisted[0]:
+                            await bet_msg.reply("You are blacklisted from this bot!")
+                            continue
                         await bet_msg.add_reaction("✅")
+                        await audio.play(ctx, "audio/roulette/chips.mp3", vol=0.5)
                         if bet_msg.author not in bets:
                             bets[bet_msg.author] = {}
                         if place not in bets[bet_msg.author]:
