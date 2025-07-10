@@ -12,9 +12,9 @@ Nocaro only accesses and processes messages in the channel it is currently activ
 
 Nocaro does not retain any message content beyond the time it has access to the server or channel. Deleting a message or removing Nocaro from the server renders the corresponding Message ID inaccessible.
 
-## 4. Limited Functionality and No Use in AI Training
+## 4. Limited Functionality and No Machine Learning Models
 
-Nocaro functions strictly within its programmed capabilities and does not use any of your content for training artificial intelligence or machine learning models. Message content is never stored or utilized for model development or improvement in any capacity.
+Nocaro does not contain or use any large language models (LLMs). It solely functions within the boundaries of its programmed operations, which do not include the storage or processing of message content beyond the Message IDs.
 
 ## 5. Responsibility Disclaimer
 
@@ -29,6 +29,6 @@ Nocaro is open-source software, and its source code is available at the [Nocaro 
 By using Nocaro, you agree to the terms outlined in this privacy policy. If you do not agree with any part of this policy, you are advised to remove Nocaro from your server. If you are not the server owner, and do not want Nocaro to interact with you, you can use the `,blacklistme` command. If Nocaro holds any message ids from you that you would like deleted, please DM the bot asking for all of or specific message ids to be removed.
 
 **Effective Date:** Sep 9th, 2024
-**Last updated:** Jun 2nd, 2025
+**Last updated:** Oct 30th, 2024
 
 This policy may be updated periodically, and changes will be reflected in the latest version available in the GitHub repository.
