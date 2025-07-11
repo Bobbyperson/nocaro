@@ -4651,7 +4651,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 return True
 
         bal = await econ.get_bal(ctx.author)
-        if worthy and bal >= 1e100:
+        if worthy and bal >= 1e99:
             async with ctx.typing():
                 await narrator("You attempt to approach the cave...", 3)
                 await narrator(
@@ -5449,7 +5449,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.command(hidden=True, aliases=["ASCEND"])
     async def ascend(self, ctx):
         bal = await econ.get_bal(ctx.author)
-        if bal < 1e100:
+        if bal < 1e99:
             return
         await ctx.send(
             misc.starspeak(
