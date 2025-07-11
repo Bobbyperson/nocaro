@@ -10,6 +10,7 @@ import time
 import tomllib
 import traceback
 from collections import Counter
+from pathlib import Path
 from typing import ClassVar
 
 import anyio
@@ -785,7 +786,7 @@ Example command: `,bougegram normal 100`"""
             vc.play(FFmpegPCMAudio("audio/end.mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.1)
-            await vc.disconnect()
+            await vc.disconnect(force=True)
             os.remove(f"{ctx.channel.id}.mp3")
             os.remove(f"{voice_channel.id}.mp3")
 
@@ -3334,7 +3335,7 @@ Example command: `,bougegram normal 100`"""
                 vc.play(FFmpegPCMAudio("audio/hugewin.mp3"))
                 while vc.is_playing():
                     await asyncio.sleep(0.1)
-                await vc.disconnect()
+                await vc.disconnect(force=True)
             return
         if s1 == s2 or s1 == s3 or s2 == s3:
             if s1 == s2 == s3:
@@ -3354,7 +3355,7 @@ Example command: `,bougegram normal 100`"""
                         vc.play(FFmpegPCMAudio("audio/test.mp3"))
                         while vc.is_playing():
                             await asyncio.sleep(0.1)
-                        await vc.disconnect()
+                        await vc.disconnect(force=True)
                 return
             await econ.update_winloss(ctx.author, "w")
             await ctx.reply(f"Nice, you get {misc.commafy(amount * 2)} bouge bucks.")
@@ -4332,7 +4333,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     vc.play(FFmpegPCMAudio("audio/hugefuckingwin.mp3"))
                     while vc.is_playing():
                         await asyncio.sleep(0.1)
-                    await vc.disconnect()
+                    await vc.disconnect(force=True)
             await ctx.send(f"You win {econ.unmoneyfy(amount)} bouge bucks!")
             await econ.update_amount(ctx.author, amount, tracker_reason="poker")
             await econ.update_winloss(ctx.author, "w")
@@ -4474,7 +4475,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             vc.play(FFmpegPCMAudio("audio/hugefuckingwin.mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.1)
-            await vc.disconnect()
+            await vc.disconnect(force=True)
 
     @commands.hybrid_command(aliases=["mine", "m"])
     @commands.cooldown(1, 1, commands.BucketType.user)
@@ -4531,9 +4532,32 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await audio.join(ctx)
         else:
             return await ctx.send("Please join a voice channel.")
-        main_track, _ = await audio.play(
-            ctx, "audio/roulette/music/main.mp3", vol=1.0, repeat=True
-        )
+
+        main_track_id = None
+
+        # main_track, _ = await audio.play(
+        #     ctx, "audio/roulette/music/bennet.mp3", vol=1.0, repeat=True
+        # )
+        async def track_manager():
+            nonlocal main_track_id
+            music_dir = Path("audio/roulette/music")
+            while ctx.guild.voice_client and ctx.guild.voice_client.is_connected():
+                filename = rd.choice(list(music_dir.glob("*.mp3")))
+                print(filename)
+                main_track_id, duration = await audio.play(ctx, filename, vol=1.0)
+                duration = duration or 5  # fallback so sleep never gets None
+
+                # wake up a bit early so the next track starts seamlessly
+                await asyncio.sleep(max(0, duration - 0.2))
+
+                # just in case the VC has gone away
+                if not (
+                    ctx.guild.voice_client and ctx.guild.voice_client.is_connected()
+                ):
+                    break
+
+        self.client.loop.create_task(track_manager())
+
         await ctx.send("""
 Roulette has been activated in this channel! You may now place your bets. To place bets, please type `bet (place) (amount)`
 For example, to bet 100 bouge bucks on 13, type `bet 13 100`. Other bets like colors work how you would expect.
@@ -4590,7 +4614,16 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         end = True
                         await ctx.send("Roulette will be ending after this round.")
                     else:
-                        _, place, amount = bet_msg.content.split(" ")
+                        _, place, amount = (
+                            bet_msg.content.split(" ")
+                            if len(bet_msg.content.split(" ")) == 3
+                            else (None, None, None)
+                        )
+                        if not place or not amount:
+                            await bet_msg.reply(
+                                "Please use the format `bet (place) (amount)`."
+                            )
+                            continue
                         if place not in possible_bets:
                             await bet_msg.reply(f"{place} is not valid!")
                             continue
@@ -4606,7 +4639,12 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                             await bet_msg.reply("You are blacklisted from this bot!")
                             continue
                         await bet_msg.add_reaction("✅")
-                        await audio.play(ctx, "audio/roulette/chips.mp3", vol=0.5)
+                        await audio.play(
+                            ctx,
+                            "audio/roulette/chips.mp3",
+                            vol=0.75,
+                            pitch=rd.random() * 6 - 3.0,
+                        )
                         if bet_msg.author not in bets:
                             bets[bet_msg.author] = {}
                         if place not in bets[bet_msg.author]:
@@ -4623,10 +4661,16 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 if first_bet != 0 and int(time.time()) - first_bet > 15:
                     betting = False
                     await ctx.send("Bets are now closed! The ball is rolling...")
+            await audio.set_track_volume(ctx, main_track_id, 0.5, ramp_sec=0.5)
             _, spin_duration = await audio.play(
-                ctx, "audio/roulette/spin.mp3", vol=0.5, repeat=False
+                ctx,
+                "audio/roulette/spin.mp3",
+                vol=0.75,
+                repeat=False,
+                pitch=rd.random() * 6 - 3.0,
             )
             await asyncio.sleep(spin_duration)
+            await audio.set_track_volume(ctx, main_track_id, 1, ramp_sec=0.5)
             ball_lands = rd.randint(1, 36)
             if ball_lands in red_numbers:
                 ball_color = "red"
@@ -4682,7 +4726,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             if len(ctx.guild.voice_client.channel.members) <= 1:
                 end = True
                 await ctx.send("No one is left in the voice channel, ending roulette.")
-        await audio.stop(ctx, main_track)
+        # await audio.stop(ctx, main_track)
         await audio.leave(ctx)
         await ctx.send("Roulette has ended. Thanks for playing!")
 

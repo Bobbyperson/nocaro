@@ -159,7 +159,7 @@ async def join(ctx) -> bool:
 
 async def leave(ctx) -> bool:
     if ctx.voice_client:
-        await ctx.voice_client.disconnect()
+        await ctx.voice_client.disconnect(force=True)
         return True
     return False
 
@@ -178,22 +178,50 @@ def _probe_duration(filename: str) -> float | None:
     return None
 
 
+def _pitch_filter(pitch_semitones: float) -> str | None:
+    if abs(pitch_semitones) < 1e-3:
+        return None
+    # Convert semitones → rate multiplier
+    ratio = 2 ** (pitch_semitones / 12.0)
+    # Keep tempo constant: change sample rate then resample + atempo inverse
+    # atempo valid 0.5-2.0 per filter, for large ratios chain filters.
+    atempo_ratio = 1.0 / ratio
+    if 0.5 <= atempo_ratio <= 2.0:
+        atempo_chain = f"atempo={atempo_ratio:.8f}"
+    else:
+        # Split into multiple stages within bounds
+        stages = []
+        r = atempo_ratio
+        while r < 0.5 or r > 2.0:
+            stage = 2.0 if r > 2.0 else 0.5
+            stages.append(stage)
+            r /= stage
+        stages.append(r)
+        atempo_chain = "".join(f"atempo={s:.8f}," for s in stages).rstrip(",")
+    return f"asetrate=48000*{ratio:.8f},aresample=48000,{atempo_chain}"
+
+
 async def play(
     ctx,
     filename: str,
     *,
     vol: float = 1.0,
     repeat: bool = False,
-) -> tuple[str, float | None] | tuple[None, None]:
+    pitch: float = 0.0,
+) -> tuple[str, float | None] | None:
     if not ctx.voice_client:
-        return None, None
+        return None
     try:
         duration = None if repeat else _probe_duration(filename)
         before_opts = "-stream_loop -1" if repeat else None
+        filter_str = _pitch_filter(pitch)
+        extra_opts = "-vn"
+        if filter_str:
+            extra_opts += f' -filter:a "{filter_str}"'
         ffmpeg = discord.FFmpegPCMAudio(
             filename,
             before_options=before_opts,
-            options="-vn",
+            options=extra_opts,
         )
         source_id = str(uuid.uuid4())
         mixer = await _ensure_mixer(ctx)
@@ -201,7 +229,7 @@ async def play(
         return source_id, duration
     except Exception as exc:
         await ctx.send(f"Error playing `{filename}`: {exc}")
-        return None, None
+        return None
 
 
 async def stop(ctx, source_id: str) -> bool:
