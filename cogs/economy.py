@@ -10,6 +10,7 @@ import time
 import tomllib
 import traceback
 from collections import Counter
+from pathlib import Path
 from typing import ClassVar
 
 import anyio
@@ -27,6 +28,7 @@ from pydub import AudioSegment
 from sqlalchemy import Integer, cast, delete, select, text
 
 import models
+import utils.audio as audio
 import utils.econfuncs as econ
 import utils.miscfuncs as misc
 
@@ -784,7 +786,7 @@ Example command: `,bougegram normal 100`"""
             vc.play(FFmpegPCMAudio("audio/end.mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.1)
-            await vc.disconnect()
+            await vc.disconnect(force=True)
             os.remove(f"{ctx.channel.id}.mp3")
             os.remove(f"{voice_channel.id}.mp3")
 
@@ -3333,7 +3335,7 @@ Example command: `,bougegram normal 100`"""
                 vc.play(FFmpegPCMAudio("audio/hugewin.mp3"))
                 while vc.is_playing():
                     await asyncio.sleep(0.1)
-                await vc.disconnect()
+                await vc.disconnect(force=True)
             return
         if s1 == s2 or s1 == s3 or s2 == s3:
             if s1 == s2 == s3:
@@ -3353,7 +3355,7 @@ Example command: `,bougegram normal 100`"""
                         vc.play(FFmpegPCMAudio("audio/test.mp3"))
                         while vc.is_playing():
                             await asyncio.sleep(0.1)
-                        await vc.disconnect()
+                        await vc.disconnect(force=True)
                 return
             await econ.update_winloss(ctx.author, "w")
             await ctx.reply(f"Nice, you get {misc.commafy(amount * 2)} bouge bucks.")
@@ -4331,7 +4333,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     vc.play(FFmpegPCMAudio("audio/hugefuckingwin.mp3"))
                     while vc.is_playing():
                         await asyncio.sleep(0.1)
-                    await vc.disconnect()
+                    await vc.disconnect(force=True)
             await ctx.send(f"You win {econ.unmoneyfy(amount)} bouge bucks!")
             await econ.update_amount(ctx.author, amount, tracker_reason="poker")
             await econ.update_winloss(ctx.author, "w")
@@ -4473,7 +4475,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             vc.play(FFmpegPCMAudio("audio/hugefuckingwin.mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.1)
-            await vc.disconnect()
+            await vc.disconnect(force=True)
 
     @commands.hybrid_command(aliases=["mine", "m"])
     @commands.cooldown(1, 1, commands.BucketType.user)
@@ -4519,6 +4521,300 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await econ.update_winloss(ctx.author, "w")
         else:
             await econ.update_winloss(ctx.author, "l")
+
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
+    @misc.generic_checks()
+    async def roulette(self, ctx):
+        if ctx.guild.voice_client:
+            await ctx.guild.voice_client.disconnect(force=True)
+        if ctx.author.voice:
+            await audio.join(ctx)
+        else:
+            return await ctx.send("Please join a voice channel.")
+
+        main_track_id = None
+        bg_vol = 1.0
+        brokie_alert = False
+
+        # main_track, _ = await audio.play(
+        #     ctx, "audio/roulette/music/bennet.mp3", vol=1.0, repeat=True
+        # )
+        async def track_manager():
+            nonlocal main_track_id, bg_vol
+            music_dir = Path("audio/roulette/music")
+            while ctx.guild.voice_client and ctx.guild.voice_client.is_connected():
+                filename = rd.choice(list(music_dir.glob("*.mp3")))
+                print(filename)
+                main_track_id, duration = await audio.play(ctx, filename, vol=bg_vol)
+                duration = duration or 5  # fallback so sleep never gets None
+
+                # wake up a bit early so the next track starts seamlessly
+                await asyncio.sleep(max(0, duration - 0.2))
+
+                # just in case the VC has gone away
+                if not (
+                    ctx.guild.voice_client and ctx.guild.voice_client.is_connected()
+                ):
+                    break
+
+        self.client.loop.create_task(track_manager())
+
+        await ctx.send("""
+Roulette has been activated in this channel! You may now place your bets. To place bets, please type `bet (place) (amount)`
+For example, to bet 100 bouge bucks on 13, type `bet 13 100`. Other bets like colors work how you would expect.
+Please note that some bets like splits, streets, and corners, are not possible cause that would be waaaaay too complicated.
+Betting will be disabled for a short period of time while the ball is rolling.
+Also, in the bouge casino, there is no 0 or 00, the numbers are 1-36.
+Roulette will end when everyone leaves the VC, or when the original invoker types `endroulette`.
+""")
+        betting = True
+        end = False
+        possible_bets = {
+            "red": 2,
+            "black": 2,
+            "odd": 2,
+            "even": 2,
+            "low": 2,
+            "high": 2,
+        }
+        for i in range(1, 37):
+            possible_bets[str(i)] = 36
+        # fmt: off
+        red_numbers = [
+            1, 3, 5, 7, 9, 12, 14, 16, 18,
+            19, 21, 23, 25, 27, 30, 32, 34, 36
+        ]
+        # fmt: on
+
+        def check(m):
+            return m.channel == ctx.channel and (
+                m.content.startswith("bet ") or m.content == "endroulette"
+            )
+
+        while not end:
+            await ctx.send(
+                "Bets are now open! Type `bet (place) (amount)` to place your bets."
+            )
+            await audio.play(
+                ctx,
+                f"audio/roulette/open{rd.randint(1, 3)}.mp3",
+                vol=1,
+                pitch=rd.random() * 2 - 1.0,
+            )
+            bets = {}
+            betting = True
+            first_bet = 0
+            while betting:
+                bet_msg = None
+                try:
+                    bet_msg = await self.client.wait_for(
+                        "message", check=check, timeout=5
+                    )
+                except TimeoutError:
+                    if len(ctx.guild.voice_client.channel.members) <= 1:
+                        betting = False
+                        end = True
+                        await ctx.send("Roulette will be ending after this round.")
+
+                if bet_msg:
+                    if (
+                        bet_msg.content == "endroulette"
+                        and bet_msg.author == ctx.author
+                    ) or len(ctx.guild.voice_client.channel.members) <= 1:
+                        betting = False
+                        end = True
+                        await ctx.send("Roulette will be ending after this round.")
+                    else:
+                        _, place, amount = (
+                            bet_msg.content.split(" ")
+                            if len(bet_msg.content.split(" ")) == 3
+                            else (None, None, None)
+                        )
+                        if not place or not amount:
+                            await bet_msg.reply(
+                                "Please use the format `bet (place) (amount)`."
+                            )
+                            continue
+                        if place not in possible_bets:
+                            await bet_msg.reply(f"{place} is not valid!")
+                            continue
+                        maxed = await econ.checkmax(bet_msg.author)
+                        if maxed:
+                            await bet_msg.reply(
+                                "You try to place a bet, but can't. Your body is too weak from the endless games. Maybe you should try to `,enterthecave`."
+                            )
+                            continue
+                        amount = econ.moneyfy(amount)
+                        if amount < 1:
+                            await bet_msg.reply("Please bet at least 1 bouge buck.")
+                            continue
+                        if amount > await econ.get_bal(bet_msg.author):
+                            await bet_msg.reply("You don't have enough bouge bucks!")
+                            if not brokie_alert:
+                                await audio.play(
+                                    ctx,
+                                    f"audio/roulette/broke{rd.randint(1, 2)}.mp3",
+                                    vol=1.0,
+                                    pitch=rd.random() * 2 - 1.0,
+                                )
+                                brokie_alert = True
+                            continue
+                        blacklisted = await misc.is_blacklisted(bet_msg.author.id)
+                        if blacklisted[0]:
+                            await bet_msg.reply("You are blacklisted from this bot!")
+                            continue
+                        await bet_msg.add_reaction("✅")
+                        await audio.play(
+                            ctx,
+                            "audio/roulette/chips.mp3",
+                            vol=0.75,
+                            pitch=rd.random() * 6 - 3.0,
+                        )
+                        if bet_msg.author not in bets:
+                            bets[bet_msg.author] = {}
+                        if place not in bets[bet_msg.author]:
+                            bets[bet_msg.author][place] = 0
+                        bets[bet_msg.author][place] += amount
+                        await econ.update_amount(
+                            bet_msg.author, -1 * amount, tracker_reason="roulette"
+                        )
+                        if first_bet == 0:
+                            first_bet = int(time.time())
+                            await ctx.send("Bets will close in roughly 15 seconds!")
+                if first_bet != 0 and int(time.time()) - first_bet > 15:
+                    betting = False
+                    await ctx.send("Bets are now closed! The ball is rolling...")
+            await audio.set_track_volume(ctx, main_track_id, 0.5, ramp_sec=0.5)
+            _, yap_duration = await audio.play(
+                ctx,
+                f"audio/roulette/closed{rd.randint(1, 3)}.mp3",
+                vol=1.0,
+                pitch=rd.random() * 2 - 1.0,
+            )
+            await asyncio.sleep(yap_duration)
+            rare = rd.randint(1, 50)
+            if rare == 1:
+                bg_vol = 0
+                await audio.set_track_volume(ctx, main_track_id, 0.0, ramp_sec=3)
+                await asyncio.sleep(4)
+                _, yap_duration = await audio.play(
+                    ctx, f"audio/roulette/rare{rd.randint(1, 3)}.mp3", vol=1.0
+                )
+                await asyncio.sleep(yap_duration + 2)
+                bg_vol = 1.0
+                await audio.set_track_volume(ctx, main_track_id, 0.5, ramp_sec=3)
+                await asyncio.sleep(4)
+            _, spin_duration = await audio.play(
+                ctx,
+                "audio/roulette/spin.mp3",
+                vol=0.75,
+                repeat=False,
+                pitch=rd.random() * 6 - 3.0,
+            )
+            await asyncio.sleep(spin_duration)
+            ball_lands = rd.randint(1, 36)
+            _, yap_duration = await audio.play(
+                ctx,
+                f"audio/roulette/{ball_lands}.mp3",
+                vol=1.0,
+                pitch=rd.random() * 2 - 1.0,
+            )
+            await asyncio.sleep(yap_duration)
+            await audio.set_track_volume(ctx, main_track_id, 1, ramp_sec=0.5)
+            if ball_lands in red_numbers:
+                ball_color = "red"
+            else:
+                ball_color = "black"
+            is_even = ball_lands % 2 == 0
+            is_low = ball_lands <= 18
+            win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\n"
+            wins = 0
+            losses = 0
+            for user, place in bets.items():
+                for bet_place, bet_amount in place.items():
+                    if bet_place == str(ball_lands):
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 36)} bouge bucks on {bet_place}!\n"
+                        await econ.update_amount(
+                            user, bet_amount * 36, tracker_reason="roulette"
+                        )
+                        wins += bet_amount * 35
+                        await econ.update_winloss(user, "w")
+                    elif bet_place == ball_color:
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
+                        await econ.update_amount(
+                            user, bet_amount * 2, tracker_reason="roulette"
+                        )
+                        wins += bet_amount
+                        await econ.update_winloss(user, "w")
+                    elif bet_place == "odd" and not is_even:
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
+                        await econ.update_amount(
+                            user, bet_amount * 2, tracker_reason="roulette"
+                        )
+                        wins += bet_amount
+                        await econ.update_winloss(user, "w")
+                    elif bet_place == "even" and is_even:
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
+                        await econ.update_amount(
+                            user, bet_amount * 2, tracker_reason="roulette"
+                        )
+                        wins += bet_amount
+                        await econ.update_winloss(user, "w")
+                    elif bet_place == "low" and is_low:
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
+                        await econ.update_amount(
+                            user, bet_amount * 2, tracker_reason="roulette"
+                        )
+                        wins += bet_amount
+                        await econ.update_winloss(user, "w")
+                    elif bet_place == "high" and not is_low:
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
+                        await econ.update_amount(
+                            user, bet_amount * 2, tracker_reason="roulette"
+                        )
+                        wins += bet_amount
+                        await econ.update_winloss(user, "w")
+                    else:
+                        losses += bet_amount
+                        win_msg += f"{user.mention} **lost** {econ.unmoneyfy(bet_amount)} bouge bucks on {bet_place}.\n"
+                        await econ.update_winloss(user, "l")
+            if len(win_msg) > 2000:
+                win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\nI would show you the results, but there are too many to display!"
+            await ctx.send(win_msg)
+            amount_of_bets = sum(len(bets[user]) for user in bets)
+            yap_duration = 0
+            if amount_of_bets > 5:
+                if wins * 2 > losses and rd.randint(1, 3) == 1:
+                    _, yap_duration = await audio.play(
+                        ctx,
+                        f"audio/roulette/win{rd.randint(1, 2)}.mp3",
+                        vol=1.0,
+                        pitch=rd.random() * 2 - 1.0,
+                    )
+                if losses * 2 > wins and rd.randint(1, 3) == 1:
+                    if rd.randint(1, 10) == 1:
+                        _, yap_duration = await audio.play(
+                            ctx,
+                            f"audio/roulette/lose_rare{rd.randint(1, 2)}.mp3",
+                            vol=1.0,
+                            pitch=rd.random() * 2 - 1.0,
+                        )
+                    else:
+                        _, yap_duration = await audio.play(
+                            ctx,
+                            f"audio/roulette/lose{rd.randint(1, 4)}.mp3",
+                            vol=1.0,
+                            pitch=rd.random() * 2 - 1.0,
+                        )
+            # check if anyone is still in the voice channel
+            await asyncio.sleep(3 + yap_duration)
+            if len(ctx.guild.voice_client.channel.members) <= 1 and not end:
+                end = True
+                await ctx.send("No one is left in the voice channel, ending roulette.")
+        # await audio.stop(ctx, main_track)
+        await audio.leave(ctx)
+        await ctx.send("Roulette has ended. Thanks for playing!")
 
     ##############################################################
     # ███████ ██████   ██████  ██ ██      ███████ ██████  ███████
