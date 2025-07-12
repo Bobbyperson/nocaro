@@ -4604,10 +4604,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             )
             bets = {}
             betting = True
+            timeout = int(time.time()) + 300  # 5 min
             first_bet = 0
             while betting:
                 bet_msg = None
-                timeout = int(time.time()) + 300  # 5 min
                 try:
                     bet_msg = await self.client.wait_for(
                         "message", check=check, timeout=5
