@@ -4639,6 +4639,12 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         if place not in possible_bets:
                             await bet_msg.reply(f"{place} is not valid!")
                             continue
+                        maxed = await econ.checkmax(bet_msg.author)
+                        if maxed:
+                            await bet_msg.reply(
+                                "You try to place a bet, but can't. Your body is too weak from the endless games. Maybe you should try to `,enterthecave`."
+                            )
+                            continue
                         amount = econ.moneyfy(amount)
                         if amount < 1:
                             await bet_msg.reply("Please bet at least 1 bouge buck.")
