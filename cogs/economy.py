@@ -4607,12 +4607,15 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             first_bet = 0
             while betting:
                 bet_msg = None
+                timeout = int(time.time()) + 300  # 5 min
                 try:
                     bet_msg = await self.client.wait_for(
                         "message", check=check, timeout=5
                     )
                 except TimeoutError:
-                    if len(ctx.guild.voice_client.channel.members) <= 1:
+                    if len(ctx.guild.voice_client.channel.members) <= 1 or (
+                        int(time.time()) > timeout and first_bet == 0
+                    ):
                         betting = False
                         end = True
                         await ctx.send("Roulette will be ending after this round.")
@@ -4784,15 +4787,15 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             await ctx.send(win_msg)
             amount_of_bets = sum(len(bets[user]) for user in bets)
             yap_duration = 0
-            if amount_of_bets > 5:
-                if wins * 2 > losses and rd.randint(1, 3) == 1:
+            if amount_of_bets > 1:
+                if wins > losses * 2 and rd.randint(1, 3) == 1:
                     _, yap_duration = await audio.play(
                         ctx,
                         f"audio/roulette/win{rd.randint(1, 2)}.mp3",
                         vol=1.0,
                         pitch=rd.random() * 2 - 1.0,
                     )
-                if losses * 2 > wins and rd.randint(1, 3) == 1:
+                if losses > wins * 2 and rd.randint(1, 3) == 1:
                     if rd.randint(1, 10) == 1:
                         _, yap_duration = await audio.play(
                             ctx,
