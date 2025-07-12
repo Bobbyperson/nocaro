@@ -113,9 +113,9 @@ async def update_amount(
     if prestieges is not None:
         uncapped = True if prestieges[3] else False
     new_balance = bal + change
-    if new_balance > 1e100:
-        new_balance = 1e100
-        excess = bal + change - 1e100
+    if new_balance > 1e99:
+        new_balance = 1e99
+        excess = bal + change - 1e99
         user_main.balance = str(new_balance)
         session.add(
             models.economy.History(
@@ -239,8 +239,8 @@ async def remove_item(session, user, item):
 async def checkmax(session, user):
     amnt = await get_bal(session, user)
     prestieges = await get_prestiege(session, user)
-    if amnt >= 1e100:
-        dif = amnt - 1e100
+    if amnt >= 1e99:
+        dif = amnt - 1e99
         await update_amount(session, user, amnt - dif)
         return True
     if prestieges and prestieges[3]:

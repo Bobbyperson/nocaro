@@ -4947,7 +4947,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 return True
 
         bal = await econ.get_bal(ctx.author)
-        if worthy and bal >= 1e100:
+        if worthy and bal >= 1e99:
             async with ctx.typing():
                 await narrator("You attempt to approach the cave...", 3)
                 await narrator(
@@ -5745,7 +5745,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
     @commands.command(hidden=True, aliases=["ASCEND"])
     async def ascend(self, ctx):
         bal = await econ.get_bal(ctx.author)
-        if bal < 1e100:
+        if bal < 1e99:
             return
         await ctx.send(
             misc.starspeak(

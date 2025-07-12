@@ -87,7 +87,7 @@ class Poll(commands.Cog):
                 for i, option in enumerate(self.poll_options):
                     count = self.votes[self.poll_emojis[i]]
                     percentage = (count / total_votes) * 100
-                    message += f"\n{self.poll_emojis[i]} - {option}: `{count} votes ({int(percentage)}%)`"
+                    message += f"\n{self.poll_emojis[i]} - {option}: `{round(count, 3)} votes ({int(percentage)}%)`"
                 await self.poll_message.edit(content=message)
             if (
                 dt.datetime.now(dt.UTC)
