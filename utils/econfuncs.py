@@ -373,39 +373,59 @@ def moneyfy(amount):
     return int(total)
 
 
-def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
+def unmoneyfy(amount):
+    suffix = ""
+
     if isinstance(amount, str):
-        amount = amount.strip(",")
+        amount = amount.replace(",", "")
+        m = re.search(r"[A-Za-z]+$", amount)
+        if m:
+            suffix = m.group(0)
+            amount = amount[: m.start()]
+        amount = int(amount)
+    else:
         amount = int(amount)
 
     if amount >= 1e39:
-        return f"{amount / 1e39:.2f}".rstrip("0").rstrip(".") + "D"
-    if amount >= 1e36:
-        return f"{amount / 1e36:.2f}".rstrip("0").rstrip(".") + "u"
-    if amount >= 1e33:
-        return f"{amount / 1e33:.2f}".rstrip("0").rstrip(".") + "d"
-    if amount >= 1e30:
-        return f"{amount / 1e30:.2f}".rstrip("0").rstrip(".") + "n"
-    if amount >= 1e27:
-        return f"{amount / 1e27:.2f}".rstrip("0").rstrip(".") + "o"
-    if amount >= 1e24:
-        return f"{amount / 1e24:.2f}".rstrip("0").rstrip(".") + "S"
-    if amount >= 1e21:
-        return f"{amount / 1e21:.2f}".rstrip("0").rstrip(".") + "s"
-    if amount >= 1e18:
-        return f"{amount / 1e18:.2f}".rstrip("0").rstrip(".") + "Q"
-    if amount >= 1e15:
-        return f"{amount / 1e15:.2f}".rstrip("0").rstrip(".") + "q"
-    if amount >= 1e12:
-        return f"{amount / 1e12:.2f}".rstrip("0").rstrip(".") + "t"
-    if amount >= 1e9:
-        return f"{amount / 1e9:.2f}".rstrip("0").rstrip(".") + "b"
-    if amount >= 1e6:
-        return f"{amount / 1e6:.2f}".rstrip("0").rstrip(".") + "m"
-    if amount >= 1e3:
-        return f"{amount / 1e3:.2f}".rstrip("0").rstrip(".") + "k"
+        div, new = 1e39, "D"
+    elif amount >= 1e36:
+        div, new = 1e36, "u"
+    elif amount >= 1e33:
+        div, new = 1e33, "d"
+    elif amount >= 1e30:
+        div, new = 1e30, "n"
+    elif amount >= 1e27:
+        div, new = 1e27, "o"
+    elif amount >= 1e24:
+        div, new = 1e24, "S"
+    elif amount >= 1e21:
+        div, new = 1e21, "s"
+    elif amount >= 1e18:
+        div, new = 1e18, "Q"
+    elif amount >= 1e15:
+        div, new = 1e15, "q"
+    elif amount >= 1e12:
+        div, new = 1e12, "t"
+    elif amount >= 1e9:
+        div, new = 1e9, "b"
+    elif amount >= 1e6:
+        div, new = 1e6, "m"
+    elif amount >= 1e3:
+        div, new = 1e3, "k"
+    else:
+        div, new = 1, ""
 
-    return amount
+    msg = f"{Decimal(amount) / Decimal(div):.2f}".rstrip("0").rstrip(".") + new
+
+    if suffix:
+        n = re.match(r"[\d.]+", msg).group(0)
+        msg = n + suffix + msg[len(n) :]
+
+    int_digits = re.match(r"\d+", msg).group(0)
+    if len(int_digits) >= 4:
+        return unmoneyfy(msg)
+
+    return msg
 
 
 @session_decorator
