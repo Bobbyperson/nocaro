@@ -4570,22 +4570,37 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
 """)
         betting = True
         end = False
-        possible_bets = {
-            "red": 2,
-            "black": 2,
-            "odd": 2,
-            "even": 2,
-            "low": 2,
-            "high": 2,
-        }
-        for i in range(1, 37):
-            possible_bets[str(i)] = 37
         # fmt: off
-        red_numbers = [
-            1, 3, 5, 7, 9, 12, 14, 16, 18,
-            19, 21, 23, 25, 27, 30, 32, 34, 36
-        ]
+        possible_bets: dict[str, int] = {
+            "red": 2, "black": 2, "odd": 2, "even": 2, "low": 2, "high": 2,
+            "1-12": 3, "13-24": 3, "25-36": 3,
+            "1-9": 4, "10-18": 4, "19-27": 4, "28-36": 4,
+        }
+        possible_bets.update({str(i): 37 for i in range(1, 37)})
+
+        red_numbers = {1, 3, 5, 7, 9, 12, 14, 16, 18,
+                    19, 21, 23, 25, 27, 30, 32, 34, 36}
         # fmt: on
+
+        def _num(b: int, lo: int, hi: int) -> bool:
+            return lo <= b <= hi
+
+        bet_checks: dict[str, callable] = {
+            "red": lambda n: n in red_numbers,
+            "black": lambda n: n not in red_numbers,
+            "odd": lambda n: n % 2 == 1,
+            "even": lambda n: n % 2 == 0,
+            "low": lambda n: _num(n, 1, 18),
+            "high": lambda n: _num(n, 19, 36),
+            "1-12": lambda n: _num(n, 1, 12),
+            "13-24": lambda n: _num(n, 13, 24),
+            "25-36": lambda n: _num(n, 25, 36),
+            "1-9": lambda n: _num(n, 1, 9),
+            "10-18": lambda n: _num(n, 10, 18),
+            "19-27": lambda n: _num(n, 19, 27),
+            "28-36": lambda n: _num(n, 28, 36),
+        }
+        bet_checks.update({str(i): (lambda n, x=i: n == x) for i in range(1, 37)})
 
         def check(m):
             return m.channel == ctx.channel and (
@@ -4696,7 +4711,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 pitch=rd.random() * 2 - 1.0,
             )
             await asyncio.sleep(yap_duration)
-            rare = rd.randint(1, 50)
+            rare = rd.randint(1, 20)
             if rare == 1:
                 bg_vol = 0
                 await audio.set_track_volume(ctx, main_track_id, 0.0, ramp_sec=3)
@@ -4729,75 +4744,44 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 ball_color = "red"
             else:
                 ball_color = "black"
-            is_even = ball_lands % 2 == 0
-            is_low = ball_lands <= 18
-            win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\n"
             wins = 0
             losses = 0
-            amount_of_bets = 0
-            for user, place in bets.items():
-                for bet_place, bet_amount in place.items():
-                    amount_of_bets += 1
-                    if bet_place == str(ball_lands):
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 37)} bouge bucks on {bet_place}!\n"
+            win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\n"
+            wins_net = losses = total_bets = 0
+
+            for user, user_bets in bets.items():
+                for bet_place, stake in user_bets.items():
+                    total_bets += 1
+                    won = bet_checks[bet_place](ball_lands)
+                    if won:
+                        multiplier = possible_bets[bet_place]
+                        payout = stake * multiplier  # money returned
+                        net_gain = stake * (multiplier - 1)  # profit only
                         await econ.update_amount(
-                            user, bet_amount * 37, tracker_reason="roulette"
+                            user, payout, tracker_reason="roulette"
                         )
-                        wins += bet_amount * 36
                         await econ.update_winloss(user, "w")
-                    elif bet_place == ball_color:
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
-                        await econ.update_amount(
-                            user, bet_amount * 2, tracker_reason="roulette"
-                        )
-                        wins += bet_amount
-                        await econ.update_winloss(user, "w")
-                    elif bet_place == "odd" and not is_even:
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
-                        await econ.update_amount(
-                            user, bet_amount * 2, tracker_reason="roulette"
-                        )
-                        wins += bet_amount
-                        await econ.update_winloss(user, "w")
-                    elif bet_place == "even" and is_even:
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
-                        await econ.update_amount(
-                            user, bet_amount * 2, tracker_reason="roulette"
-                        )
-                        wins += bet_amount
-                        await econ.update_winloss(user, "w")
-                    elif bet_place == "low" and is_low:
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
-                        await econ.update_amount(
-                            user, bet_amount * 2, tracker_reason="roulette"
-                        )
-                        wins += bet_amount
-                        await econ.update_winloss(user, "w")
-                    elif bet_place == "high" and not is_low:
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
-                        await econ.update_amount(
-                            user, bet_amount * 2, tracker_reason="roulette"
-                        )
-                        wins += bet_amount
-                        await econ.update_winloss(user, "w")
+                        wins_net += net_gain
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(payout)} on {bet_place}!\n"
                     else:
-                        losses += bet_amount
-                        win_msg += f"{user.mention} **lost** {econ.unmoneyfy(bet_amount)} bouge bucks on {bet_place}.\n"
+                        losses += stake
                         await econ.update_winloss(user, "l")
+                        win_msg += f"{user.mention} **lost** {econ.unmoneyfy(stake)} on {bet_place}.\n"
+
             if len(win_msg) > 2000:
                 win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\nI would show you the results, but there are too many to display!"
             await ctx.send(win_msg)
             yap_duration = 0
-            if amount_of_bets > 1:
-                if wins > losses * 2 and rd.randint(1, 3) == 1:
+            if total_bets > 1:
+                if wins > losses and rd.randint(1, 2) == 1:
                     _, yap_duration = await audio.play(
                         ctx,
                         f"audio/roulette/win{rd.randint(1, 2)}.mp3",
                         vol=1.0,
                         pitch=rd.random() * 2 - 1.0,
                     )
-                if losses > wins * 2 and rd.randint(1, 3) == 1:
-                    if rd.randint(1, 10) == 1:
+                if losses > wins and rd.randint(1, 2) == 1:
+                    if rd.randint(1, 5) == 1:
                         _, yap_duration = await audio.play(
                             ctx,
                             f"audio/roulette/lose_rare{rd.randint(1, 2)}.mp3",
