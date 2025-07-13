@@ -4848,7 +4848,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             if len(ctx.guild.voice_client.channel.members) <= 1 and not end:
                 end = True
                 await ctx.send("No one is left in the voice channel, ending roulette.")
-        # await audio.stop(ctx, main_track)
+        await audio.stop(ctx, main_track_id)
         await audio.leave(ctx)
         await ctx.send("Roulette has ended. Thanks for playing!")
 
