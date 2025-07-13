@@ -4788,7 +4788,6 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 pitch=rd.random() * 2 - 1.0,
             )
             await asyncio.sleep(yap_duration)
-            await audio.set_track_volume(ctx, main_track_id, 1, ramp_sec=0.5)
             if ball_lands in red_numbers:
                 ball_color = "red"
             else:
@@ -4843,7 +4842,9 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                             pitch=rd.random() * 2 - 1.0,
                         )
             # check if anyone is still in the voice channel
-            await asyncio.sleep(3 + yap_duration)
+            await asyncio.sleep(yap_duration)
+            await audio.set_track_volume(ctx, main_track_id, 1, ramp_sec=2)
+            await asyncio.sleep(3)
             if len(ctx.guild.voice_client.channel.members) <= 1 and not end:
                 end = True
                 await ctx.send("No one is left in the voice channel, ending roulette.")
