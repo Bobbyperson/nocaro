@@ -4695,7 +4695,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                             bets[bet_msg.author][place] = 0
                         bets[bet_msg.author][place] += amount
                         await econ.update_amount(
-                            bet_msg.author, -1 * amount, tracker_reason="roulette"
+                            bet_msg.author,
+                            -1 * amount,
+                            tracker_reason="roulette",
+                            bonuses=False,
                         )
                         if first_bet == 0:
                             first_bet = int(time.time())
@@ -4758,7 +4761,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         payout = stake * multiplier  # money returned
                         net_gain = stake * (multiplier - 1)  # profit only
                         await econ.update_amount(
-                            user, payout, tracker_reason="roulette"
+                            user, payout, tracker_reason="roulette", bonuses=False
                         )
                         await econ.update_winloss(user, "w")
                         wins_net += net_gain
