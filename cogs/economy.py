@@ -4747,10 +4747,9 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 ball_color = "red"
             else:
                 ball_color = "black"
-            wins = 0
             losses = 0
             win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\n"
-            wins_net = losses = total_bets = 0
+            wins = losses = total_bets = 0
 
             for user, user_bets in bets.items():
                 for bet_place, stake in user_bets.items():
@@ -4759,12 +4758,11 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                     if won:
                         multiplier = possible_bets[bet_place]
                         payout = stake * multiplier  # money returned
-                        net_gain = stake * (multiplier - 1)  # profit only
                         await econ.update_amount(
                             user, payout, tracker_reason="roulette", bonuses=False
                         )
                         await econ.update_winloss(user, "w")
-                        wins_net += net_gain
+                        wins += payout
                         win_msg += f"{user.mention} **won** {econ.unmoneyfy(payout)} on {bet_place}!\n"
                     else:
                         losses += stake
