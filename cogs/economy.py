@@ -4563,6 +4563,12 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         await ctx.send("""
 Roulette has been activated in this channel! You may now place your bets. To place bets, please type `bet (place) (amount)`
 For example, to bet 100 bouge bucks on 13, type `bet 13 100`. Other bets like colors work how you would expect.
+You can also do multiline bets, for example:
+```
+bet 13 100
+bet red 50
+bet 1-12 25
+```
 Please note that some bets like splits, streets, and corners, are not possible cause that would be waaaaay too complicated.
 Betting will be disabled for a short period of time while the ball is rolling.
 Also, in the bouge casino, there is no 0 or 00, the numbers are 1-36.
@@ -4636,6 +4642,9 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         await ctx.send("Roulette will be ending after this round.")
 
                 if bet_msg:
+                    total_user_bets = (
+                        sum(1 for _ in bets.get(bet_msg.author, {}).values()) or 0
+                    )
                     if (
                         bet_msg.content == "endroulette"
                         and bet_msg.author == ctx.author
@@ -4644,43 +4653,72 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         end = True
                         await ctx.send("Roulette will be ending after this round.")
                     else:
-                        _, place, amount = (
-                            bet_msg.content.split(" ")
-                            if len(bet_msg.content.split(" ")) == 3
-                            else (None, None, None)
-                        )
-                        if not place or not amount:
-                            await bet_msg.reply(
-                                "Please use the format `bet (place) (amount)`."
+                        valid_message = True
+                        if "\n" in bet_msg.content:
+                            lines = bet_msg.content.split("\n")
+                        else:
+                            lines = [bet_msg.content]
+                        bal = await econ.get_bal(bet_msg.author)
+                        for line in lines:
+                            if not line.startswith("bet "):
+                                continue
+                            _, place, amount = (
+                                line.split(" ")
+                                if len(line.split(" ")) == 3
+                                else (None, None, None)
                             )
-                            continue
-                        if place not in possible_bets:
-                            await bet_msg.reply(f"{place} is not valid!")
-                            continue
-                        maxed = await econ.checkmax(bet_msg.author)
-                        if maxed:
-                            await bet_msg.reply(
-                                "You try to place a bet, but can't. Your body is too weak from the endless games. Maybe you should try to `,enterthecave`."
-                            )
-                            continue
-                        amount = econ.moneyfy(amount)
-                        if amount < 1:
-                            await bet_msg.reply("Please bet at least 1 bouge buck.")
-                            continue
-                        if amount > await econ.get_bal(bet_msg.author):
-                            await bet_msg.reply("You don't have enough bouge bucks!")
-                            if not brokie_alert:
-                                await audio.play(
-                                    ctx,
-                                    f"audio/roulette/broke{rd.randint(1, 2)}.mp3",
-                                    vol=1.0,
-                                    pitch=rd.random() * 2 - 1.0,
+                            if not place or not amount:
+                                await bet_msg.reply(
+                                    "Please use the format `bet (place) (amount)`."
                                 )
-                                brokie_alert = True
-                            continue
+                                valid_message = False
+                                break
+                            if place not in possible_bets:
+                                await bet_msg.reply(f"{place} is not valid!")
+                                valid_message = False
+                                break
+                            maxed = await econ.checkmax(bet_msg.author)
+                            if maxed:
+                                await bet_msg.reply(
+                                    "You try to place a bet, but can't. Your body is too weak from the endless games. Maybe you should try to `,enterthecave`."
+                                )
+                                valid_message = False
+                                break
+                            amount = econ.moneyfy(amount)
+                            if amount < 1:
+                                await bet_msg.reply("Please bet at least 1 bouge buck.")
+                                valid_message = False
+                                break
+                            if amount > bal:
+                                await bet_msg.reply(
+                                    "You don't have enough bouge bucks!"
+                                )
+                                if not brokie_alert:
+                                    await audio.play(
+                                        ctx,
+                                        f"audio/roulette/broke{rd.randint(1, 2)}.mp3",
+                                        vol=1.0,
+                                        pitch=rd.random() * 2 - 1.0,
+                                    )
+                                    brokie_alert = True
+                                valid_message = False
+                                break
+                            bal -= amount
+                            if (
+                                total_user_bets > 10
+                                or total_user_bets + len(lines) > 10
+                            ):
+                                await bet_msg.reply(
+                                    "Only a maximum of 10 bets per user are allowed!"
+                                )
+                                valid_message = False
+                                break
                         blacklisted = await misc.is_blacklisted(bet_msg.author.id)
                         if blacklisted[0]:
                             await bet_msg.reply("You are blacklisted from this bot!")
+                            continue
+                        if not valid_message:
+                            await bet_msg.add_reaction("❌")
                             continue
                         await bet_msg.add_reaction("✅")
                         await audio.play(
@@ -4691,15 +4729,22 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         )
                         if bet_msg.author not in bets:
                             bets[bet_msg.author] = {}
-                        if place not in bets[bet_msg.author]:
-                            bets[bet_msg.author][place] = 0
-                        bets[bet_msg.author][place] += amount
-                        await econ.update_amount(
-                            bet_msg.author,
-                            -1 * amount,
-                            tracker_reason="roulette",
-                            bonuses=False,
-                        )
+                        for line in lines:
+                            _, place, amount = (
+                                line.split(" ")
+                                if len(line.split(" ")) == 3
+                                else (None, None, None)
+                            )
+                            # everything valid at this point
+                            if place not in bets[bet_msg.author]:
+                                bets[bet_msg.author][place] = 0
+                            bets[bet_msg.author][place] += amount
+                            await econ.update_amount(
+                                bet_msg.author,
+                                -1 * amount,
+                                tracker_reason="roulette",
+                                bonuses=False,
+                            )
                         if first_bet == 0:
                             first_bet = int(time.time())
                             await ctx.send("Bets will close in roughly 15 seconds!")
