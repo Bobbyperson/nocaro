@@ -4735,6 +4735,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                                 if len(line.split(" ")) == 3
                                 else (None, None, None)
                             )
+                            amount = econ.moneyfy(amount)
                             # everything valid at this point
                             if place not in bets[bet_msg.author]:
                                 bets[bet_msg.author][place] = 0
