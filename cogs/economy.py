@@ -4579,7 +4579,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             "high": 2,
         }
         for i in range(1, 37):
-            possible_bets[str(i)] = 36
+            possible_bets[str(i)] = 37
         # fmt: off
         red_numbers = [
             1, 3, 5, 7, 9, 12, 14, 16, 18,
@@ -4734,14 +4734,16 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\n"
             wins = 0
             losses = 0
+            amount_of_bets = 0
             for user, place in bets.items():
                 for bet_place, bet_amount in place.items():
+                    amount_of_bets += 1
                     if bet_place == str(ball_lands):
-                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 36)} bouge bucks on {bet_place}!\n"
+                        win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 37)} bouge bucks on {bet_place}!\n"
                         await econ.update_amount(
-                            user, bet_amount * 36, tracker_reason="roulette"
+                            user, bet_amount * 37, tracker_reason="roulette"
                         )
-                        wins += bet_amount * 35
+                        wins += bet_amount * 36
                         await econ.update_winloss(user, "w")
                     elif bet_place == ball_color:
                         win_msg += f"{user.mention} **won** {econ.unmoneyfy(bet_amount * 2)} bouge bucks on {bet_place}!\n"
@@ -4785,7 +4787,6 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             if len(win_msg) > 2000:
                 win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\nI would show you the results, but there are too many to display!"
             await ctx.send(win_msg)
-            amount_of_bets = sum(len(bets[user]) for user in bets)
             yap_duration = 0
             if amount_of_bets > 1:
                 if wins > losses * 2 and rd.randint(1, 3) == 1:
