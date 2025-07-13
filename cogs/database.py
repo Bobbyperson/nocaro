@@ -170,10 +170,12 @@ class database(commands.Cog):
                 mentions = message_to_send.role_mentions
                 if not any(role in mentions for role in message.guild.roles):
                     break
-
-            await message.channel.send(
-                discord.utils.escape_mentions(message_to_send.content)
-            )  # send that bitch
+            try:
+                await message.channel.send(
+                    discord.utils.escape_mentions(message_to_send.content)
+                )  # send that bitch
+            except discord.Forbidden:
+                return
             self.nocaro_cooldowns[user_id] = current_time
         else:
             async with self.client.session as session:
