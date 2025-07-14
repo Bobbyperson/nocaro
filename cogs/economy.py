@@ -4822,14 +4822,14 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             await ctx.send(win_msg)
             yap_duration = 0
             if total_bets > 1:
-                if wins > losses and rd.randint(1, 2) == 1:
+                if wins * 2 > losses and rd.randint(1, 2) == 1:
                     _, yap_duration = await audio.play(
                         ctx,
                         f"audio/roulette/win{rd.randint(1, 2)}.mp3",
                         vol=1.0,
                         pitch=rd.random() * 2 - 1.0,
                     )
-                if losses > wins and rd.randint(1, 2) == 1:
+                if losses * 2 > wins and rd.randint(1, 2) == 1:
                     if rd.randint(1, 5) == 1:
                         _, yap_duration = await audio.play(
                             ctx,
