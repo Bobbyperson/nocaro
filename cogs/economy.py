@@ -4609,8 +4609,11 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
         bet_checks.update({str(i): (lambda n, x=i: n == x) for i in range(1, 37)})
 
         def check(m):
-            return m.channel == ctx.channel and (
-                m.content.startswith("bet ") or m.content == "endroulette"
+            return (
+                m.channel == ctx.channel
+                and (m.content.startswith("bet ") or m.content == "endroulette")
+                and not m.author.bot
+                and m.author.voice == ctx.author.voice
             )
 
         while not end:
