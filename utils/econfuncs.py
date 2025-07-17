@@ -177,7 +177,7 @@ async def get_banana(session, user):
 @session_decorator
 async def update_banana(session, user, change=0):
     user_main = await get_or_create_account(session, user)
-    user_main.bananas = change
+    user_main.bananas += change
 
 
 # get user's immunity, return int
