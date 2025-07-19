@@ -3390,6 +3390,7 @@ Example command: `,bougegram normal 100`"""
         if ctx.author == member:
             await ctx.send("Stop playing with yourself.")
             return
+        amount = econ.moneyfy(amount)
         if amount == 0:
             await ctx.send(
                 "Welcome to share or steal!\n"
