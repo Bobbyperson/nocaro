@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import models
 import utils.miscfuncs as mf
 from __main__ import Session
+from utils.achievements import get_achievement, money_achievements_list
 
 if __name__ == "__main__":
     print(
@@ -147,6 +148,33 @@ async def update_amount(
                 time=int(time.time()),
             )
         )
+    for achievement in money_achievements_list:
+        if not await achievement.is_achieved(user):
+            await achievement.set_progress(user, new_balance, overwrite=True)
+            if await achievement.is_achieved(user):
+                await user.send("Milestone reached: " + str(achievement))
+                if achievement.internal_name == "halfway_point":
+                    await user.send(
+                        mf.starspeak(
+                            [
+                                "NEARLY SO NEARLY THERE",
+                                "AT THE END SOMETHING WAITS",
+                                "SOMETHING FOR ONE OR MANY",
+                                "",
+                                "DO NOT SHARE THIS COMMUNICATION",
+                            ]
+                        )
+                    )
+    if new_balance < 0:
+        mogul_moves = await get_achievement("mogul_moves")
+        if not await mogul_moves.is_achieved(user):
+            await mogul_moves.unlock(user)
+            await user.send(f"Achievement Get! {mogul_moves!s}")
+    if new_balance > 0 and new_balance / bal <= 0.1:
+        better_left_than_dead = await get_achievement("better_left_than_dead")
+        if not await better_left_than_dead.is_achieved(user):
+            await better_left_than_dead.unlock(user)
+            await user.send(f"Achievement Get! {better_left_than_dead!s}")
 
 
 # get user's level, returns int

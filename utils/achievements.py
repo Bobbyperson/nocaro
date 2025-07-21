@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
 from __main__ import Session
-from utils.econfuncs import get_bal
 
 bank = "./data/database.sqlite"
 
@@ -126,6 +125,7 @@ async def set_achievement_progress(
             user_id=user.id,
             achievement_id=achievement_name,
             progress=progress,
+            achieved_at=discord.utils.utcnow(),
         )
         session.add(achievement)
     else:
@@ -154,6 +154,7 @@ async def add_achievement_progress(
             user_id=user.id,
             achievement_id=achievement_name,
             progress=progress,
+            achieved_at=discord.utils.utcnow(),
         )
         session.add(achievement)
     else:
@@ -189,13 +190,40 @@ class Achievement:
         """Get the current progress of the achievement for the user."""
         return await get_achievement_progress(user, self.internal_name)
 
-    async def set_progress(self, user: discord.User | discord.Member, progress: int):
+    async def set_progress(
+        self,
+        user: discord.User | discord.Member,
+        progress: int,
+        overwrite: bool = False,
+    ):
         """Set the progress of the achievement for the user."""
+        if not overwrite:
+            progress = max(await self.get_progress(user), progress)
+        progress = min(progress, self.needed_progress)
+        if progress == self.needed_progress:
+            await self.unlock(user)
         return await set_achievement_progress(user, self.internal_name, progress)
 
     async def add_progress(self, user: discord.User | discord.Member, progress: int):
         """Add progress to the achievement for the user."""
+        if await self.is_achieved(user):
+            return False
+        progress = max(await self.get_progress(user) + progress, 0)
+        progress = min(progress, self.needed_progress - await self.get_progress(user))
+        if await self.get_progress(user) + progress >= self.needed_progress:
+            await self.unlock(user)
         return await add_achievement_progress(user, self.internal_name, progress)
+
+    async def unlock(self, user: discord.User | discord.Member):
+        """Unlock the achievement for the user."""
+        if not await self.is_achieved(user):
+            await complete_achievement(user, self.internal_name)
+            if self.progressable:
+                await set_achievement_progress(
+                    user, self.internal_name, self.needed_progress
+                )
+            return True
+        return False
 
     def __str__(self):
         # if self.hidden:
@@ -223,25 +251,13 @@ class MoneyAchievement(Achievement):
             **kwargs,
         )
 
-    async def get_progress(self, user: discord.User | discord.Member):
-        if not await self.is_achieved(user):
-            return await get_bal(user)
-        return self.needed_progress
 
-    async def set_progress(self, user: discord.User | discord.Member):
-        """Update the progress of the achievement based on the user's balance."""
-        current_balance = await get_bal(user)
-        current_progress = await get_achievement_progress(user, self.internal_name)
-        if current_balance >= self.needed_progress:
-            await complete_achievement(user, self.internal_name)
-            await set_achievement_progress(
-                user, self.internal_name, self.needed_progress
-            )
-        else:
-            if current_balance > current_progress:
-                await set_achievement_progress(
-                    user, self.internal_name, current_balance
-                )
+async def get_achievement(internal_name: str):
+    """Get an achievement by its internal name."""
+    for achievement in achievements_list + money_achievements_list:
+        if achievement.internal_name == internal_name:
+            return achievement
+    return None
 
 
 achievements_list = [
@@ -346,12 +362,14 @@ achievements_list = [
     ),
     Achievement(
         name="Don't hate the player, hate the game",
+        internal_name="hate_the_game",
         description="Get stolen from 100 times.",
         progressable=True,
         needed_progress=100,
     ),
     Achievement(
         name="Let it Ride!",
+        internal_name="let_it_ride",
         description="Win on a single number in roulette twice in a row.",
     ),
 ]

@@ -28,6 +28,7 @@ from pydub import AudioSegment
 from sqlalchemy import Integer, cast, delete, select, text
 
 import models
+import utils.achievements as ach
 import utils.audio as audio
 import utils.econfuncs as econ
 import utils.miscfuncs as misc
@@ -799,6 +800,15 @@ Example command: `,bougegram normal 100`"""
         winloss = await econ.formatted_winloss(member)
         good = "".join(winloss.split(", "))
         await ctx.send(f"{member}'s winloss: {good}")
+        unformatted_winloss = await econ.get_winloss(member)
+        not_wins = ["l", "X", "t"]
+        for not_win in not_wins:
+            if not_win in unformatted_winloss:
+                return
+        green_fingers = await ach.get_achievement("green_fingers")
+        if not await green_fingers.is_achieved(member):
+            await green_fingers.unlock(member)
+            await ctx.reply(f"Achievement Get! {green_fingers!s}")
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
@@ -2027,6 +2037,40 @@ Example command: `,bougegram normal 100`"""
                 )
             except discord.Forbidden:
                 await ctx.send(f"could not dm {victim}")
+        if stealamnt > victimbucks:
+            dickhead = await ach.get_achievement("dickhead")
+            if not await dickhead.is_achieved(user):
+                await dickhead.unlock(user)
+                await ctx.reply(f"Achievement Get! {dickhead!s}")
+        if stealamnt == 5000:
+            expert_cleptomaniac = await ach.get_achievement("expert_cleptomaniac")
+            if not await expert_cleptomaniac.is_achieved(user):
+                await expert_cleptomaniac.unlock(user)
+                await ctx.reply(f"Achievement Get! {expert_cleptomaniac!s}")
+        if await econ.get_bal(user) > 1_000_000_000_000:
+            i_do_it_for_the_love_of_the_game = await ach.get_achievement(
+                "i_do_it_for_the_love_of_the_game"
+            )
+            if not await i_do_it_for_the_love_of_the_game.is_achieved(user):
+                await i_do_it_for_the_love_of_the_game.unlock(user)
+                await ctx.reply(
+                    f"Achievement Get! {i_do_it_for_the_love_of_the_game!s}"
+                )
+        hate_the_game = await ach.get_achievement("hate_the_game")
+        if not await hate_the_game.is_achieved(user):
+            await hate_the_game.add_progress(user, 1)
+            if await hate_the_game.is_achieved(user):
+                await ctx.reply(f"Achievement Get! {hate_the_game!s}")
+        petty_thief = await ach.get_achievement("petty_thief")
+        if not await petty_thief.is_achieved(user):
+            await petty_thief.add_progress(user, 1)
+            if await petty_thief.is_achieved(user):
+                await ctx.reply(f"Achievement Get! {petty_thief!s}")
+        cleptomaniac = await ach.get_achievement("cleptomaniac")
+        if not await cleptomaniac.is_achieved(user):
+            await cleptomaniac.add_progress(user, 1)
+            if await cleptomaniac.is_achieved(user):
+                await ctx.reply(f"Achievement Get! {cleptomaniac!s}")
 
     @commands.hybrid_command()
     @misc.generic_checks()
@@ -2140,6 +2184,28 @@ Example command: `,bougegram normal 100`"""
                 return hands
 
         async def score(hand: Hand, dealer: Dealer, double):
+            # achievement logic
+            if (
+                hand.get_value() == 5
+                and dealer.get_value() > 5
+                and dealer.get_value() <= 21
+            ):
+                austin_powers = await ach.get_achievement("austin_powers")
+                if not await austin_powers.is_achieved(ctx.author):
+                    await austin_powers.unlock(ctx.author)
+                    await ctx.reply(f"Achievement Get! {austin_powers!s}")
+
+            if (
+                double == 2
+                and hand.cards[0].value + hand.cards[1].value == 21
+                and dealer.get_value() < hand.get_value()
+            ):
+                x_ray = await ach.get_achievement("x_ray")
+                if not await x_ray.is_achieved(ctx.author):
+                    await x_ray.unlock(ctx.author)
+                    await ctx.reply(f"Achievement Get! {x_ray!s}")
+
+            # actual function
             reward = 0
             if len(hand.cards) >= 7 and hand.get_value() <= 21:
                 await econ.update_winloss(ctx.author, "b")
@@ -2604,6 +2670,11 @@ Example command: `,bougegram normal 100`"""
         await econ.update_amount(giftee, amount, False, tracker_reason="gifted")
         await econ.update_amount(user, -1 * amount, False, tracker_reason="gift")
         await ctx.send(f"{ctx.author} just gifted {amount} bouge bucks to {giftee}!!!")
+        if amount == 10_000_000_000:
+            mr_generosity = await ach.get_achievement("mr_generosity")
+            if not await mr_generosity.is_achieved(ctx.author):
+                await mr_generosity.unlock(ctx.author)
+                await ctx.reply(f"Achievement Get! {mr_generosity!s}")
 
     @commands.hybrid_command(aliases=["lb", "baltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -2881,6 +2952,10 @@ Example command: `,bougegram normal 100`"""
                             user, pool * 10, tracker_reason="doubleornothing"
                         )
                         await econ.update_winloss(ctx.author, "b")
+                        jackpot_ach = await ach.get_achievement("jackpot")
+                        if not await jackpot_ach.is_achieved(ctx.author):
+                            await jackpot_ach.unlock(ctx.author)
+                            await ctx.reply(f"Achievement Get! {jackpot_ach!s}")
                         return
                     await main_message.edit(
                         content=(

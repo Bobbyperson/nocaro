@@ -21,7 +21,7 @@ class Achievements(commands.Cog):
             if achievement.hidden and not (
                 is_dm and await achievement.is_achieved(ctx.author)
             ):
-                msg += f"{''.join('?' if c not in [' ', ':'] else ' ' for c in str(achievement))} "
+                msg += f"{''.join('?' if c not in [' ', ':', '*'] else c for c in str(achievement))} "
             else:
                 msg += f"{achievement!s} "
             if achievement.progressable:
@@ -33,6 +33,9 @@ class Achievements(commands.Cog):
             title="Achievements",
             description=msg,
             color=discord.Color.blue(),
+        )
+        embed.set_footer(
+            text="Use this command in a DM to see unlocked hidden achievements."
         )
         await ctx.send(embed=embed)
 
@@ -54,7 +57,10 @@ class Achievements(commands.Cog):
         embed = discord.Embed(
             title="Achievements",
             description=msg,
-            color=discord.Color.blue(),
+            color=discord.Color.green(),
+        )
+        embed.set_footer(
+            text="Use this command in a DM to see unlocked hidden achievements."
         )
         await ctx.send(embed=embed)
 
