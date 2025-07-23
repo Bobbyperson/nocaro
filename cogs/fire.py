@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from sqlalchemy import delete, select, update
 
 import models
+from utils.achievements import get_achievement
 from utils.miscfuncs import generic_checks
 
 bank = "./data/database.sqlite"
@@ -135,6 +136,23 @@ class Fire(commands.Cog):
                 newfb = await fireboard.send(
                     content=f"{fire} **{total_reacts}**", embed=em
                 )
+                get_fireboarded = await get_achievement("get_fireboarded")
+                frequent_firerer = await get_achievement("frequent_firerer")
+                firestarter = await get_achievement("firestarter")
+                if not await get_fireboarded.is_achieved(added_msg.author):
+                    await get_fireboarded.unlock(added_msg.author)
+                    await added_msg.author.send(f"Achievement Get! {get_fireboarded!s}")
+                if not await frequent_firerer.is_achieved(added_msg.author):
+                    await frequent_firerer.add_progress(added_msg.author, 1)
+                    if await frequent_firerer.is_achieved(added_msg.author):
+                        await added_msg.author.send(
+                            f"Achievement Get! {frequent_firerer!s}"
+                        )
+                if not await firestarter.is_achieved(added_msg.author):
+                    await firestarter.add_progress(added_msg.author, 1)
+                    if await firestarter.is_achieved(added_msg.author):
+                        await added_msg.author.send(f"Achievement Get! {firestarter!s}")
+
             # newfb = await fireboard.send(f"{added_msg.author.name}'s message '{added_msg.content}' has {total_reacts} {fire}.")
             await self.add_msg(total_reacts, added_msg, newfb.id, fireboard.id, emoji)
         else:

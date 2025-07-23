@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import models
 import utils.miscfuncs as mf
 from __main__ import Session
+from utils.achievements import get_achievement, money_achievements_list
 
 if __name__ == "__main__":
     print(
@@ -113,9 +114,13 @@ async def update_amount(
     if prestieges is not None:
         uncapped = True if prestieges[3] else False
     new_balance = bal + change
-    if new_balance > 1e99:
-        new_balance = 1e99
-        excess = bal + change - 1e99
+    if new_balance > int(Decimal(10) ** 99):
+        # python interally stores 1e99 as a float, which causes precision issues when converted to an int
+        # additionally, str(1e99) returns '1e+99', which for some reason, cannot be converted back to an int
+        # Decimal(1e99) returns '1E+99', which is also not convertible to an int
+        # so we have to use Decimal(10) ** 99 to get the correct value, and to avoid issues when storing it in the db
+        new_balance = int(Decimal(10) ** 99)
+        excess = Decimal(bal) + Decimal(change) - int(Decimal(10) ** 99)
         user_main.balance = str(new_balance)
         session.add(
             models.economy.History(
@@ -147,6 +152,33 @@ async def update_amount(
                 time=int(time.time()),
             )
         )
+    for achievement in money_achievements_list:
+        if not await achievement.is_achieved(user):
+            await achievement.set_progress(user, new_balance, overwrite=True)
+            if await achievement.is_achieved(user):
+                await user.send("Milestone reached: " + str(achievement))
+                if achievement.internal_name == "halfway_point":
+                    await user.send(
+                        mf.starspeak(
+                            [
+                                "NEARLY SO NEARLY THERE",
+                                "AT THE END SOMETHING WAITS",
+                                "SOMETHING FOR ONE OR MANY",
+                                "",
+                                "DO NOT SHARE THIS COMMUNICATION",
+                            ]
+                        )
+                    )
+    if new_balance < 0:
+        mogul_moves = await get_achievement("mogul_moves")
+        if not await mogul_moves.is_achieved(user):
+            await mogul_moves.unlock(user)
+            await user.send(f"Achievement Get! {mogul_moves!s}")
+    if new_balance > 0 and new_balance / bal <= 0.1:
+        better_left_than_dead = await get_achievement("better_left_than_dead")
+        if not await better_left_than_dead.is_achieved(user):
+            await better_left_than_dead.unlock(user)
+            await user.send(f"Achievement Get! {better_left_than_dead!s}")
 
 
 # get user's level, returns int
@@ -239,8 +271,8 @@ async def remove_item(session, user, item):
 async def checkmax(session, user):
     amnt = await get_bal(session, user)
     prestieges = await get_prestiege(session, user)
-    if amnt >= 1e99:
-        dif = amnt - 1e99
+    if amnt >= int(Decimal(10) ** 99):
+        dif = amnt - int(Decimal(10) ** 99)
         await update_amount(session, user, amnt - dif)
         return True
     if prestieges and prestieges[3]:
@@ -445,6 +477,20 @@ async def log_prestiege(session, user, pres):
 @session_decorator
 async def get_prestiege(session, user):
     user_main = await get_or_create_prestiege(session, user)
+    maximum_overdrive = await get_achievement("maximum_overdrive")
+    total = (
+        user_main.pres1
+        + user_main.pres2
+        + user_main.pres3
+        + user_main.pres4
+        + user_main.pres5
+    )
+    if not await maximum_overdrive.is_achieved(user):
+        if total >= 7:
+            await maximum_overdrive.unlock(user)
+            await user.send(f"Achievement Get! {maximum_overdrive!s}")
+        else:
+            await maximum_overdrive.set_progress(user, total, overwrite=True)
     return [
         user_main.pres1,
         user_main.pres2,

@@ -10,6 +10,7 @@ import time
 import tomllib
 import traceback
 from collections import Counter
+from decimal import Decimal, getcontext
 from pathlib import Path
 from typing import ClassVar
 
@@ -28,9 +29,12 @@ from pydub import AudioSegment
 from sqlalchemy import Integer, cast, delete, select, text
 
 import models
+import utils.achievements as ach
 import utils.audio as audio
 import utils.econfuncs as econ
 import utils.miscfuncs as misc
+
+getcontext().prec = 200
 
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
@@ -799,6 +803,20 @@ Example command: `,bougegram normal 100`"""
         winloss = await econ.formatted_winloss(member)
         good = "".join(winloss.split(", "))
         await ctx.send(f"{member}'s winloss: {good}")
+        unformatted_winloss = await econ.get_winloss(member)
+        not_wins = ["l", "X", "t"]
+        not_win_amnt = 0
+        for not_win in not_wins:
+            for char in unformatted_winloss:
+                if char == not_win:
+                    not_win_amnt += 1
+        green_fingers = await ach.get_achievement("green_fingers")
+        if not await green_fingers.is_achieved(member):
+            if not_win_amnt == 0:
+                await green_fingers.unlock(member)
+                await ctx.reply(f"Achievement Get! {green_fingers!s}")
+            else:
+                await green_fingers.set_progress(member, 20 - not_win_amnt)
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
@@ -2028,6 +2046,43 @@ Example command: `,bougegram normal 100`"""
             except discord.Forbidden:
                 await ctx.send(f"could not dm {victim}")
 
+        # achievement logic
+        # theres gotta be a better way to do this that i'm overlooking
+        if stealamnt > victimbucks:
+            dickhead = await ach.get_achievement("dickhead")
+            if not await dickhead.is_achieved(user):
+                await dickhead.unlock(user)
+                await ctx.reply(f"Achievement Get! {dickhead!s}")
+        if stealamnt == 5000:
+            expert_cleptomaniac = await ach.get_achievement("expert_cleptomaniac")
+            if not await expert_cleptomaniac.is_achieved(user):
+                await expert_cleptomaniac.unlock(user)
+                await ctx.reply(f"Achievement Get! {expert_cleptomaniac!s}")
+        if await econ.get_bal(user) > 1_000_000_000_000:
+            i_do_it_for_the_love_of_the_game = await ach.get_achievement(
+                "i_do_it_for_the_love_of_the_game"
+            )
+            if not await i_do_it_for_the_love_of_the_game.is_achieved(user):
+                await i_do_it_for_the_love_of_the_game.unlock(user)
+                await ctx.reply(
+                    f"Achievement Get! {i_do_it_for_the_love_of_the_game!s}"
+                )
+        hate_the_game = await ach.get_achievement("hate_the_game")
+        if not await hate_the_game.is_achieved(user):
+            await hate_the_game.add_progress(user, 1)
+            if await hate_the_game.is_achieved(user):
+                await ctx.reply(f"Achievement Get! {hate_the_game!s}")
+        petty_thief = await ach.get_achievement("petty_thief")
+        if not await petty_thief.is_achieved(user):
+            await petty_thief.add_progress(user, 1)
+            if await petty_thief.is_achieved(user):
+                await ctx.reply(f"Achievement Get! {petty_thief!s}")
+        cleptomaniac = await ach.get_achievement("cleptomaniac")
+        if not await cleptomaniac.is_achieved(user):
+            await cleptomaniac.add_progress(user, 1)
+            if await cleptomaniac.is_achieved(user):
+                await ctx.reply(f"Achievement Get! {cleptomaniac!s}")
+
     @commands.hybrid_command()
     @misc.generic_checks()
     async def checkimmunity(self, ctx, member: discord.Member = None):
@@ -2140,6 +2195,28 @@ Example command: `,bougegram normal 100`"""
                 return hands
 
         async def score(hand: Hand, dealer: Dealer, double):
+            # achievement logic
+            if (
+                hand.get_value() == 5
+                and dealer.get_value() > 5
+                and dealer.get_value() <= 21
+            ):
+                austin_powers = await ach.get_achievement("austin_powers")
+                if not await austin_powers.is_achieved(ctx.author):
+                    await austin_powers.unlock(ctx.author)
+                    await ctx.reply(f"Achievement Get! {austin_powers!s}")
+
+            if (
+                double == 2
+                and hand.cards[0].value + hand.cards[1].value == 21
+                and dealer.get_value() < hand.get_value()
+            ):
+                x_ray = await ach.get_achievement("x_ray")
+                if not await x_ray.is_achieved(ctx.author):
+                    await x_ray.unlock(ctx.author)
+                    await ctx.reply(f"Achievement Get! {x_ray!s}")
+
+            # actual function
             reward = 0
             if len(hand.cards) >= 7 and hand.get_value() <= 21:
                 await econ.update_winloss(ctx.author, "b")
@@ -2604,6 +2681,11 @@ Example command: `,bougegram normal 100`"""
         await econ.update_amount(giftee, amount, False, tracker_reason="gifted")
         await econ.update_amount(user, -1 * amount, False, tracker_reason="gift")
         await ctx.send(f"{ctx.author} just gifted {amount} bouge bucks to {giftee}!!!")
+        if amount == 10_000_000_000:
+            mr_generosity = await ach.get_achievement("mr_generosity")
+            if not await mr_generosity.is_achieved(ctx.author):
+                await mr_generosity.unlock(ctx.author)
+                await ctx.reply(f"Achievement Get! {mr_generosity!s}")
 
     @commands.hybrid_command(aliases=["lb", "baltop"])
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -2881,6 +2963,10 @@ Example command: `,bougegram normal 100`"""
                             user, pool * 10, tracker_reason="doubleornothing"
                         )
                         await econ.update_winloss(ctx.author, "b")
+                        jackpot_ach = await ach.get_achievement("jackpot")
+                        if not await jackpot_ach.is_achieved(ctx.author):
+                            await jackpot_ach.unlock(ctx.author)
+                            await ctx.reply(f"Achievement Get! {jackpot_ach!s}")
                         return
                     await main_message.edit(
                         content=(
@@ -4987,7 +5073,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 return True
 
         bal = await econ.get_bal(ctx.author)
-        if worthy and bal >= 1e99:
+        if worthy and bal >= int(Decimal(10) ** 99):
             async with ctx.typing():
                 await narrator("You attempt to approach the cave...", 3)
                 await narrator(
@@ -4998,10 +5084,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 await ctx.send(
                     misc.starspeak(
                         [
-                            "There's nothing left for you here...",
-                            "You are a fool for returning...",
+                            "THERE IS NOTHING LEFT FOR YOU HERE",
+                            "YOU ARE A FOOL FOR RETURNING",
                             "",
-                            ",ASCEND to realize your destiny",
+                            ",ASCEND TO REALIZE YOUR IDENTITY",
                         ]
                     )
                 )
@@ -5097,6 +5183,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 if msg.content.lower() == "yes":
                     skip = True
             async with ctx.typing():
+                the_end = await ach.get_achievement("the_end")
+                if not await the_end.is_achieved(ctx.author):
+                    await the_end.unlock(ctx.author)
+                    await ctx.send(f"Achievement Get! {the_end!s}")
                 if not skip:
                     await narrator(
                         "In the bouge casino, when days became weeks, became months, became years, you found yourself at the top. You had won it all, and lost it all. You had taken from the rich, and taken from the poor. You had taken from the casino, and taken from yourself.",
@@ -5725,6 +5815,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 await econ.log_prestiege(ctx.author, power.content)
 
                 if power.content == "4":
+                    banished = await ach.get_achievement("banished")
+                    if not await banished.is_achieved():
+                        await banished.unlock()
+                        await ctx.send(f"Achievement Get! {banished!s}")
                     await pishifat(
                         ctx,
                         "Oh. It's too bad we won't be seeing each other again, but I understand. Hopefully you won't get bored while chasing infinity, I know I did. Sooner or later you'll lose it all, you know.",
@@ -5785,15 +5879,15 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
     @commands.command(hidden=True, aliases=["ASCEND"])
     async def ascend(self, ctx):
         bal = await econ.get_bal(ctx.author)
-        if bal < 1e99:
+        if bal < int(Decimal(10) ** 99):
             return
         await ctx.send(
             misc.starspeak(
                 [
-                    "The acension process is not ready yet",
-                    "Return to me in the future",
+                    "THE ASCENSION PROCESS IS NOT READY YET",
+                    "RETURN TO ME IN THE FUTURE",
                     "",
-                    "Good things come to those who wait.",
+                    "GOOD THINGS COME TO THOSE WHO WAIT.",
                 ]
             )
         )
