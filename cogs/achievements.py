@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from utils.achievements import achievements_list, money_achievements_list
-from utils.misc import generic_checks
+from utils.miscfuncs import generic_checks
 
 
 class Achievements(commands.Cog):
