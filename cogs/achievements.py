@@ -50,7 +50,7 @@ class Achievements(commands.Cog):
             if achievement.hidden and not (
                 is_dm and await achievement.is_achieved(ctx.author)
             ):
-                msg += f"{''.join('?' if c not in [' ', ':'] else ' ' for c in str(achievement))} "
+                msg += f"{''.join('?' if c not in [' ', ':', '*'] else c for c in str(achievement))} "
             else:
                 msg += f"{achievement!s} "
             msg += "\n"
