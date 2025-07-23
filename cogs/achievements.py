@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 from utils.achievements import achievements_list, money_achievements_list
+from utils.misc import generic_checks
 
 
 class Achievements(commands.Cog):
@@ -11,21 +12,24 @@ class Achievements(commands.Cog):
         self.client = client
 
     @commands.command(name="achievements")
-    async def achievements(self, ctx):
+    @generic_checks(max_check=False, dm_check=False)
+    async def achievements(self, ctx, user: discord.User = None):
         """List all achievements."""
+        if not user:
+            user = ctx.author
         is_dm = isinstance(ctx.channel, discord.DMChannel)
         msg = ""
         for achievement in achievements_list:
-            emoji = "✅" if await achievement.is_achieved(ctx.author) else "❌"
+            emoji = "✅" if await achievement.is_achieved(user) else "❌"
             msg += f"{emoji} "
             if achievement.hidden and not (
-                is_dm and await achievement.is_achieved(ctx.author)
+                is_dm and await achievement.is_achieved(user)
             ):
                 msg += f"{''.join('?' if c not in [' ', ':', '*'] else c for c in str(achievement))} "
             else:
                 msg += f"{achievement!s} "
             if achievement.progressable:
-                progress = await achievement.get_progress(ctx.author)
+                progress = await achievement.get_progress(user)
                 needed_progress = achievement.needed_progress
                 msg += f"({progress}/{needed_progress})"
             msg += "\n"
@@ -40,15 +44,18 @@ class Achievements(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def milestones(self, ctx):
+    @generic_checks(max_check=False, dm_check=False)
+    async def milestones(self, ctx, user: discord.User = None):
         """List all money-related achievements."""
+        if not user:
+            user = ctx.author
         is_dm = isinstance(ctx.channel, discord.DMChannel)
         msg = ""
         for achievement in money_achievements_list:
-            emoji = "✅" if await achievement.is_achieved(ctx.author) else "❌"
+            emoji = "✅" if await achievement.is_achieved(user) else "❌"
             msg += f"{emoji} "
             if achievement.hidden and not (
-                is_dm and await achievement.is_achieved(ctx.author)
+                is_dm and await achievement.is_achieved(user)
             ):
                 msg += f"{''.join('?' if c not in [' ', ':', '*'] else c for c in str(achievement))} "
             else:
