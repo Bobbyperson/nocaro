@@ -2068,10 +2068,10 @@ Example command: `,bougegram normal 100`"""
                     f"Achievement Get! {i_do_it_for_the_love_of_the_game!s}"
                 )
         hate_the_game = await ach.get_achievement("hate_the_game")
-        if not await hate_the_game.is_achieved(user):
-            await hate_the_game.add_progress(user, 1)
-            if await hate_the_game.is_achieved(user):
-                await ctx.reply(f"Achievement Get! {hate_the_game!s}")
+        if not await hate_the_game.is_achieved(victim):
+            await hate_the_game.add_progress(victim, 1)
+            if await hate_the_game.is_achieved(victim):
+                await victim.send(f"Achievement Get! {hate_the_game!s}")
         petty_thief = await ach.get_achievement("petty_thief")
         if not await petty_thief.is_achieved(user):
             await petty_thief.add_progress(user, 1)
