@@ -4694,6 +4694,13 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             "19-27": lambda n: _num(n, 19, 27),
             "28-36": lambda n: _num(n, 28, 36),
         }
+        groups = [
+            ["red", "black"],
+            ["odd", "even"],
+            ["low", "high"],
+            ["1-12", "13-24", "25-36"],
+            ["1-9", "10-18", "19-27", "28-36"],
+        ]
         bet_checks.update({str(i): (lambda n, x=i: n == x) for i in range(1, 37)})
 
         def check(m):
@@ -4828,6 +4835,12 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                             )
                             amount = econ.moneyfy(amount)
                             # everything valid at this point
+                            conflicting_bets = False
+                            for bet in bets[bet_msg.author].keys():
+                                for group in groups:
+                                    if bet in group and place in group and bet != place:
+                                        conflicting_bets = True
+                                        break
                             if place not in bets[bet_msg.author]:
                                 bets[bet_msg.author][place] = 0
                             bets[bet_msg.author][place] += amount
@@ -4835,7 +4848,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                                 bet_msg.author,
                                 -1 * amount,
                                 tracker_reason="roulette",
-                                bonuses=False,
+                                bonuses=not conflicting_bets,
                             )
                         if first_bet == 0:
                             first_bet = int(time.time())
@@ -4894,8 +4907,18 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                     if won:
                         multiplier = possible_bets[bet_place]
                         payout = stake * multiplier  # money returned
+                        conflicting_bets = False
+                        for bet in user_bets.keys():
+                            for place in user_bets.keys():
+                                for group in groups:
+                                    if bet in group and place in group and bet != place:
+                                        conflicting_bets = True
+                                        break
                         await econ.update_amount(
-                            user, payout, tracker_reason="roulette", bonuses=False
+                            user,
+                            payout,
+                            tracker_reason="roulette",
+                            bonuses=not conflicting_bets,
                         )
                         await econ.update_winloss(user, "w")
                         wins += payout
