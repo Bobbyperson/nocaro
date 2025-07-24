@@ -2028,6 +2028,7 @@ Example command: `,bougegram normal 100`"""
                 f" is in jail and cannot steal or be stolen from for 10 minutes."
             )
             await econ.update_immunity(user, unix + 600)
+            return
         else:
             if gunga == 1:
                 stealamnt = stealamnt * 10
