@@ -245,7 +245,7 @@ class MoneyAchievement(Achievement):
             name=name,
             internal_name=internal_name,
             description=description,
-            progressable=True,  # all money achievements are progressable
+            progressable=False,  # handled a little differently
             needed_progress=needed_progress,
             hidden=hidden,
             **kwargs,

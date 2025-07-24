@@ -154,8 +154,8 @@ async def update_amount(
         )
     for achievement in money_achievements_list:
         if not await achievement.is_achieved(user):
-            await achievement.set_progress(user, new_balance, overwrite=True)
-            if await achievement.is_achieved(user):
+            if achievement.needed_progress <= new_balance:
+                await achievement.unlock(user)
                 await user.send("Milestone reached: " + str(achievement))
                 if achievement.internal_name == "halfway_point":
                     await user.send(
