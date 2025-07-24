@@ -174,7 +174,7 @@ async def update_amount(
         if not await mogul_moves.is_achieved(user):
             await mogul_moves.unlock(user)
             await user.send(f"Achievement Get! {mogul_moves!s}")
-    if new_balance > 0 and new_balance / bal <= 0.1:
+    if new_balance > 0 and bal > 0 and new_balance / bal <= 0.1:
         better_left_than_dead = await get_achievement("better_left_than_dead")
         if not await better_left_than_dead.is_achieved(user):
             await better_left_than_dead.unlock(user)
