@@ -485,7 +485,7 @@ async def get_prestiege(session, user):
         + user_main.pres4
         + user_main.pres5
     )
-    if not await maximum_overdrive.is_achieved(user):
+    if not await maximum_overdrive.is_achieved(user) and total > 0:
         if total >= 7:
             await maximum_overdrive.unlock(user)
             await user.send(f"Achievement Get! {maximum_overdrive!s}")
