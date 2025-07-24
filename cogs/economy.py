@@ -4701,6 +4701,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             ["1-12", "13-24", "25-36"],
             ["1-9", "10-18", "19-27", "28-36"],
         ]
+        single_bet_wins = {}
         bet_checks.update({str(i): (lambda n, x=i: n == x) for i in range(1, 37)})
 
         def check(m):
@@ -4907,6 +4908,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                     if won:
                         multiplier = possible_bets[bet_place]
                         payout = stake * multiplier  # money returned
+                        if multiplier == 37:
+                            if user not in single_bet_wins:
+                                single_bet_wins[user] = 0
+                            single_bet_wins[user] += 2
                         conflicting_bets = False
                         for bet in user_bets.keys():
                             for place in user_bets.keys():
@@ -4927,6 +4932,16 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                         losses += stake
                         await econ.update_winloss(user, "l")
                         win_msg += f"{user.mention} **lost** {econ.unmoneyfy(stake)} on {bet_place}.\n"
+                if user in single_bet_wins and single_bet_wins[user] > 0:
+                    single_bet_wins[user] -= 1
+                let_it_ride = await ach.get_achievement("let_it_ride")
+                if (
+                    user in single_bet_wins
+                    and single_bet_wins[user] == 2
+                    and not await let_it_ride.is_unlocked(user)
+                ):
+                    await let_it_ride.unlock(user)
+                    await ctx.send(f"{user.mention} Achievement Get! {let_it_ride!s}")
 
             if len(win_msg) > 2000:
                 win_msg = f"The ball has landed on **{ball_lands} ({ball_color})!**\nI would show you the results, but there are too many to display!"
