@@ -101,7 +101,7 @@ class Poll(commands.Cog):
                 and not self.warned_voters
             ):
                 # Warn voters if it's past 5 pm on a Friday
-                warning_message = "The event poll will be closing in one hour. If you cannot attend, please remove your vote to avoid losing future voting power."
+                warning_message = f"The event poll will be closing in one hour. If you cannot attend, please remove your vote to avoid losing future voting power. {cache_msg.jump_url}"
                 users = []
                 for reaction in cache_msg.reactions:
                     if reaction.emoji in self.poll_emojis:
