@@ -208,7 +208,7 @@ class Achievement:
         """Add progress to the achievement for the user."""
         if await self.is_achieved(user):
             return False
-        progress = max(await self.get_progress(user) + progress, 0)
+        progress = max(0, progress)
         progress = min(progress, self.needed_progress - await self.get_progress(user))
         if await self.get_progress(user) + progress >= self.needed_progress:
             await self.unlock(user)
