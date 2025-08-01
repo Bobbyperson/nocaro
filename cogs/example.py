@@ -102,8 +102,7 @@ class Example(commands.Cog):
             ):
                 return await ctx.send("Could not determine the repository URL.")
 
-            if remote_url.endswith(".git"):
-                remote_url = remote_url[:-4]
+            remote_url = remote_url.removesuffix(".git")
 
             remote_commit_hash = (
                 subprocess.check_output(

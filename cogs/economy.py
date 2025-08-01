@@ -30,9 +30,9 @@ from sqlalchemy import Integer, cast, delete, select, text
 
 import models
 import utils.achievements as ach
-import utils.audio as audio
 import utils.econfuncs as econ
 import utils.miscfuncs as misc
+from utils import audio
 
 getcontext().prec = 200
 
@@ -53,15 +53,13 @@ class InventorySource(menus.ListPageSource):
     @menus.button("\N{BLACK LEFT-POINTING TRIANGLE}")
     async def on_previous_page(self, payload):
         self.page -= 1
-        if self.page < 0:
-            self.page = 0
+        self.page = max(self.page, 0)
         await self.message.edit(embed=self.compose_embed())
 
     @menus.button("\N{BLACK RIGHT-POINTING TRIANGLE}")
     async def on_next_page(self, payload):
         self.page += 1
-        if self.page > len(self.source) // 25:
-            self.page = len(self.source) // 25
+        self.page = min(self.page, len(self.source) // 25)
         await self.message.edit(embed=self.compose_embed())
 
 
@@ -594,20 +592,18 @@ Example command: `,bougegram normal 100`"""
                 await join_msg.reply("You have already joined!")
             elif join_msg.content.lower() == "skip":
                 await join_msg.reply("You cannot skip!")
+            elif await econ.get_bal(join_msg.author) < bet:
+                await join_msg.reply("You don't have enough bouge bucks!")
+            elif await econ.checkmax(join_msg.author):
+                await ctx.send(
+                    "You attempt to join the best game but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
+                )
             else:
-                if await econ.get_bal(join_msg.author) < bet:
-                    await join_msg.reply("You don't have enough bouge bucks!")
-                else:
-                    if await econ.checkmax(join_msg.author):
-                        await ctx.send(
-                            "You attempt to join the best game but you can't, your body is too weak from the endless games. Maybe you should attempt to `,enterthecave`."
-                        )
-                    else:
-                        players.append(join_msg.author)
-                        await join_msg.add_reaction("✅")
-                        await start_msg.edit(
-                            content=f"Starting a game of Bouge Gram on {difficulty} mode!!!! Type `join` to join! There are currently {len(players)} in the game. The current pot is {bet * len(players)}! Starting <t:{end_check}:R>..."
-                        )
+                players.append(join_msg.author)
+                await join_msg.add_reaction("✅")
+                await start_msg.edit(
+                    content=f"Starting a game of Bouge Gram on {difficulty} mode!!!! Type `join` to join! There are currently {len(players)} in the game. The current pot is {bet * len(players)}! Starting <t:{end_check}:R>..."
+                )
         await start_msg.edit(
             content="This game is very simple. Type the word before you hear this sound. The time to answer will shorten when you hear this sound. Last one standing wins. On your mark, get ready, go!"
         )
@@ -1233,11 +1229,10 @@ Example command: `,bougegram normal 100`"""
                 correct = "in"
             else:
                 correct = "out"
+        elif cards[2].value >= cards[0].value and cards[2].value <= cards[1].value:
+            correct = "in"
         else:
-            if cards[2].value >= cards[0].value and cards[2].value <= cards[1].value:
-                correct = "in"
-            else:
-                correct = "out"
+            correct = "out"
         if msg.content == "i":
             msg.content = "in"
         if msg.content == "o":
@@ -1379,8 +1374,8 @@ Example command: `,bougegram normal 100`"""
         reqamnt = 20000 + (1000 * (level + 1))
         earn = math.ceil(
             (
-                math.log(bal / 6000, 10)
-                + (2 * math.log(bal / 6000, 10) - 1)
+                math.log10(bal / 6000)
+                + (2 * math.log10(bal / 6000) - 1)
                 + math.sqrt(bal / 35000)
             )
             / 1.15
@@ -2497,14 +2492,13 @@ Example command: `,bougegram normal 100`"""
                                     options = get_options()
                                     await update_game()
                                     await pippi_say(ctx, "Ok, done.")
+                elif rd.randint(1, 5) == 1:
+                    await pippi_say(
+                        ctx,
+                        "https://tenor.com/view/walter-white-walter-falling-breaking-bad-dm4uz3-gif-18078549 ",
+                    )
                 else:
-                    if rd.randint(1, 5) == 1:
-                        await pippi_say(
-                            ctx,
-                            "https://tenor.com/view/walter-white-walter-falling-breaking-bad-dm4uz3-gif-18078549 ",
-                        )
-                    else:
-                        await pippi_say(ctx, "Alright then.")
+                    await pippi_say(ctx, "Alright then.")
                 options = get_options()
                 await update_game()
         # end pippi
@@ -2669,10 +2663,9 @@ Example command: `,bougegram normal 100`"""
             if amount > (gifteebal * -1) + 10_000_000_000:  # 10 trillion
                 await ctx.send("Max gift is debt + ten billion!")
                 return
-        else:
-            if amount > 10_000_000_000:
-                await ctx.send("Max gift is ten billion!")
-                return
+        elif amount > 10_000_000_000:
+            await ctx.send("Max gift is ten billion!")
+            return
         user = ctx.author
         giftee = member
         totalmoney = await econ.get_bal(user)
@@ -4363,44 +4356,43 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     ctx.author, -1 * amount, tracker_reason="poker"
                 )
                 await econ.update_winloss(ctx.author, "l")
+            elif score(player)[1] > score(dealer)[1]:
+                await ctx.send(
+                    f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
+                )
+                await econ.update_amount(ctx.author, amount, tracker_reason="poker")
+                await econ.update_winloss(ctx.author, "w")
+            elif score(player)[1] < score(dealer)[1]:
+                await ctx.send(
+                    f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
+                )
+                await econ.update_amount(
+                    ctx.author, -1 * amount, tracker_reason="poker"
+                )
+                await econ.update_winloss(ctx.author, "l")
             else:
-                if score(player)[1] > score(dealer)[1]:
-                    await ctx.send(
-                        f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
-                    )
-                    await econ.update_amount(ctx.author, amount, tracker_reason="poker")
-                    await econ.update_winloss(ctx.author, "w")
-                elif score(player)[1] < score(dealer)[1]:
-                    await ctx.send(
-                        f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
-                    )
-                    await econ.update_amount(
-                        ctx.author, -1 * amount, tracker_reason="poker"
-                    )
-                    await econ.update_winloss(ctx.author, "l")
-                else:
-                    for i in range(4, -1, -1):  # reversed loop, lol
-                        if score(player)[3][i] > score(dealer)[3][i]:
-                            await ctx.send(
-                                f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
-                            )
-                            await econ.update_amount(
-                                ctx.author, amount, tracker_reason="poker"
-                            )
-                            await econ.update_winloss(ctx.author, "w")
-                            break
-                        elif score(player)[3][i] < score(dealer)[3][i]:
-                            await ctx.send(
-                                f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
-                            )
-                            await econ.update_amount(
-                                ctx.author, -1 * amount, tracker_reason="poker"
-                            )
-                            await econ.update_winloss(ctx.author, "l")
-                            break
-                    else:  # if the loop completes without breaking, it's a tie
-                        await ctx.send("It's a tie! What the fuck????")
-                        await econ.update_winloss(ctx.author, "t")
+                for i in range(4, -1, -1):  # reversed loop, lol
+                    if score(player)[3][i] > score(dealer)[3][i]:
+                        await ctx.send(
+                            f"You win {econ.unmoneyfy(amount)} bouge bucks! You won due to higher valued cards."
+                        )
+                        await econ.update_amount(
+                            ctx.author, amount, tracker_reason="poker"
+                        )
+                        await econ.update_winloss(ctx.author, "w")
+                        break
+                    elif score(player)[3][i] < score(dealer)[3][i]:
+                        await ctx.send(
+                            f"You lose {econ.unmoneyfy(amount)} bouge bucks! The dealer won due to higher valued cards."
+                        )
+                        await econ.update_amount(
+                            ctx.author, -1 * amount, tracker_reason="poker"
+                        )
+                        await econ.update_winloss(ctx.author, "l")
+                        break
+                else:  # if the loop completes without breaking, it's a tie
+                    await ctx.send("It's a tie! What the fuck????")
+                    await econ.update_winloss(ctx.author, "t")
         elif score_lookup[score(player)[0]] > score_lookup[score(dealer)[0]]:
             if score(player)[0] == "royal flush":
                 pinme = await ctx.send(

@@ -54,11 +54,13 @@ select = [
     "UP",
     "I",
     "ASYNC",
-    "F"
+    "F",
+    "FURB",
+    "PLC",
 ]
 extend-ignore = [
     "ASYNC110", # I don't care
-    "ASYNC221"
+    "ASYNC221",
 ]
 
 [build-system]

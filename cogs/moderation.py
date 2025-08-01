@@ -70,8 +70,7 @@ class Moderation(commands.Cog):
     async def timeout(self, ctx, member: discord.Member, length: int = 5):
         """Timeout someone."""
         max_time = 2419200
-        if length > max_time:
-            length = max_time
+        length = min(length, max_time)
         current_time = discord.utils.utcnow()
         future_time = current_time + timedelta(seconds=length)
         await member.timeout(future_time, reason="Timeout")

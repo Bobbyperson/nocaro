@@ -255,8 +255,7 @@ class database(commands.Cog):
     @mf.generic_checks()
     async def conversation(self, ctx, number: int = 5):
         """Generate a whole conversation between random users."""
-        if number > 10:
-            number = 10
+        number = min(number, 10)
         async with self.client.session as session:
             rows = (
                 await session.scalars(
