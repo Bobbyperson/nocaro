@@ -26,6 +26,37 @@ class Poll(commands.Cog):
         self.event_vcs = []  # voice channel being monitored
         self.should_end_poll = False  # flag to end the poll
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        async with self.bot.session as session:
+            result = (
+                await session.scalars(select(models.poll.PollState))
+            ).one_or_none()
+            if result:
+                poll_channel = (
+                    1003557819800367154  # hardcoded for now, need to fix this
+                )
+                poll_channel = await self.bot.get_channel(poll_channel)
+                self.poll_message = await poll_channel.fetch_message(result.message_id)
+                self.poll_options = result.options.split(",")
+                self.poll_emojis = [
+                    "1️⃣",
+                    "2️⃣",
+                    "3️⃣",
+                    "4️⃣",
+                    "5️⃣",
+                    "6️⃣",
+                    "7️⃣",
+                    "8️⃣",
+                    "9️⃣",
+                    "0️⃣",
+                ][: len(self.poll_options)]
+                self.votes = Counter()
+                # if update_poll isn't running, start it
+                if not self.update_poll.is_running():
+                    self.update_poll.start()
+        print("Polls are ready")
+
     @commands.command(aliases=["cep"])
     @commands.is_owner()
     async def createeventpoll(self, ctx, *, options: str):
