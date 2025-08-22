@@ -441,6 +441,9 @@ class Economy(commands.Cog):
         if isinstance(ctx.channel, discord.channel.DMChannel):
             await ctx.send("Command may not be used in a DM.")
             return
+        if ctx.voice_client is not None:
+            await ctx.send("Looks like I'm busy doing something else, try again later.")
+            return
         bet = econ.moneyfy(bet)
         if difficulty is None:
             await ctx.send(
@@ -4606,8 +4609,9 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
     @misc.generic_checks()
     async def roulette(self, ctx):
-        if ctx.guild.voice_client:
-            await ctx.guild.voice_client.disconnect(force=True)
+        if ctx.voice_client is not None:
+            await ctx.send("Looks like I'm busy doing something else, try again later.")
+            return
         if ctx.author.voice:
             await audio.join(ctx)
         else:
