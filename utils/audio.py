@@ -1,10 +1,16 @@
+import asyncio
+import io
 import threading
 import time
 import uuid
 
+# Load once (e.g., in your Cog __init__)
 import discord
 import numpy as np
+import soundfile as sf
+from kittentts import KittenTTS
 from mutagen import File as MutagenFile
+from pydub import AudioSegment
 
 
 class MixerAudioSource(discord.AudioSource):
@@ -150,6 +156,21 @@ class MixerAudioSource(discord.AudioSource):
         return False
 
 
+class PCMBytesAudio(discord.AudioSource):
+    """Streams 48kHz stereo s16le PCM bytes (no files)."""
+
+    FRAME_BYTES = 3840  # 20ms * 48000 Hz * 2ch * 2 bytes
+
+    def __init__(self, pcm_bytes: bytes):
+        self._buf = io.BytesIO(pcm_bytes)
+
+    def read(self):
+        return self._buf.read(self.FRAME_BYTES)
+
+    def is_opus(self):
+        return False
+
+
 async def join(ctx) -> bool:
     if ctx.author.voice:
         await ctx.author.voice.channel.connect()
@@ -260,3 +281,41 @@ async def time_left(ctx, source_id: str) -> float | None:
     if ctx.voice_client and hasattr(ctx.voice_client, "mixer"):
         return ctx.voice_client.mixer.get_time_left(source_id)
     return None
+
+
+async def kitten_tts_source(
+    kitten: KittenTTS,
+    text: str,
+    *,
+    voice: str = "expr-voice-2-f",
+    concat_after_path: str | None = None,  # e.g., "audio/madibanocaro.mp3"
+) -> PCMBytesAudio:
+    """Return a Discord AudioSource containing the spoken text, no temp files."""
+
+    def build_bytes() -> bytes:
+        # 1) TTS -> numpy float audio @24kHz (mono)
+        audio = kitten.generate(text, voice=voice)
+
+        # 2) Encode to a WAV in memory (so pydub can read reliably)
+        wav_buf = io.BytesIO()
+        sf.write(wav_buf, audio, 24000, format="WAV")  # float32 -> WAV header
+        wav_buf.seek(0)
+
+        # 3) To pydub segment
+        voice_seg = AudioSegment.from_file(wav_buf, format="wav")
+
+        # 4) Optional concatenate your stinger (keeps your old behavior of sound1 + sound2)
+        if concat_after_path:
+            tail = AudioSegment.from_file(concat_after_path)
+            out = voice_seg + tail
+        else:
+            out = voice_seg
+
+        # 5) Convert to Discord's raw PCM: 48kHz, stereo, 16-bit little endian
+        out = out.set_frame_rate(48000).set_channels(2).set_sample_width(2)
+
+        # 6) Raw PCM bytes to stream
+        return out.raw_data
+
+    pcm_bytes = await asyncio.to_thread(build_bytes)  # keep event loop snappy
+    return PCMBytesAudio(pcm_bytes)

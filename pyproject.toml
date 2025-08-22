@@ -9,25 +9,25 @@ license = "GNU GPLv3"
 dependencies = [
     "sqlalchemy[aiosqlite]>=2.0.40",
     "pillow>=11.2.0",
-    "discord.py[voice] @ git+https://github.com/Rapptz/discord.py.git@a00510988a204517f4777f1231407de3db726ae5", # CHANGE ME WHEN NEW VERSION IS RELEASED
+    "discord-py[voice]>=2.6.0",
     "discord-pretty-help>=2.0.7",
     "ffmpy>=0.5.0",
     "pyquery>=2.0.1",
     "asyncio>=3.4.3",
     "asyncpg>=0.30.0",
     "matplotlib>=3.10.1",
-    "pydub>=0.25.1",
     "emoji>=2.14.1",
     "yfinance>=0.2.55",
     "pandas>=2.2.3",
     "pandas_market_calendars>=5.0.0",
-    "pyttsx3>=2.98",
     "discord-ext-menus",
     "anyio>=4.9.0",
     "alembic>=1.16.1",
     "numpy>=2.2.1",
     "aiohttp>=3.11.11",
     "mutagen>=1.47.0",
+    "kittentts",
+    "pydub>=0.25.1",
 ]
 
 [dependency-groups]
@@ -41,6 +41,7 @@ package = false
 
 [tool.uv.sources]
 discord-ext-menus = { git = "https://github.com/Rapptz/discord-ext-menus" }
+kittentts = { url = "https://github.com/KittenML/KittenTTS/releases/download/0.1/kittentts-0.1.0-py3-none-any.whl" }
 
 [tool.ruff]
 exclude = [

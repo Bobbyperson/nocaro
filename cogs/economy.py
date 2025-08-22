@@ -18,14 +18,13 @@ import anyio
 import asyncpg
 import discord
 import matplotlib.pyplot as plt
-import pyttsx3
 from discord import FFmpegPCMAudio
 from discord.ext import commands, menus, tasks
 from discord.ui import Button, View
+from kittentts import KittenTTS
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import FuncFormatter
 from PIL import Image, ImageDraw, ImageFont
-from pydub import AudioSegment
 from sqlalchemy import Integer, cast, delete, select, text
 
 import models
@@ -326,6 +325,7 @@ class Economy(commands.Cog):
         self.client = client
         self.award_map.add_exception_type(asyncpg.PostgresConnectionError)
         self.award_map.start()
+        self.kitten = KittenTTS("KittenML/kitten-tts-nano-0.1")
 
     def cog_unload(self):
         self.award_map.cancel()
@@ -564,17 +564,19 @@ Example command: `,bougegram normal 100`"""
         )
         voice_channel = user.voice.channel
         vc = await voice_channel.connect()
-        engine = pyttsx3.init()
-        engine.save_to_file(
-            f"A bouge gram game is starting in {ctx.channel.name}! The difficulty is {difficulty} and the bet is {bet} bouge bucks! Go there and type join to join!",
-            f"{ctx.channel.id}.mp3",
+        announce = (
+            f"A booj gram game is starting in {ctx.channel.name}! "
+            f"The difficulty is {difficulty} and the bet is {bet} booj bucks! "
+            "Go there and type join to join!"
         )
-        engine.runAndWait()
-        sound1 = AudioSegment.from_file(f"{ctx.channel.id}.mp3", format="mp3")
-        sound2 = AudioSegment.from_file("audio/madibanocaro.mp3", format="mp3")
-        combined = sound1 + sound2
-        combined.export(f"{voice_channel.id}.mp3", format="mp3")
-        vc.play(FFmpegPCMAudio(f"{voice_channel.id}.mp3"))
+
+        src = await audio.kitten_tts_source(
+            self.kitten,
+            announce,
+            voice="expr-voice-3-m",
+            concat_after_path="audio/madibanocaro.mp3",
+        )
+        vc.play(src)
         while misc.get_unix() < end_check:
             try:
                 join_msg = await self.client.wait_for(
@@ -774,7 +776,7 @@ Example command: `,bougegram normal 100`"""
                 for player in players:
                     await econ.update_amount(
                         player,
-                        int(round((bet * initial_players) / len(players), 0)),
+                        int(round((bet * len(initial_players)) / len(players), 0)),
                         tracker_reason="bougegram",
                     )
                     win_msg += f"{player.mention} "
@@ -787,8 +789,6 @@ Example command: `,bougegram normal 100`"""
             while vc.is_playing():
                 await asyncio.sleep(0.1)
             await vc.disconnect(force=True)
-            os.remove(f"{ctx.channel.id}.mp3")
-            os.remove(f"{voice_channel.id}.mp3")
 
     @commands.hybrid_command(aliases=["wl"])
     @commands.cooldown(1, 5, commands.BucketType.user)
