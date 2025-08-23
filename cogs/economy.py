@@ -3214,6 +3214,7 @@ Example command: `,bougegram normal 100`"""
             return (
                 moosage.channel == ctx.channel
                 and moosage.content.lower() == str.lower(word)
+                and (moosage.author == member or moosage.author == ctx.author)
             )
 
         if ctx.author == member:
