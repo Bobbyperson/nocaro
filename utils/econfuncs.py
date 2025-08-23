@@ -384,7 +384,7 @@ def moneyfy(amount):
         return amount
 
     if isinstance(amount, str):
-        amount = amount.replace(",", "").replace(" ", "")
+        amount = amount.replace(",", ".").replace(" ", "")
 
     if str(amount).lstrip("-").isdigit():
         return int(amount)
