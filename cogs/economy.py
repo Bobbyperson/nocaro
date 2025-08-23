@@ -4770,7 +4770,11 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                                 valid_message = False
                                 break
                             if place not in possible_bets:
-                                await bet_msg.reply(f"{place} is not valid!")
+                                await bet_msg.reply(
+                                    discord.utils.escape_mentions(
+                                        f"{place} is not valid!"
+                                    )
+                                )
                                 valid_message = False
                                 break
                             maxed = await econ.checkmax(bet_msg.author)
