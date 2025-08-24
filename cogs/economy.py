@@ -4707,6 +4707,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 m.channel == ctx.channel
                 and (m.content.startswith("bet ") or m.content == "endroulette")
                 and not m.author.bot
+                and m.author.voice
                 and m.author.voice.channel == ctx.guild.voice_client.channel
             )
 
