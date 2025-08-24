@@ -1835,7 +1835,8 @@ Example command: `,bougegram normal 100`"""
 
     # It sends a message with an image of the user's balance.
     @commands.hybrid_command(
-        name="balance", aliases=["bal", "bank", "money", "bucks", "dosh", "wonga"]
+        name="balance",
+        aliases=["bal", "bank", "money", "bucks", "dosh", "wonga", "kromer", "dollars"],
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     @misc.generic_checks(max_check=False)
@@ -2040,7 +2041,7 @@ Example command: `,bougegram normal 100`"""
             )
             try:
                 await member.send(
-                    f"{user} just stole {stealamnt} bouge bucks from you in {ctx.channel.mention}!!!"
+                    f"{user} just stole {stealamnt} bouge bucks from you!!! {ctx.message.jump_url}"
                 )
             except discord.Forbidden:
                 await ctx.send(f"could not dm {victim}")
@@ -2098,7 +2099,7 @@ Example command: `,bougegram normal 100`"""
             await ctx.reply(f"{member} is not immune.")
 
     # look i did the rewrite
-    @commands.hybrid_command(aliases=["bj", "b", "blowjob", "bjrw"])
+    @commands.hybrid_command(aliases=["bj", "b", "blowjob", "bjrw", "blahaj"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=False)
     @misc.generic_checks()
     async def blackjack(self, ctx, amountstr: str | None = None):
