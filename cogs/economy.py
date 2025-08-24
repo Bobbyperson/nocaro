@@ -1352,7 +1352,7 @@ Example command: `,bougegram normal 100`"""
             return
         for map in maps_to_delete:
             if map not in user_maps:
-                await ctx.send(f"You do not own {map}!")
+                await ctx.send(discord.utils.escape_mentions(f"You do not own {map}!"))
                 return
         for map in maps_to_delete:
             await econ.remove_item(ctx.author, map)
