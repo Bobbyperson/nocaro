@@ -3475,6 +3475,9 @@ Example command: `,bougegram normal 100`"""
         if ctx.author == member:
             await ctx.send("Stop playing with yourself.")
             return
+        if member == self.client.user:
+            await ctx.send("You wouldn't wanna play against me, all I do is steal.")
+            return
         amount = econ.moneyfy(amount)
         if amount == 0:
             await ctx.send(
@@ -3486,6 +3489,7 @@ Example command: `,bougegram normal 100`"""
                 "To begin, type `,shareorsteal (amount) (user)`"
             )
             ctx.command.reset_cooldown(ctx)
+            return
         if not member:
             await ctx.send("Please select a user to compete with!")
             ctx.command.reset_cooldown(ctx)
