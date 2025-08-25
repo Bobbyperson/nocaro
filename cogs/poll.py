@@ -36,7 +36,7 @@ class Poll(commands.Cog):
                 poll_channel = (
                     1003557819800367154  # hardcoded for now, need to fix this
                 )
-                poll_channel = await self.bot.get_channel(poll_channel)
+                poll_channel = self.bot.get_channel(poll_channel)
                 self.poll_message = await poll_channel.fetch_message(result.message_id)
                 self.poll_options = result.options.split(",")
                 self.poll_emojis = [
