@@ -203,7 +203,7 @@ class database(commands.Cog):
                 ctx=message,
                 name=message.author.display_name,
                 avatar=message.author.display_avatar,
-                message=newmsg,
+                message=discord.utils.escape_mentions(newmsg),
             )
 
     @commands.hybrid_command()
