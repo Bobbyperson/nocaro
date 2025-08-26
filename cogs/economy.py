@@ -4626,6 +4626,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         main_track_id = None
         bg_vol = 1.0
         brokie_alert = False
+        music_should_play = true
 
         # main_track, _ = await audio.play(
         #     ctx, "audio/roulette/music/bennet.mp3", vol=1.0, repeat=True
@@ -4646,6 +4647,8 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                 if not (
                     ctx.guild.voice_client and ctx.guild.voice_client.is_connected()
                 ):
+                    break
+                if not music_should_play
                     break
 
         self.client.loop.create_task(track_manager())
@@ -4984,6 +4987,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             if len(ctx.guild.voice_client.channel.members) <= 1 and not end:
                 end = True
                 await ctx.send("No one is left in the voice channel, ending roulette.")
+        music_should_play = false
         await audio.stop(ctx, main_track_id)
         await audio.leave(ctx)
         await ctx.send("Roulette has ended. Thanks for playing!")
