@@ -4648,7 +4648,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
                     ctx.guild.voice_client and ctx.guild.voice_client.is_connected()
                 ):
                     break
-                if not music_should_play
+                if not music_should_play:
                     break
 
         self.client.loop.create_task(track_manager())
