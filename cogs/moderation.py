@@ -88,33 +88,117 @@ class Moderation(commands.Cog):
 
     @commands.hybrid_command()
     @commands.has_permissions(ban_members=True, manage_messages=True)
+    @mf.generic_checks(max_check=False)
+    @commands.cooldown(1, 3600, commands.BucketType.user)
     async def messageban(self, ctx, member: discord.Member):
         """Find and delete all messages in a server from one individual"""
-        await ctx.send(
-            "Ok working on it, this will take a long time. Type yes to confirm"
-        )
-        msg = await self.client.wait_for(
-            "message", check=lambda m: m.author == ctx.author
-        )
+        if not ctx.guild.me.guild_permissions.manage_messages:
+            await ctx.send("I don't have permission to manage messages.")
+            return
+
+        issues = []
+
+        for channel in ctx.guild.channels:
+            perms = channel.permissions_for(ctx.guild.me)
+
+            if isinstance(channel, discord.TextChannel):
+                if (
+                    not perms.view_channel
+                    and not perms.read_messages
+                    and not perms.manage_messages
+                ):
+                    issues.append(f"❌ Missing perms in {channel.mention}\n")
+            elif isinstance(channel, discord.VoiceChannel):
+                if (
+                    not perms.view_channel
+                    and not perms.read_messages
+                    and not perms.manage_messages
+                ):
+                    issues.append(f"❌ Missing perms in VC {channel.name}\n")
+            elif isinstance(channel, discord.ForumChannel):
+                if (
+                    not perms.view_channel
+                    and not perms.read_messages
+                    and not perms.manage_messages
+                ):
+                    issues.append(f"❌ Missing perms in forum {channel.name}\n")
+            elif isinstance(channel, discord.CategoryChannel):
+                if (
+                    not perms.view_channel
+                    and not perms.read_messages
+                    and not perms.manage_messages
+                ):
+                    issues.append(f"❌ Missing perms in category {channel.name}\n")
+        for thread in ctx.guild.threads:
+            perms = thread.permissions_for(ctx.guild.me)
+            if (
+                not perms.view_channel
+                and not perms.read_messages
+                and not perms.manage_messages
+            ):
+                issues.append(f"❌ Missing perms in thread {thread.name}\n")
+
+        if issues:
+            if len(issues) > 10:
+                await ctx.send(
+                    f"I'm missing permissions in {len(issues)} VCs/channels/forums."
+                )
+            else:
+                await ctx.send(
+                    "I'm missing permissions in the following VCs/channels/forums:\n"
+                    + "".join(issues)
+                )
+            await ctx.send(
+                "Continue anyways? This will take a long time. Type yes to confirm."
+            )
+        else:
+            await ctx.send(
+                "Ok working on it, this will take a long time. Type yes to confirm"
+            )
+        try:
+            msg = await self.client.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+                timeout=30,
+            )
+        except TimeoutError:
+            await ctx.send("Cancelling...")
+            return
         if msg.content != "yes":
             return
         main_msg = await ctx.send("Working...")
-        for channel in ctx.guild.text_channels:
-            await main_msg.edit(content=f"Now checking {channel.mention}...")
-            await channel.purge(
-                limit=None,
-                check=lambda m: m.author == member,
-                bulk=True,
-                reason="Bulk deleted",
-            )
-        for vc in ctx.guild.voice_channels:
-            await main_msg.edit(content=f"Now checking {vc.mention}...")
-            await vc.purge(
-                limit=None,
-                check=lambda m: m.author == member,
-                bulk=True,
-                reason="Bulk deleted",
-            )
+        for channel in ctx.guild.channels:
+            if (
+                not isinstance(channel, discord.CategoryChannel)
+                and not isinstance(channel, discord.ForumChannel)
+                and channel.permissions_for(ctx.guild.me).read_messages
+                and channel.permissions_for(ctx.guild.me).manage_messages
+            ):
+                await main_msg.edit(content=f"Now checking {channel.mention}...")
+                msgs = await channel.purge(
+                    limit=None,
+                    check=lambda m: m.author == member,
+                    bulk=True,
+                    reason="Bulk deleted",
+                )
+                await member.send(
+                    f"Deleted {len(msgs)} messages from {channel.mention}."
+                )
+        for thread in ctx.guild.threads:
+            if (
+                thread.permissions_for(ctx.guild.me).read_messages
+                and thread.permissions_for(ctx.guild.me).manage_messages
+            ):
+                await main_msg.edit(content=f"Now checking {thread.mention}...")
+                await thread.purge(
+                    limit=None,
+                    check=lambda m: m.author == member,
+                    bulk=True,
+                    reason="Bulk deleted",
+                )
+                await member.send(
+                    f"Deleted {len(msgs)} messages from {channel.mention}."
+                )
         await ctx.send("Done!")
 
     @commands.hybrid_command()
