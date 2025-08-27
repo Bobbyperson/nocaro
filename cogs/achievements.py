@@ -71,6 +71,44 @@ class Achievements(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+    @commands.command()
+    @commands.is_owner()
+    async def grantachievement(
+        self, ctx, user: discord.User, achievement_name: str = ""
+    ):
+        """Grant an achievement to a user."""
+        if not achievement_name:
+            await ctx.send("Please specify an achievement name.")
+            return
+
+        achievement = next(
+            (a for a in achievements_list if a.name == achievement_name), None
+        )
+        if not achievement:
+            await ctx.send("Achievement not found.")
+            return
+
+        await achievement.grant(user)
+        await ctx.send(f"Granted achievement **{achievement.name}** to {user.mention}.")
+
+    @commands.command()
+    @commands.is_owner()
+    async def setachievementprogress(
+        self, ctx, user: discord.User, achievement_name: str, progress: int
+    ):
+        """Set the progress of an achievement for a user."""
+        achievement = next(
+            (a for a in achievements_list if a.name == achievement_name), None
+        )
+        if not achievement:
+            await ctx.send("Achievement not found.")
+            return
+
+        await achievement.set_progress(user, progress)
+        await ctx.send(
+            f"Set achievement **{achievement.name}** progress to {progress} for {user.mention}."
+        )
+
 
 async def setup(client):
     await client.add_cog(Achievements(client))
