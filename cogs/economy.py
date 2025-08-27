@@ -5867,8 +5867,8 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
 
                 if power.content == "4":
                     banished = await ach.get_achievement("banished")
-                    if not await banished.is_achieved():
-                        await banished.unlock()
+                    if not await banished.is_achieved(ctx.author):
+                        await banished.unlock(ctx.author)
                         await ctx.send(f"Achievement Get! {banished!s}")
                     await pishifat(
                         ctx,
