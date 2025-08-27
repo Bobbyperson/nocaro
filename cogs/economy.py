@@ -1849,44 +1849,60 @@ Example command: `,bougegram normal 100`"""
             member = ctx.author
         amount = await econ.get_bal(member)
         img = Image.open("templates/balance.png")
-        if member.id == 351048216348721155:  # wyit
-            if amount == 1:
-                await ctx.send(
-                    file=discord.File(fp="templates/wyit.gif", filename="bal.gif"),
-                    content=f"{member} has {misc.commafy(amount)} bogue buck",
-                )
-            else:
-                await ctx.send(
-                    file=discord.File(fp="templates/wyit.gif", filename="bal.gif"),
-                    content=f"{member} has {misc.commafy(amount)} bouge bucks",
-                )
-            return
-        if member.id == 263126803780993024:  # ralkinson
-            if amount == 1:
-                await ctx.send(
-                    file=discord.File(fp="templates/ralkinson.png", filename="bal.png"),
-                    content=f"{member} has {misc.commafy(amount)} bogue buck",
-                )
-            else:
-                await ctx.send(
-                    file=discord.File(fp="templates/ralkinson.png", filename="bal.png"),
-                    content=f"{member} has {misc.commafy(amount)} bouge bucks",
-                )
-            return
-        if member.id == 819235084917276682:  # ned
-            if amount == 1:
-                await ctx.send(
-                    file=discord.File(fp="templates/ned.gif", filename="bal.gif"),
-                    content=f"{member} has {misc.commafy(amount)} bogue buck",
-                )
-            else:
-                await ctx.send(
-                    file=discord.File(fp="templates/ned.gif", filename="bal.gif"),
-                    content=f"{member} has {misc.commafy(amount)} bouge bucks",
-                )
-            return
-        if member.id == 201553786974502912:  # karma
-            img = Image.open("templates/karma.jpg")
+        prestiege = await econ.get_prestiege(ctx.author)
+        if prestiege[3]:
+            if member.id == 351048216348721155:  # wyit
+                if amount == 1:
+                    await ctx.send(
+                        file=discord.File(
+                            fp="templates/custombal/wyit.gif", filename="bal.gif"
+                        ),
+                        content=f"{member} has {misc.commafy(amount)} bogue buck",
+                    )
+                else:
+                    await ctx.send(
+                        file=discord.File(
+                            fp="templates/custombal/wyit.gif", filename="bal.gif"
+                        ),
+                        content=f"{member} has {misc.commafy(amount)} bouge bucks",
+                    )
+                return
+            if member.id == 263126803780993024:  # ralkinson
+                if amount == 1:
+                    await ctx.send(
+                        file=discord.File(
+                            fp="templates/custombal/ralkinson.png", filename="bal.png"
+                        ),
+                        content=f"{member} has {misc.commafy(amount)} bogue buck",
+                    )
+                else:
+                    await ctx.send(
+                        file=discord.File(
+                            fp="templates/custombal/ralkinson.png", filename="bal.png"
+                        ),
+                        content=f"{member} has {misc.commafy(amount)} bouge bucks",
+                    )
+                return
+            if member.id == 819235084917276682:  # ned
+                if amount == 1:
+                    await ctx.send(
+                        file=discord.File(
+                            fp="templates/custombal/ned.gif", filename="bal.gif"
+                        ),
+                        content=f"{member} has {misc.commafy(amount)} bogue buck",
+                    )
+                else:
+                    await ctx.send(
+                        file=discord.File(
+                            fp="templates/custombal/ned.gif", filename="bal.gif"
+                        ),
+                        content=f"{member} has {misc.commafy(amount)} bouge bucks",
+                    )
+                return
+            if member.id == 201553786974502912:  # karma
+                img = Image.open("templates/custombal/karma.jpg")
+            if member.id == 402550402140340224:  # neko
+                img = Image.open("templates/custombal/neko.jpg")
         wid, hig = (500, 500)
         if amount == 1:
             msg = f"{amount} bouge buck"
