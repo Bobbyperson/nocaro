@@ -5145,7 +5145,8 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 return
 
         prestieges = await econ.get_prestiege(ctx.author)
-        if prestieges is not None and prestieges[3] > 0:
+        total_prestiege = sum(prestieges) if prestieges is not None else 0
+        if total_prestiege > 0 and prestieges[3] > 0:
             await narrator("You attempt to approach the cave...", 1)
             await narrator(
                 "You fear the worst, and upon reaching the caves entrance, your fears are more than confirmed.",
@@ -5217,7 +5218,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 await ctx.send("You didn't respond! Exiting.")
                 return
             skip = False
-            if prestieges is not None:
+            if total_prestiege > 0:
                 await narrator(
                     "Looks like you've been here before, wanna cut to the chase? The last edit to the story/text was 12/2/24. (yes/no)"
                 )
