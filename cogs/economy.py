@@ -1423,10 +1423,10 @@ Example command: `,bougegram normal 100`"""
             await ctx.send("You need to specify a member to trade with!")
             return
         prestiege = await econ.get_prestiege(ctx.author)
-        if prestiege and prestiege[4]:
+        if prestiege and prestiege[3]:
             await ctx.send("You cannot trade $BB with this person.")
         prestiege = await econ.get_prestiege(ctx.author)
-        if prestiege and prestiege[4]:
+        if prestiege and prestiege[3]:
             await ctx.send("You cannot trade $BB.")
         if await econ.checkmax(member):
             await ctx.send("You cannot trade with this person. They have work to do.")
