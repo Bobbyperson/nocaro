@@ -1850,7 +1850,7 @@ Example command: `,bougegram normal 100`"""
         amount = await econ.get_bal(member)
         img = Image.open("templates/balance.png")
         prestiege = await econ.get_prestiege(member)
-        if prestiege[3]:
+        if prestiege[1]:
             if member.id == 351048216348721155:  # wyit
                 if amount == 1:
                     await ctx.send(
