@@ -88,7 +88,7 @@ class Achievements(commands.Cog):
             await ctx.send("Achievement not found.")
             return
 
-        await achievement.grant(user)
+        await achievement.unlock(user)
         await ctx.send(f"Granted achievement **{achievement.name}** to {user.mention}.")
 
     @commands.command()
