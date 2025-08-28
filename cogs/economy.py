@@ -4965,7 +4965,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 if (
                     user in single_bet_wins
                     and single_bet_wins[user] == 2
-                    and not await let_it_ride.is_unlocked(user)
+                    and not await let_it_ride.is_achieved(user)
                 ):
                     await let_it_ride.unlock(user)
                     await ctx.send(f"{user.mention} Achievement Get! {let_it_ride!s}")
