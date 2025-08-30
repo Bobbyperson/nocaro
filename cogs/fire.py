@@ -46,7 +46,7 @@ class Fire(commands.Cog):
                         guild_id=gid,
                         user_id=uid,
                         fb_id=fbid,
-                        message=message,
+                        message=discord.utils.escape_mentions(message),
                         attachments=None,
                         timestamp=int(unix),
                         fb_msg_id=fb_msg_id,
@@ -63,7 +63,7 @@ class Fire(commands.Cog):
                 await session.execute(
                     update(models.fire.Fire)
                     .where(models.fire.Fire.message_id == mid)
-                    .values(message=message, reacts=reacts)
+                    .values(message=discord.utils.escape_mentions(message), reacts=reacts)
                 )
 
     async def get_element(self, element, value_name, value):
@@ -99,7 +99,7 @@ class Fire(commands.Cog):
         exists = await self.get_element("fb_msg_id", "message_id", added_msg.id)
         if not exists:
             em = discord.Embed(
-                color=discord.Color(0xFA43EE), description=added_msg.content
+                color=discord.Color(0xFA43EE), description=discord.utils.escape_mentions(added_msg.content)
             )
             em.add_field(
                 name="Original",
