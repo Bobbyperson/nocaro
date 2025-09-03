@@ -3422,7 +3422,7 @@ Example command: `,bougegram normal 100`"""
         if jackpot == 1:
             await memesage.edit(content=f"{jackpotemoji} {jackpotemoji} {jackpotemoji}")
             await ctx.reply(
-                f"What the fuck? You got the gunga jackpot! You win {misc.commafy(amount * 25)} bouge bucks!"
+                f"What the fuck? You got the gunga jackpot! You win {misc.commafy(amount * 20)} bouge bucks!"
             )
             await econ.update_amount(
                 ctx.author, amount * 20 - amount, tracker_reason="slots"

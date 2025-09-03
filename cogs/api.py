@@ -293,7 +293,7 @@ class API(commands.Cog):
         banger = rd.randint(1, 10)
         earnings = rd.randint(0, 100)
         bangerearn = rd.randint(100, 500)
-        if banger:
+        if banger == 1:
             user_main.balance = str(int(user_main.balance) + bangerearn)
             session.add(
                 models.economy.History(
