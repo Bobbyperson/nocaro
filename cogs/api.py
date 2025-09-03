@@ -1,4 +1,5 @@
 import random as rd
+import time
 import uuid
 
 from aiohttp import web
@@ -17,30 +18,46 @@ CORSHEADERS = {
 }
 
 
-# TODO update every callsite to pass sessions explicitly
-# until then this will be used as a stop-gap solution
 def session_decorator(func):
     async def wrapped(*args, **kwargs):
-        session = None
-        if not isinstance(args[0], AsyncSession):
-            session = Session()
-            args = list(args)
-            args.insert(0, session)
+        # Expect a bound method: args[0] is `self`
+        if not args:
+            # Fallback: no self (unlikely here), treat like a function
+            session_provided = args and isinstance(args[0], AsyncSession)
+            session = args[0] if session_provided else Session()
+            new_args = args if session_provided else (session, *args)
+            try:
+                retval = await func(*new_args, **kwargs)
+                if not session_provided:
+                    await session.commit()
+                return retval
+            except Exception:
+                if not session_provided:
+                    await session.rollback()
+                raise
+            finally:
+                if not session_provided:
+                    await session.close()
 
+        self = args[0]
+        session_provided = len(args) > 1 and isinstance(args[1], AsyncSession)
+
+        if session_provided:
+            # Session came in as the second arg already
+            return await func(*args, **kwargs)
+
+        # Create and insert session as the second arg
+        session = Session()
+        new_args = (self, session, *args[1:])
         try:
-            retval = await func(*args, **kwargs)
-        except:
-            if session is not None:
-                await session.rollback()
+            retval = await func(*new_args, **kwargs)
+            await session.commit()
+            return retval
+        except Exception:
+            await session.rollback()
             raise
-        else:
-            if session is not None:
-                await session.commit()
         finally:
-            if session is not None:
-                await session.close()
-
-        return retval
+            await session.close()
 
     return wrapped
 
@@ -57,6 +74,26 @@ class API(commands.Cog):
         self.app.router.add_route("OPTIONS", "/user/map", self.handle_options)
         self.runner = web.AppRunner(self.app)
 
+        self.cooldowns = {}
+
+    async def add_cooldown(self, user_id, cmd: str, timestamp: int):
+        # check if cooldowns["cmd"] exists
+        if cmd not in self.cooldowns:
+            self.cooldowns[cmd] = {}
+        self.cooldowns[cmd][user_id] = timestamp + int(time.time())
+
+    async def check_cooldown(self, user_id, cmd: str):
+        if cmd not in self.cooldowns:
+            return False
+        user_cooldown = self.cooldowns[cmd].get(user_id)
+        if user_cooldown is None:
+            return False
+        return user_cooldown > int(time.time())
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.start_web_server()
+
     async def handle_options(self, request):
         # do nothing, just respond with OK
         return web.Response(
@@ -67,7 +104,7 @@ class API(commands.Cog):
     async def validate_auth(self, token) -> (bool, bool):
         async with Session() as session:
             result = await session.execute(
-                select(models.Api).where(models.Api.api_key == token)
+                select(models.api.Api).where(models.api.Api.api_key == token)
             )
             api_key = result.scalars().first()
             if api_key is None:
@@ -75,31 +112,28 @@ class API(commands.Cog):
             return True, api_key.can_write
 
     @session_decorator
-    async def check_user_allowed(user_id):
-        async with Session() as session:
-            main_result = await session.execute(
-                select(models.economy.Main).where(
-                    models.economy.Main.user_ID == user_id
-                )
+    async def check_user_allowed(self, session, user_id):
+        main_result = await session.execute(
+            select(models.economy.Main).where(models.economy.Main.user_ID == user_id)
+        )
+        user_main = main_result.scalars().first()
+        if user_main is None:
+            return False
+        prestiege_result = await session.execute(
+            select(models.economy.Prestiege).where(
+                models.economy.Prestiege.user_id == user_id
             )
-            user_main = main_result.scalars().first()
-            if user_main is None:
-                return False
-            prestige_result = await session.execute(
-                select(models.economy.Prestige).where(
-                    models.economy.Prestige.user_ID == user_id
-                )
-            )
-            user_prestige = prestige_result.scalars().first()
-            if user_prestige is not None:
-                pres_allowed = user_prestige.pres4 == 0
-            blacklisted, _ = await is_blacklisted(user_id)
-            return (
-                user_main.api_consent
-                and user_main.balance < (2 ** (64 - 1)) - 1
-                and not blacklisted
-                and pres_allowed
-            )
+        )
+        user_prestiege = prestiege_result.scalars().first()
+        if user_prestiege is not None:
+            pres_allowed = user_prestiege.pres4 == 0
+        blacklisted, _ = await is_blacklisted(user_id)
+        return (
+            user_main.api_consent
+            and int(user_main.balance) < (2 ** (64 - 1)) - 1
+            and not blacklisted
+            and pres_allowed
+        )
 
     @session_decorator
     async def get_user_bal(self, session, request):
@@ -140,7 +174,7 @@ class API(commands.Cog):
             )
         user_id = request.query.get("user_id")
         bet = request.query.get("bet")
-        if not self.check_user_allowed(user_id):
+        if not await self.check_user_allowed(user_id):
             return web.Response(
                 status=403, text="User not allowed", headers=CORSHEADERS
             )
@@ -160,10 +194,12 @@ class API(commands.Cog):
             return web.Response(
                 status=400, text="Invalid bet amount", headers=CORSHEADERS
             )
-        if bet > user_main.balance:
+        if bet > int(user_main.balance):
             return web.Response(
                 status=402, text="Insufficient balance", headers=CORSHEADERS
             )
+        if await self.check_cooldown(user_id, "slots"):
+            return web.Response(status=429, text="Cooldown active", headers=CORSHEADERS)
         result = {}
         jackpot = rd.randint(1, 350)
         s1 = rd.randint(0, 4)
@@ -182,20 +218,47 @@ class API(commands.Cog):
             result["spinners"].append([s1, s2, s3])
         winner = False
         if jackpot == 1:
-            user_main.balance += bet * 20
+            user_main.balance = str(int(user_main.balance) + bet * 20)
             result["amount_won"] = bet * 20
             winner = True
             result["jackpot"] = True
             result["spinners"].append([5, 5, 5])
+            session.add(
+                models.economy.History(
+                    user_id=user_main.user_ID,
+                    amount=str(bet * 20),
+                    reason="api_map",
+                    time=int(time.time()),
+                )
+            )
         elif s1 == s2 or s1 == s3 or s2 == s3:
             if s1 == s2 == s3:
-                user_main.balance += bet * 3
+                user_main.balance = str(int(user_main.balance) + bet * 3)
                 result["amount_won"] = bet * 3
+                session.add(
+                    models.economy.History(
+                        user_id=user_main.user_ID,
+                        amount=str(bet * 3),
+                        reason="api_map",
+                        time=int(time.time()),
+                    )
+                )
             else:
-                user_main.balance += bet
+                user_main.balance = str(int(user_main.balance) + bet)
                 result["amount_won"] = bet
+                session.add(
+                    models.economy.History(
+                        user_id=user_main.user_ID,
+                        amount=str(bet),
+                        reason="api_map",
+                        time=int(time.time()),
+                    )
+                )
             winner = True
+        else:
+            result["amount_won"] = 0
         result["winner"] = winner
+        await self.add_cooldown(user_id, "slots", 3)
         return web.json_response(result, headers=CORSHEADERS)
 
     @session_decorator
@@ -209,10 +272,12 @@ class API(commands.Cog):
                 status=403, text="Insufficient permissions", headers=CORSHEADERS
             )
         user_id = request.query.get("user_id")
-        if not self.check_user_allowed(user_id):
+        if not await self.check_user_allowed(user_id):
             return web.Response(
                 status=403, text="User not allowed", headers=CORSHEADERS
             )
+        if await self.check_cooldown(user_id, "map"):
+            return web.Response(status=429, text="Cooldown active", headers=CORSHEADERS)
         result = await session.execute(
             select(models.economy.Main).where(models.economy.Main.user_ID == user_id)
         )
@@ -223,20 +288,58 @@ class API(commands.Cog):
         earnings = rd.randint(0, 100)
         bangerearn = rd.randint(100, 500)
         if banger:
-            user_main.balance += bangerearn
+            user_main.balance = str(int(user_main.balance) + bangerearn)
+            session.add(
+                models.economy.History(
+                    user_id=user_main.user_ID,
+                    amount=str(bangerearn),
+                    reason="api_map",
+                    time=int(time.time()),
+                )
+            )
+            await self.add_cooldown(user_id, "map", 72)
             return web.Response(status=200, text=str(bangerearn), headers=CORSHEADERS)
         else:
-            user_main.balance += earnings
+            user_main.balance = str(int(user_main.balance) + earnings)
+            session.add(
+                models.economy.History(
+                    user_id=user_main.user_ID,
+                    amount=str(earnings),
+                    reason="api_map",
+                    time=int(time.time()),
+                )
+            )
+            await self.add_cooldown(user_id, "map", 72)
             return web.Response(status=200, text=str(earnings), headers=CORSHEADERS)
+
+    @session_decorator
+    async def actuallymakekey(self, session, can_write: bool):
+        key = uuid.uuid4()
+        api_key = models.api.Api(api_key=str(key), can_write=can_write)
+        session.add(api_key)
+        return key
 
     @commands.command()
     @commands.is_owner()
     async def makekey(self, ctx, can_write: bool):
-        async with Session() as session:
-            api_key = models.Api(api_key=str(uuid.uuid4()), can_write=can_write)
-            session.add(api_key)
-            await session.commit()
-        await ctx.author.send(f"API key created: {api_key.api_key}")
+        api_key = await self.actuallymakekey(can_write)
+        await ctx.author.send(f"API key created: {api_key}")
+
+    @session_decorator
+    async def actuallyconsent(self, session, ctx):
+        user_main = await session.execute(
+            select(models.economy.Main).where(
+                models.economy.Main.user_ID == ctx.author.id
+            )
+        )
+        user_main = user_main.scalars().first()
+        if user_main is None:
+            await ctx.author.send(
+                "You do not have an economy account. Please type `,map` and try again."
+            )
+            return False
+        user_main.api_consent = True
+        return True
 
     @commands.hybrid_command()
     async def apiconsent(self, ctx):
@@ -248,24 +351,31 @@ class API(commands.Cog):
                 "message", check=lambda m: m.author == ctx.author, timeout=30
             )
             if msg.content.lower() == "i consent":
-                await ctx.author.send("You have successfully consented to API usage.")
-                async with Session() as session:
-                    user_main = await session.execute(
-                        select(models.economy.Main).where(
-                            models.economy.Main.user_ID == ctx.author.id
-                        )
-                    )
-                    user_main = user_main.scalars().first()
-                    if user_main is None:
-                        await ctx.author.send(
-                            "You do not have an economy account. Please type `,map` and try again."
-                        )
-                        return
-                    user_main.api_consent = True
-                    await session.commit()
-                    # await ctx.author.send("You have been granted API access.")
+                if await self.actuallyconsent(ctx):
+                    await ctx.send("You have now consented.")
         except TimeoutError:
             return
+
+    @commands.hybrid_command()
+    async def apiunconsent(self, ctx):
+        await ctx.send("You have now unconsented.")
+        await self.actuallyunconsent(ctx)
+
+    @session_decorator
+    async def actuallyunconsent(self, session, ctx):
+        user_main = await session.execute(
+            select(models.economy.Main).where(
+                models.economy.Main.user_ID == ctx.author.id
+            )
+        )
+        user_main = user_main.scalars().first()
+        if user_main is None:
+            await ctx.author.send(
+                "You do not have an economy account. Please type `,map` and try again."
+            )
+            return False
+        user_main.api_consent = False
+        return True
 
     async def start_web_server(self):
         await self.runner.setup()
