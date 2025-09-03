@@ -6043,6 +6043,11 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             await ctx.reply(
                 "Too many people are using this command! Please try again later."
             )
+        elif isinstance(error, commands.BotMissingPermissions):
+            await ctx.author.send(
+                "Looks like I can't talk in that channel, please try a different one."
+            )
+            return
         elif isinstance(error, commands.NSFWChannelRequired):
             await ctx.reply("<:weirdchamp:1037242286439931974>")
         elif isinstance(error, commands.CommandNotFound):
