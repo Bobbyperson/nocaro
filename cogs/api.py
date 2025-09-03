@@ -10,6 +10,12 @@ import models
 from __main__ import Session
 from utils.miscfuncs import is_blacklisted
 
+CORSHEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+}
+
 
 # TODO update every callsite to pass sessions explicitly
 # until then this will be used as a stop-gap solution
@@ -45,11 +51,18 @@ class API(commands.Cog):
         self.app = web.Application()
         self.app.router.add_get("/user/balance", self.get_user_bal)
         self.app.router.add_get("/games/slots", self.api_slots)
-        self.app.router.add_get("/user/map", self.get_user_map)
+        self.app.router.add_get("/user/map", self.api_map)
         self.app.router.add_route("OPTIONS", "/user/balance", self.handle_options)
         self.app.router.add_route("OPTIONS", "/games/slots", self.handle_options)
         self.app.router.add_route("OPTIONS", "/user/map", self.handle_options)
         self.runner = web.AppRunner(self.app)
+
+    async def handle_options(self, request):
+        # do nothing, just respond with OK
+        return web.Response(
+            text="Options received",
+            headers=CORSHEADERS,
+        )
 
     async def validate_auth(self, token) -> (bool, bool):
         async with Session() as session:
@@ -93,42 +106,64 @@ class API(commands.Cog):
         auth_header = request.headers.get("authentication")
         is_valid, _ = await self.validate_auth(auth_header)
         if not is_valid:
-            return web.Response(status=401, text="Invalid API key")
+            return web.Response(
+                status=401,
+                text="Invalid API key",
+                headers=CORSHEADERS,
+            )
         user_id = request.query.get("user_id")
         result = await session.execute(
             select(models.economy.Main).where(models.economy.Main.user_ID == user_id)
         )
         user_main = result.scalars().first()
         if user_main is None:
-            return web.Response(status=400, text="No such user")
-        return web.Response(status=200, text=str(user_main.balance))
+            return web.Response(
+                status=400,
+                text="No such user",
+                headers=CORSHEADERS,
+            )
+        return web.Response(
+            status=200,
+            text=str(user_main.balance),
+            headers=CORSHEADERS,
+        )
 
     @session_decorator
     async def api_slots(self, session, request):
         auth_header = request.headers.get("authentication")
         is_valid, can_write = await self.validate_auth(auth_header)
         if not is_valid:
-            return web.Response(status=401, text="Invalid API key")
+            return web.Response(status=401, text="Invalid API key", headers=CORSHEADERS)
         if not can_write:
-            return web.Response(status=403, text="Insufficient permissions")
+            return web.Response(
+                status=403, text="Insufficient permissions", headers=CORSHEADERS
+            )
         user_id = request.query.get("user_id")
         bet = request.query.get("bet")
         if not self.check_user_allowed(user_id):
-            return web.Response(status=403, text="User not allowed")
+            return web.Response(
+                status=403, text="User not allowed", headers=CORSHEADERS
+            )
         try:
             bet = int(bet)
         except (ValueError, TypeError):
-            return web.Response(status=400, text="Invalid bet amount")
+            return web.Response(
+                status=400, text="Invalid bet amount", headers=CORSHEADERS
+            )
         result = await session.execute(
             select(models.economy.Main).where(models.economy.Main.user_ID == user_id)
         )
         user_main = result.scalars().first()
         if user_main is None:
-            return web.Response(status=400, text="No such user")
+            return web.Response(status=400, text="No such user", headers=CORSHEADERS)
         if bet <= 0:
-            return web.Response(status=400, text="Invalid bet amount")
+            return web.Response(
+                status=400, text="Invalid bet amount", headers=CORSHEADERS
+            )
         if bet > user_main.balance:
-            return web.Response(status=402, text="Insufficient balance")
+            return web.Response(
+                status=402, text="Insufficient balance", headers=CORSHEADERS
+            )
         result = {}
         jackpot = rd.randint(1, 350)
         s1 = rd.randint(0, 4)
@@ -161,34 +196,38 @@ class API(commands.Cog):
                 result["amount_won"] = bet
             winner = True
         result["winner"] = winner
-        return web.json_response(result)
+        return web.json_response(result, headers=CORSHEADERS)
 
     @session_decorator
     async def api_map(self, session, request):
         auth_header = request.headers.get("authentication")
         is_valid, can_write = await self.validate_auth(auth_header)
         if not is_valid:
-            return web.Response(status=401, text="Invalid API key")
+            return web.Response(status=401, text="Invalid API key", headers=CORSHEADERS)
         if not can_write:
-            return web.Response(status=403, text="Insufficient permissions")
+            return web.Response(
+                status=403, text="Insufficient permissions", headers=CORSHEADERS
+            )
         user_id = request.query.get("user_id")
         if not self.check_user_allowed(user_id):
-            return web.Response(status=403, text="User not allowed")
+            return web.Response(
+                status=403, text="User not allowed", headers=CORSHEADERS
+            )
         result = await session.execute(
             select(models.economy.Main).where(models.economy.Main.user_ID == user_id)
         )
         user_main = result.scalars().first()
         if user_main is None:
-            return web.Response(status=400, text="No such user")
+            return web.Response(status=400, text="No such user", headers=CORSHEADERS)
         banger = rd.randint(1, 10)
         earnings = rd.randint(0, 100)
         bangerearn = rd.randint(100, 500)
         if banger:
             user_main.balance += bangerearn
-            return web.Response(status=200, text=str(bangerearn))
+            return web.Response(status=200, text=str(bangerearn), headers=CORSHEADERS)
         else:
             user_main.balance += earnings
-            return web.Response(status=200, text=str(earnings))
+            return web.Response(status=200, text=str(earnings), headers=CORSHEADERS)
 
     @commands.command()
     @commands.is_owner()
