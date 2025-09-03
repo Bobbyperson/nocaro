@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String
 
 from . import Base
 
@@ -15,6 +15,7 @@ class Main(Base):
     inventory = Column(String)
     winloss = Column(String)
     invested = Column(String, nullable=False, default=0)
+    api_consent = Column(Boolean, nullable=False, default=False)
 
 
 class Prestiege(Base):
