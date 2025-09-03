@@ -72,9 +72,15 @@ class API(commands.Cog):
         self.app.router.add_route("OPTIONS", "/user/balance", self.handle_options)
         self.app.router.add_route("OPTIONS", "/games/slots", self.handle_options)
         self.app.router.add_route("OPTIONS", "/user/map", self.handle_options)
+        self.app.router.add_get("/", self.root_redirect)
+        self.app.router.add_route("OPTIONS", "/", self.handle_options)
+
         self.runner = web.AppRunner(self.app)
 
         self.cooldowns = {}
+
+    async def root_redirect(self, request):
+        raise web.HTTPMovedPermanently("https://github.com/Bobbyperson/nocaro")
 
     async def add_cooldown(self, user_id, cmd: str, timestamp: int):
         # check if cooldowns["cmd"] exists
