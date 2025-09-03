@@ -6043,7 +6043,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             await ctx.reply(
                 "Too many people are using this command! Please try again later."
             )
-        elif isinstance(error, discord.Forbidden):
+        elif isinstance(error, discord.errors.Forbidden):
             await ctx.author.send(
                 "Looks like I can't talk in that channel, please try a different one."
             )
