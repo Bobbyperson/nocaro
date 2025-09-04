@@ -234,7 +234,7 @@ class API(commands.Cog):
                 models.economy.History(
                     user_id=user_main.user_ID,
                     amount=str(bet * 20),
-                    reason="api_map",
+                    reason="api_slots",
                     time=int(time.time()),
                 )
             )
@@ -246,7 +246,7 @@ class API(commands.Cog):
                     models.economy.History(
                         user_id=user_main.user_ID,
                         amount=str(bet * 3),
-                        reason="api_map",
+                        reason="api_slots",
                         time=int(time.time()),
                     )
                 )
@@ -257,7 +257,7 @@ class API(commands.Cog):
                     models.economy.History(
                         user_id=user_main.user_ID,
                         amount=str(bet),
-                        reason="api_map",
+                        reason="api_slots",
                         time=int(time.time()),
                     )
                 )
