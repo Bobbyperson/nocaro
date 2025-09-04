@@ -223,6 +223,7 @@ class API(commands.Cog):
                 s3 = 5
             result["spinners"].append([s1, s2, s3])
         winner = False
+        result["jackpot"] = False
         if jackpot == 1:
             user_main.balance = str(int(user_main.balance) + bet * 20)
             result["amount_won"] = bet * 20
