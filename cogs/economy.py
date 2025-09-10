@@ -1280,14 +1280,14 @@ Example command: `,bougegram normal 100`"""
             return
         match cards[3].suit:
             case "♤":
-                suit = "spades"
+                acceptable_suits = ["spades", "spade", "s"]
             case "♡":
-                suit = "hearts"
+                acceptable_suits = ["hearts", "heart", "h"]
             case "♢":
-                suit = "diamonds"
+                acceptable_suits = ["diamonds", "diamond", "d"]
             case "♧":
-                suit = "clubs"
-        if msg.content == suit:
+                acceptable_suits = ["clubs", "club", "c"]
+        if msg.content in acceptable_suits:
             await ctx.reply(
                 f"Cards: {cards[0]!s}, {cards[1]!s}, {cards[2]!s}, {cards[3]!s}\nCorrect! You win **{misc.commafy(bet * 20)}** bouge bucks!"
             )
