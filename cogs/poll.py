@@ -37,24 +37,25 @@ class Poll(commands.Cog):
                     1003557819800367154  # hardcoded for now, need to fix this
                 )
                 poll_channel = self.bot.get_channel(poll_channel)
-                self.poll_message = await poll_channel.fetch_message(result.message_id)
-                self.poll_options = result.options.split(",")
-                self.poll_emojis = [
-                    "1️⃣",
-                    "2️⃣",
-                    "3️⃣",
-                    "4️⃣",
-                    "5️⃣",
-                    "6️⃣",
-                    "7️⃣",
-                    "8️⃣",
-                    "9️⃣",
-                    "0️⃣",
-                ][: len(self.poll_options)]
-                self.votes = Counter()
-                # if update_poll isn't running, start it
-                if not self.update_poll.is_running():
-                    self.update_poll.start()
+                if poll_channel:
+                    self.poll_message = await poll_channel.fetch_message(result.message_id)
+                    self.poll_options = result.options.split(",")
+                    self.poll_emojis = [
+                        "1️⃣",
+                        "2️⃣",
+                        "3️⃣",
+                        "4️⃣",
+                        "5️⃣",
+                        "6️⃣",
+                        "7️⃣",
+                        "8️⃣",
+                        "9️⃣",
+                        "0️⃣",
+                    ][: len(self.poll_options)]
+                    self.votes = Counter()
+                    # if update_poll isn't running, start it
+                    if not self.update_poll.is_running():
+                        self.update_poll.start()
         print("Polls are ready")
 
     @commands.command(aliases=["cep"])
