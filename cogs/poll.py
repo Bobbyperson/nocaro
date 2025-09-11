@@ -114,11 +114,17 @@ class Poll(commands.Cog):
 
             total_votes = sum(self.votes.values())
             if total_votes > 0:
+                winner_emoji = max(self.votes, key=self.votes.get)
                 message = "What game Friday?"
                 for i, option in enumerate(self.poll_options):
-                    count = self.votes[self.poll_emojis[i]]
+                    emoji = self.poll_emojis[i]
+                    count = self.votes[emoji]
                     percentage = (count / total_votes) * 100
-                    message += f"\n{self.poll_emojis[i]} - {option}: `{round(count, 3)} votes ({int(percentage)}%)`"
+                    if emoji == winner_emoji:
+                        option_text = f"**{option.strip()}**"
+                    else:
+                        option_text = option.strip()
+                    message += f"\n{self.poll_emojis[i]} - {option_text}: `{round(count, 3)} votes ({int(percentage)}%)`"
                 await self.poll_message.edit(content=message)
             if (
                 dt.datetime.now(dt.UTC)
