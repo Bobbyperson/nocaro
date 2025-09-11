@@ -37,24 +37,25 @@ class Poll(commands.Cog):
                     1003557819800367154  # hardcoded for now, need to fix this
                 )
                 poll_channel = self.bot.get_channel(poll_channel)
-                self.poll_message = await poll_channel.fetch_message(result.message_id)
-                self.poll_options = result.options.split(",")
-                self.poll_emojis = [
-                    "1️⃣",
-                    "2️⃣",
-                    "3️⃣",
-                    "4️⃣",
-                    "5️⃣",
-                    "6️⃣",
-                    "7️⃣",
-                    "8️⃣",
-                    "9️⃣",
-                    "0️⃣",
-                ][: len(self.poll_options)]
-                self.votes = Counter()
-                # if update_poll isn't running, start it
-                if not self.update_poll.is_running():
-                    self.update_poll.start()
+                if poll_channel:
+                    self.poll_message = await poll_channel.fetch_message(result.message_id)
+                    self.poll_options = result.options.split(",")
+                    self.poll_emojis = [
+                        "1️⃣",
+                        "2️⃣",
+                        "3️⃣",
+                        "4️⃣",
+                        "5️⃣",
+                        "6️⃣",
+                        "7️⃣",
+                        "8️⃣",
+                        "9️⃣",
+                        "0️⃣",
+                    ][: len(self.poll_options)]
+                    self.votes = Counter()
+                    # if update_poll isn't running, start it
+                    if not self.update_poll.is_running():
+                        self.update_poll.start()
         print("Polls are ready")
 
     @commands.command(aliases=["cep"])
@@ -114,11 +115,17 @@ class Poll(commands.Cog):
 
             total_votes = sum(self.votes.values())
             if total_votes > 0:
+                winner_emoji = max(self.votes, key=self.votes.get)
                 message = "What game Friday?"
                 for i, option in enumerate(self.poll_options):
-                    count = self.votes[self.poll_emojis[i]]
+                    emoji = self.poll_emojis[i]
+                    count = self.votes[emoji]
                     percentage = (count / total_votes) * 100
-                    message += f"\n{self.poll_emojis[i]} - {option}: `{round(count, 3)} votes ({int(percentage)}%)`"
+                    if emoji == winner_emoji:
+                        option_text = f"**{option.strip()}**"
+                    else:
+                        option_text = option.strip()
+                    message += f"\n{self.poll_emojis[i]} - {option_text}: `{round(count, 3)} votes ({int(percentage)}%)`"
                 await self.poll_message.edit(content=message)
             if (
                 dt.datetime.now(dt.UTC)
