@@ -1,4 +1,5 @@
 import csv
+import io
 import time as t
 
 import anyio
@@ -198,10 +199,10 @@ class Fire(commands.Cog):
                 async with await anyio.open_file(
                     csvfile, "a+", encoding="utf8", newline=""
                 ) as csvf:
-                    # creating a csv writer object
-                    csvwriter = csv.writer(csvf)
-                    # writing the fields
-                    csvwriter.writerow(fields)
+                    buffer = io.StringIO()
+                    writer = csv.writer(buffer)
+                    writer.writerow(fields)
+                    await csvf.write(buffer.getvalue())
                 print(f"ok doing {channel.name}")
                 await ctx.send(f"ok doing {channel.name}")
                 themessages = list()
@@ -253,10 +254,10 @@ class Fire(commands.Cog):
         async with await anyio.open_file(
             csvfile, "a+", encoding="utf8", newline=""
         ) as csvf:
-            # creating a csv writer object
-            csvwriter = csv.writer(csvf)
-            # writing the fields
-            csvwriter.writerow(fields)
+            buffer = io.StringIO()
+            writer = csv.writer(buffer)
+            writer.writerow(fields)
+            await csvf.write(buffer.getvalue())
         i = 0
         await ctx.send(f"ok doing {channel.name}")
         async for message in channel.history(limit=99999999999):
