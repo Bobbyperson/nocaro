@@ -238,6 +238,43 @@ class Fire(commands.Cog):
         await ctx.send("ok done")
         print("ok done")
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def downloadchannel(self, ctx, channel: discord.TextChannel):
+        fields = [
+            "userid",
+            "username",
+            "content",
+            "messageid",
+            "attachments",
+            "reactions",
+        ]
+        csvfile = f"{channel.id}.csv"
+        async with await anyio.open_file(
+            csvfile, "a+", encoding="utf8", newline=""
+        ) as csvf:
+            # creating a csv writer object
+            csvwriter = csv.writer(csvf)
+            # writing the fields
+            csvwriter.writerow(fields)
+        i = 0
+        async for message in channel.history(limit=99999999999):
+            i += 1
+            row = [
+                message.author.id,
+                message.author.name,
+                message.content,
+                message.id,
+                message.attachments,
+                message.reactions,
+            ]
+            async with await anyio.open_file(
+                csvfile, "a+", encoding="utf8", newline=""
+            ) as csvf:
+                csvwriter = csv.writer(csvf)
+                csvwriter.writerow(row)
+        await ctx.send(f"ok done, found {i} messages")
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         fire = "🔥"
