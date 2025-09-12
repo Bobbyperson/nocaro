@@ -17,6 +17,48 @@ bank = "./data/database.sqlite"
 fire = "🔥"
 
 
+def serialize_attachments(attachments: list[discord.Attachment]) -> str:
+    # semicolon-separated URLs
+    return ";".join(a.url for a in attachments) if attachments else ""
+
+
+def serialize_reactions(reactions: list[discord.Reaction]) -> str:
+    # "emoji:count|emoji:count"
+    if not reactions:
+        return ""
+    parts = []
+    for r in reactions:
+        emoji = str(r.emoji)  # handles custom + unicode
+        parts.append(f"{emoji}:{r.count}")
+    return "|".join(parts)
+
+
+async def _write_rows_async(csvf, rows: list[list[str]]):
+    """Use csv.writer on a StringIO buffer, then write once to the async file."""
+    if not rows:
+        return
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerows(rows)
+    await csvf.write(buf.getvalue())
+
+
+async def _ensure_header(csvfile: str, fields: list[str]):
+    path = anyio.Path(csvfile)
+    if await path.exists():
+        # only write header if empty
+        stat = await path.stat()
+        if stat.st_size > 0:
+            return
+    async with await anyio.open_file(
+        csvfile, "a+", encoding="utf8", newline=""
+    ) as csvf:
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(fields)
+        await csvf.write(buf.getvalue())
+
+
 class Fire(commands.Cog):
     """Starboard if it were awesome..."""
 
@@ -191,50 +233,47 @@ class Fire(commands.Cog):
             "reactions",
         ]
         await ctx.send("ok i am downloading, this will take an extremely long time")
+
         for channel in ctx.guild.text_channels:
-            # done = [800957030461472828, 800958063410151454, 800958363240235028, 887862056664051722, 800969682454446091, 975865331505561701, 851570154432102441]
-            done = []
-            if channel.id not in done:
-                csvfile = f"{channel.id}.csv"
-                async with await anyio.open_file(
-                    csvfile, "a+", encoding="utf8", newline=""
-                ) as csvf:
-                    buffer = io.StringIO()
-                    writer = csv.writer(buffer)
-                    writer.writerow(fields)
-                    await csvf.write(buffer.getvalue())
-                print(f"ok doing {channel.name}")
-                await ctx.send(f"ok doing {channel.name}")
-                themessages = list()
-                async for message in channel.history(limit=9999999):
-                    themessages.append(message)
-                # messages = [item for sublist in themessages for item in sublist]
-                messages = themessages
-                print("i got the messages lol")
-                await ctx.send(
-                    f"successfully downloaded every message in {channel.name}, i have to loop through {len(messages)} fucking messages."
-                )
-                rows = []
-                for i, message in enumerate(messages):
-                    if i % 10000 == 0:
-                        print(i)
+            csvfile = f"{channel.id}.csv"
+            await _ensure_header(csvfile, fields)
+
+            await ctx.send(f"ok doing {channel.name}")
+            print(f"ok doing {channel.name}")
+
+            count = 0
+            batch = []
+            BATCH_SIZE = 5000
+
+            async with await anyio.open_file(
+                csvfile, "a+", encoding="utf8", newline=""
+            ) as csvf:
+                async for message in channel.history(limit=None, oldest_first=True):
+                    count += 1
+                    if count % 10000 == 0:
+                        print(count)
+
                     row = [
-                        message.author.id,
+                        str(message.author.id),
                         message.author.name,
-                        message.content,
-                        message.id,
-                        message.attachments,
-                        message.reactions,
+                        message.content.replace("\r\n", "\n"),  # keep it tidy
+                        str(message.id),
+                        serialize_attachments(message.attachments),
+                        serialize_reactions(message.reactions),
                     ]
-                    rows.append(row)
-                    # link = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
-                async with await anyio.open_file(
-                    csvfile, "a+", encoding="utf8", newline=""
-                ) as csvf:
-                    # creating a csv writer object
-                    csvwriter = csv.writer(csvf)
-                    # writing the data rows
-                    csvwriter.writerows(rows)
+                    batch.append(row)
+
+                    if len(batch) >= BATCH_SIZE:
+                        await _write_rows_async(csvf, batch)
+                        batch.clear()
+
+                # flush the last partial batch
+                if batch:
+                    await _write_rows_async(csvf, batch)
+
+            await ctx.send(
+                f"successfully downloaded {count} messages from {channel.name}"
+            )
 
         await ctx.send("ok done")
         print("ok done")
@@ -251,30 +290,36 @@ class Fire(commands.Cog):
             "reactions",
         ]
         csvfile = f"{channel.id}.csv"
+        await _ensure_header(csvfile, fields)
+
+        await ctx.send(f"ok doing {channel.name}")
+
+        i = 0
+        batch = []
+        BATCH_SIZE = 5000
+
         async with await anyio.open_file(
             csvfile, "a+", encoding="utf8", newline=""
         ) as csvf:
-            buffer = io.StringIO()
-            writer = csv.writer(buffer)
-            writer.writerow(fields)
-            await csvf.write(buffer.getvalue())
-        i = 0
-        await ctx.send(f"ok doing {channel.name}")
-        async for message in channel.history(limit=99999999999):
-            i += 1
-            row = [
-                message.author.id,
-                message.author.name,
-                message.content,
-                message.id,
-                message.attachments,
-                message.reactions,
-            ]
-            async with await anyio.open_file(
-                csvfile, "a+", encoding="utf8", newline=""
-            ) as csvf:
-                csvwriter = csv.writer(csvf)
-                csvwriter.writerow(row)
+            async for message in channel.history(limit=None, oldest_first=True):
+                i += 1
+                row = [
+                    str(message.author.id),
+                    message.author.name,
+                    message.content.replace("\r\n", "\n"),
+                    str(message.id),
+                    serialize_attachments(message.attachments),
+                    serialize_reactions(message.reactions),
+                ]
+                batch.append(row)
+
+                if len(batch) >= BATCH_SIZE:
+                    await _write_rows_async(csvf, batch)
+                    batch.clear()
+
+            if batch:
+                await _write_rows_async(csvf, batch)
+
         await ctx.reply(f"ok done, found {i} messages")
 
     @commands.Cog.listener()
