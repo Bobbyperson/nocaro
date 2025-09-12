@@ -258,6 +258,7 @@ class Fire(commands.Cog):
             # writing the fields
             csvwriter.writerow(fields)
         i = 0
+        await ctx.send(f"ok doing {channel.name}")
         async for message in channel.history(limit=99999999999):
             i += 1
             row = [
@@ -273,7 +274,7 @@ class Fire(commands.Cog):
             ) as csvf:
                 csvwriter = csv.writer(csvf)
                 csvwriter.writerow(row)
-        await ctx.send(f"ok done, found {i} messages")
+        await ctx.reply(f"ok done, found {i} messages")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
