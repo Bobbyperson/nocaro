@@ -137,7 +137,7 @@ class Poll(commands.Cog):
                 and dt.datetime.now(dt.UTC)
                 .astimezone(dt.timezone(dt.timedelta(hours=-5)))
                 .hour
-                >= 17
+                >= 16
                 and not self.warned_voters
             ):
                 # Warn voters if it's past 5 pm on a Friday
@@ -166,7 +166,7 @@ class Poll(commands.Cog):
                 and discord.utils.utcnow()
                 .astimezone(dt.timezone(dt.timedelta(hours=-5)))
                 .hour
-                >= 18
+                >= 17
             ) or self.should_end_poll:
                 # refresh the message so we have every reaction in the latest order
                 cache_msg = await self.poll_message.channel.fetch_message(
