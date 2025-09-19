@@ -436,6 +436,7 @@ class Poll(commands.Cog):
                     models.poll.VoteMultipliers.user_id == user.id,
                     models.poll.VoteMultipliers.attended.is_(True),
                 )
+                .limit(10)
             )
             missed_count = await session.scalar(
                 select(func.count())
@@ -445,6 +446,7 @@ class Poll(commands.Cog):
                     models.poll.VoteMultipliers.voted_for_winner.is_(True),
                     models.poll.VoteMultipliers.attended.is_(False),
                 )
+                .limit(10)
             )
         await ctx.send(
             f"Out of the last 10 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma."
@@ -470,8 +472,16 @@ class Poll(commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def checkevent(self, ctx, event_id):
+    async def checkevent(self, ctx, event_id: int | None = None):
         """Check the results of a specific event by ID"""
+        if event_id is None:
+            async with self.bot.session as session:
+                event_id = (
+                    await session.scalar(
+                        select(func.max(models.poll.VoteMultipliers.event_id))
+                    )
+                    or 0
+                )
         async with self.bot.session as session:
             results = await session.execute(
                 select(models.poll.VoteMultipliers).where(
