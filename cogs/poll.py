@@ -38,7 +38,9 @@ class Poll(commands.Cog):
                 )
                 poll_channel = self.bot.get_channel(poll_channel)
                 if poll_channel:
-                    self.poll_message = await poll_channel.fetch_message(result.message_id)
+                    self.poll_message = await poll_channel.fetch_message(
+                        result.message_id
+                    )
                     self.poll_options = result.options.split(",")
                     self.poll_emojis = [
                         "1️⃣",
@@ -234,7 +236,7 @@ class Poll(commands.Cog):
 
             # to be uncommented if whomegalols start swaying votes too hard
 
-            attended = sum(1 for r in recent_records if r.attended)
+            # attended = sum(1 for r in recent_records if r.attended)
             missed = sum(
                 1 for r in recent_records if r.voted_for_winner and not r.attended
             )
@@ -247,8 +249,8 @@ class Poll(commands.Cog):
                 )
             ) or 0
 
-            karma = 50 + attended * 5 - missed * 10
-            return max(0, min(100, karma)) + bonus
+            karma = 100 - missed * 10
+            return min(100, karma) + bonus
 
     @commands.command()
     @commands.is_owner()
