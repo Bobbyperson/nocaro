@@ -8,7 +8,6 @@ import os
 import random as rd
 import sys
 import time
-import tomllib
 import traceback
 from collections import Counter
 from decimal import Decimal, getcontext
@@ -40,11 +39,7 @@ from utils import audio
 
 getcontext().prec = 200
 
-with open("config.toml", "rb") as f:
-    config = tomllib.load(f)
-
 log = logging.getLogger(__name__)
-
 
 class InventorySource(menus.ListPageSource):
     def __init__(self, data):
@@ -6093,7 +6088,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
         else:
             ctx.command.reset_cooldown(ctx)
             channel = await self.client.fetch_channel(
-                config["channels"]["error_reporting_channel"]
+                self.client.config["channels"]["error_reporting_channel"]
             )
             embed = discord.Embed(
                 title="An Error has occurred",
