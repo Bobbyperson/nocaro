@@ -10,8 +10,6 @@ from sqlalchemy import delete, select
 import models
 import utils.miscfuncs as mf
 
-bank = "./data/database.sqlite"
-
 
 class database(commands.Cog):
     """Commands which utilize a message database."""

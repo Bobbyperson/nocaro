@@ -1,13 +1,9 @@
 import random
-import tomllib
 
 import discord
 from discord.ext import commands
 
 import utils.miscfuncs as mf
-
-with open("config.toml", "rb") as f:
-    config = tomllib.load(f)
 
 
 class Fun(commands.Cog):
@@ -31,9 +27,10 @@ class Fun(commands.Cog):
         if blacklisted[0]:
             return
         if isinstance(message.channel, discord.channel.DMChannel):
-            if message.author.id in config["blacklists"]["blacklisted_dms"]:
+            if message.author.id in self.client.config["blacklists"]["blacklisted_dms"]:
                 return
-            me = await self.client.fetch_user(config["general"]["owner_id"])
+            print(self.client.config["blacklists"]["blacklisted_dms"])
+            me = await self.client.fetch_user(self.client.config["general"]["owner_id"])
             await me.send(
                 f"DM from {message.author.name} ({message.author.id})\n{message.content}\n`,dm {message.author.id}`"
             )
