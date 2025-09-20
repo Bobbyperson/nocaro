@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import math
 import time
 import tomllib
@@ -15,6 +16,7 @@ import utils.miscfuncs as mf
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
+log = logging.getLogger(__name__)
 
 def get_unix():
     return int(time.time())
@@ -180,7 +182,7 @@ class osu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Osu ready")
+        log.info("Osu ready")
 
     @commands.command(hidden=True)
     async def getrank(self, ctx, id):

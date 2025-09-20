@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import random
 import tomllib
@@ -12,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
+log = logging.getLogger(__name__)
 
 async def main():
     # start the client
@@ -90,11 +92,11 @@ async def users():
 
 @client.event
 async def on_ready():
-    print("I am ready.")
+    log.info("I am ready.")
     change_status.start()
     try:
         synced = await client.tree.sync()
-        print(f"Sycned {len(synced)} commands!")
+        log.info(f"Loaded {len(synced)} commands!")
     except Exception as e:
         print(e)
 
@@ -105,4 +107,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         # Handle gracefully
-        print("Stopping")
+        log.info("Stopping")

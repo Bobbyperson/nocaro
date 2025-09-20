@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import sys
@@ -8,6 +9,8 @@ import discord
 from discord.ext import commands
 
 import utils.miscfuncs as mf
+
+log = logging.getLogger(__name__)
 
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
@@ -20,7 +23,7 @@ class Example(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Example ready")
+        log.info("Example ready")
 
     @commands.command(aliases=["pong"], hidden=True)
     async def ping(self, ctx):
