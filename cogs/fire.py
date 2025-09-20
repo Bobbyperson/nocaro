@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import time as t
 
 import anyio
@@ -16,6 +17,7 @@ bank = "./data/database.sqlite"
 
 fire = "🔥"
 
+log = logging.getLogger(__name__)
 
 def serialize_attachments(attachments: list[discord.Attachment]) -> str:
     # semicolon-separated URLs
@@ -212,7 +214,7 @@ class Fire(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Fire ready")
+        log.info("Fire ready")
 
     @commands.hybrid_command()
     @generic_checks(max_check=False)
@@ -239,7 +241,7 @@ class Fire(commands.Cog):
             await _ensure_header(csvfile, fields)
 
             await ctx.send(f"ok doing {channel.name}")
-            print(f"ok doing {channel.name}")
+            log.debug(f"ok doing {channel.name}")
 
             count = 0
             batch = []
@@ -251,7 +253,7 @@ class Fire(commands.Cog):
                 async for message in channel.history(limit=None, oldest_first=True):
                     count += 1
                     if count % 10000 == 0:
-                        print(count)
+                        log.debug(count)
 
                     row = [
                         str(message.author.id),
@@ -276,7 +278,7 @@ class Fire(commands.Cog):
             )
 
         await ctx.send("ok done")
-        print("ok done")
+        log.debug("ok done")
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -466,7 +468,7 @@ class Fire(commands.Cog):
         old = await getfuckingdata()
         unix = int(t.time())
         if not old:
-            print(
+            log.warning(
                 "Old returned none in getfuckingdata() in fire.py!!! This should never happen!!!"
             )
             return
@@ -476,7 +478,7 @@ class Fire(commands.Cog):
                 for channel in server.text_channels:
                     if channel.name == "fireboard":
                         fireboard = channel
-                        print("found fireboard")
+                        log.debug("found fireboard")
                 if fireboard:
                     result = await getmessages(unix)
                     msgtosend = "Congrats to the following people for getting the top 5 hottest messages this week:\n"
@@ -491,7 +493,7 @@ class Fire(commands.Cog):
                                 user = self.client.get_user(msg[5])
                                 msgtosend += f"{fire} **{msg[1]}** - {user.mention} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
                             except:
-                                print("couldn't get user!!!")
+                                log.warning("couldn't get user!!!")
                                 user = msg[5]
                                 msgtosend += f"{fire} **{msg[1]}** - {user} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
                     if (

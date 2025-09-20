@@ -1,7 +1,9 @@
+import logging
 import random as rd
 
 from discord.ext import commands
 
+log = logging.getLogger(__name__)
 
 class GM(commands.Cog):
     def __init__(self, client):
@@ -10,7 +12,7 @@ class GM(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("GM ready")
+        log.info("GM ready")
 
     @commands.Cog.listener()
     async def on_message(self, message):

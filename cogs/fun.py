@@ -1,3 +1,4 @@
+import logging
 import random
 import tomllib
 
@@ -9,6 +10,7 @@ import utils.miscfuncs as mf
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
+log = logging.getLogger(__name__)
 
 class Fun(commands.Cog):
     def __init__(self, client):
@@ -17,7 +19,7 @@ class Fun(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Fun ready.")
+        log.info("Fun ready.")
 
     @commands.Cog.listener()
     async def on_message(self, message):

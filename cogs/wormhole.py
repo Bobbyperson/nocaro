@@ -1,6 +1,9 @@
+import logging
+
 import discord
 from discord.ext import commands
 
+log = logging.getLogger(__name__)
 
 class wormhole(commands.Cog):
     def __init__(self, client):
@@ -9,7 +12,7 @@ class wormhole(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("wormhole ready")
+        log.info("wormhole ready")
 
     @commands.command(hidden=True)
     @commands.is_owner()

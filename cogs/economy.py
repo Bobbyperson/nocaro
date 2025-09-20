@@ -2,6 +2,7 @@
 import asyncio
 import datetime
 import io
+import logging
 import math
 import os
 import random as rd
@@ -41,6 +42,8 @@ getcontext().prec = 200
 
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
+
+log = logging.getLogger(__name__)
 
 
 class InventorySource(menus.ListPageSource):
@@ -339,7 +342,7 @@ class Economy(commands.Cog):
     # create database if none exists
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Economy ready")
+        log.info("Economy ready")
 
     @commands.hybrid_command(aliases=["graph", "timeline"])
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -1672,8 +1675,7 @@ Example command: `,bougegram normal 100`"""
                     await ctx.send("Confirmation timeout. Changes rolled back.")
 
         except Exception as e:
-            print(type(e))
-            print(e)
+            log.exception(e)
             await ctx.send(f"Error: {e!s}")
 
         # Note: With the use of context managers, we don't need to manually close the db and cursor anymore.
@@ -4660,7 +4662,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             music_dir = Path("audio/roulette/music")
             while ctx.guild.voice_client and ctx.guild.voice_client.is_connected():
                 filename = rd.choice(list(music_dir.glob("*.mp3")))
-                print(filename)
+                log.debug(filename)
                 main_track_id, duration = await audio.play(ctx, filename, vol=bg_vol)
                 duration = duration or 5  # fallback so sleep never gets None
 
@@ -5987,10 +5989,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
     async def sync(self, ctx):
         try:
             synced = await self.client.tree.sync()
-            print(f"Sycned {len(synced)} commands!")
+            log.info(f"Sycned {len(synced)} commands!")
             await ctx.send(f"Sycned {len(synced)} commands!")
         except Exception as e:
-            print(e)
+            log.exception(e)
             await ctx.send(f"`{e}`")
 
     @commands.command(hidden=True)
@@ -6100,11 +6102,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 color=242424,
             )
             await channel.send(embed=embed)
-            print(error)
-            traceback.print_exception(
+            log.exception(error)
+            traceback.log.info_exception(
                 type(error), error, error.__traceback__, file=sys.stderr
             )
-            print("-" * 20)
             await ctx.reply("An unexpected error occurred! Please try again.")
 
 

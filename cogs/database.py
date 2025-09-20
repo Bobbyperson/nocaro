@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 import time
 
@@ -10,8 +11,7 @@ from sqlalchemy import delete, select
 import models
 import utils.miscfuncs as mf
 
-bank = "./data/database.sqlite"
-
+log = logging.getLogger(__name__)
 
 class database(commands.Cog):
     """Commands which utilize a message database."""
@@ -23,7 +23,7 @@ class database(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Database ready")
+        log.info("Database ready")
 
     async def check_ignored(self, channel):
         async with self.client.session as session:

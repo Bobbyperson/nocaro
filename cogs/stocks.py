@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import math
 
 import discord
@@ -12,6 +13,7 @@ import models
 import utils.econfuncs as econ
 import utils.miscfuncs as mf
 
+log = logging.getLogger(__name__)
 
 class Stocks(commands.Cog):
     """Buy real stocks with bouge bucks"""
@@ -22,7 +24,7 @@ class Stocks(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Stock market loaded")
+        log.info("Stock market loaded")
 
     async def add_to_db(self, user_id, ticker, amount, purchase_price):
         async with self.client.session as session:
