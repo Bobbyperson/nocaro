@@ -100,5 +100,9 @@ async def on_ready():
 
 
 if __name__ == "__main__":
-    discord.utils.setup_logging()
-    asyncio.run(main())
+    try:
+        discord.utils.setup_logging()
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        # Handle gracefully
+        print("Stopping")
