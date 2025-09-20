@@ -25,14 +25,19 @@ dependencies = [
     "alembic>=1.16.1",
     "numpy>=2.2.1",
     "aiohttp>=3.11.11",
+    "soundfile>=0.13.1",
     "mutagen>=1.47.0",
-    "kittentts",
     "pydub>=0.25.1",
 ]
 
 [dependency-groups]
 dev = [
     "ruff>=0.11.4",
+]
+
+[project.optional-dependencies]
+tts = [
+    "kittentts",
 ]
 
 [tool.uv]

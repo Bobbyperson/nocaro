@@ -8,9 +8,13 @@ import uuid
 import discord
 import numpy as np
 import soundfile as sf
-from kittentts import KittenTTS
 from mutagen import File as MutagenFile
 from pydub import AudioSegment
+
+try:
+    from kittentts import KittenTTS
+except ImportError:
+    KittenTTS = None
 
 
 class MixerAudioSource(discord.AudioSource):
