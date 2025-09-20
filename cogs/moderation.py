@@ -1,6 +1,5 @@
 import json
 import time
-import tomllib
 from datetime import timedelta
 
 import anyio
@@ -8,9 +7,6 @@ import discord
 from discord.ext import commands
 
 import utils.miscfuncs as mf
-
-with open("config.toml", "rb") as f:
-    config = tomllib.load(f)
 
 
 def array_to_string(arr):
@@ -52,16 +48,16 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         print("Moderation loaded.")
         for guild in self.client.guilds:
-            if guild.id in config["blacklists"]["blacklisted_dms"]:
+            if guild.id in self.client.config["blacklists"]["blacklisted_dms"]:
                 await guild.leave()
-                me = await self.client.fetch_user(config["general"]["owner_id"])
+                me = await self.client.fetch_user(self.client.config["general"]["owner_id"])
                 await me.send(f"Left blacklisted server: {guild.name}: `{guild.id}`")
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        if guild.id in config["blacklists"]["blacklisted_dms"]:
+        if guild.id in self.client.config["blacklists"]["blacklisted_dms"]:
             await guild.leave()
-            me = await self.client.fetch_user(config["general"]["owner_id"])
+            me = await self.client.fetch_user(self.client.config["general"]["owner_id"])
             await me.send(f"Left blacklisted server: {guild.name}: `{guild.id}`")
 
     @commands.hybrid_command()

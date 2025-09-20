@@ -9,9 +9,6 @@ from pretty_help import PrettyHelp
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-with open("config.toml", "rb") as f:
-    config = tomllib.load(f)
-
 
 async def main():
     # start the client
@@ -19,7 +16,7 @@ async def main():
         for filename in os.listdir("./cogs"):
             if filename.endswith(".py"):
                 await client.load_extension(f"cogs.{filename[:-3]}")
-        await client.start(config["general"]["token"])
+        await client.start(client.config["general"]["token"])
 
 
 engine = create_async_engine("sqlite+aiosqlite:///data/database.sqlite", echo=None)
@@ -27,6 +24,13 @@ Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
 class Bot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        with open("config.toml", "rb") as f:
+            self.config = tomllib.load(f)
+
+        kwargs["command_prefix"] = self.config["general"]["prefix"]
+        super().__init__(*args, **kwargs)
+
     @property
     def session(self):
         return Session()
@@ -34,7 +38,6 @@ class Bot(commands.Bot):
 
 intents = discord.Intents().all()
 client = Bot(
-    command_prefix=config["general"]["prefix"],
     intents=intents,
     help_command=PrettyHelp(),
 )
@@ -52,26 +55,26 @@ async def change_status():
 
 @client.command(hidden=True)
 async def load(ctx, extension):
-    if ctx.author.id == config["general"]["owner_id"]:
+    if ctx.author.id == client.config["general"]["owner_id"]:
         await client.load_extension(f"cogs.{extension}")
         await ctx.send(f"{extension} loaded.")
-    if ctx.author.id != config["general"]["owner_id"]:
+    if ctx.author.id != client.config["general"]["owner_id"]:
         await ctx.send("no")
 
 
 @client.command(hidden=True)
 async def unload(ctx, extension):
-    if ctx.author.id == config:
+    if ctx.author.id == client.config:
         await client.unload_extension(f"cogs.{extension}")
         await ctx.send(f"{extension} unloaded.")
 
-    if ctx.author.id != config["general"]["owner_id"]:
+    if ctx.author.id != client.config["general"]["owner_id"]:
         await ctx.send("no")
 
 
 @client.command(hidden=True)
 async def reload(ctx, extension):
-    if ctx.author.id == config["general"]["owner_id"]:
+    if ctx.author.id == client.config["general"]["owner_id"]:
         await client.unload_extension(f"cogs.{extension}")
         await ctx.send(f"{extension} unloaded.")
         await client.load_extension(f"cogs.{extension}")

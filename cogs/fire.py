@@ -12,8 +12,6 @@ import models
 from utils.achievements import get_achievement
 from utils.miscfuncs import generic_checks
 
-bank = "./data/database.sqlite"
-
 fire = "🔥"
 
 

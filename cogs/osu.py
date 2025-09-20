@@ -1,7 +1,6 @@
 import asyncio
 import math
 import time
-import tomllib
 
 import aiohttp
 import discord
@@ -11,9 +10,6 @@ from sqlalchemy import select
 import models
 import utils.econfuncs as econ
 import utils.miscfuncs as mf
-
-with open("config.toml", "rb") as f:
-    config = tomllib.load(f)
 
 
 def get_unix():
@@ -111,8 +107,8 @@ class osu(commands.Cog):
     #     self.give_rewards.cancel()
 
     async def refresh_token(self):  # token lasts for one day
-        client_id = config["osu"]["client_id"]
-        client_secret = config["osu"]["client_secret"]
+        client_id = self.client.config["osu"]["client_id"]
+        client_secret = self.client.config["osu"]["client_secret"]
         if not client_secret or not client_secret:
             raise Exception("Client ID or Secret not set")
 
