@@ -21,11 +21,15 @@ import matplotlib.pyplot as plt
 from discord import FFmpegPCMAudio
 from discord.ext import commands, menus, tasks
 from discord.ui import Button, View
-from kittentts import KittenTTS
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import FuncFormatter
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import Integer, cast, delete, select, text
+
+try:
+    from kittentts import KittenTTS
+except ImportError:
+    KittenTTS = None
 
 import models
 import utils.achievements as ach
@@ -325,7 +329,9 @@ class Economy(commands.Cog):
         self.client = client
         self.award_map.add_exception_type(asyncpg.PostgresConnectionError)
         self.award_map.start()
-        self.kitten = KittenTTS("KittenML/kitten-tts-nano-0.1")
+
+        if KittenTTS is not None:
+            self.kitten = KittenTTS("KittenML/kitten-tts-nano-0.1")
 
     def cog_unload(self):
         self.award_map.cancel()
@@ -573,13 +579,15 @@ Example command: `,bougegram normal 100`"""
             "Go there and type join to join!"
         )
 
-        src = await audio.kitten_tts_source(
-            self.kitten,
-            announce,
-            voice="expr-voice-3-m",
-            concat_after_path="audio/madibanocaro.mp3",
-        )
-        vc.play(src)
+        if KittenTTS is not None:
+            src = await audio.kitten_tts_source(
+                self.kitten,
+                announce,
+                voice="expr-voice-3-m",
+                concat_after_path="audio/madibanocaro.mp3",
+            )
+            vc.play(src)
+
         while misc.get_unix() < end_check:
             try:
                 join_msg = await self.client.wait_for(
