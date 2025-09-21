@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 import tomllib
 from datetime import timedelta
@@ -12,6 +13,7 @@ import utils.miscfuncs as mf
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
+log = logging.getLogger(__name__)
 
 def array_to_string(arr):
     x = ", ".join(str(x) for x in arr)
@@ -50,7 +52,7 @@ class Moderation(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Moderation loaded.")
+        log.info("Moderation loaded.")
         for guild in self.client.guilds:
             if guild.id in config["blacklists"]["blacklisted_dms"]:
                 await guild.leave()

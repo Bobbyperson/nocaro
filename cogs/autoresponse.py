@@ -1,3 +1,4 @@
+import logging
 import random
 
 import discord
@@ -8,6 +9,7 @@ from sqlalchemy import select
 import models
 from utils.miscfuncs import is_blacklisted
 
+log = logging.getLogger(__name__)
 
 class Autoresponse(commands.Cog):
     def __init__(self, client):
@@ -16,7 +18,7 @@ class Autoresponse(commands.Cog):
     # events
     @commands.Cog.listener()
     async def on_ready(self):
-        print("autoresponse ready")
+        log.info("autoresponse ready")
 
     async def check_ignored(self, channel):
         async with self.client.session as session:

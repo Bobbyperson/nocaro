@@ -1,5 +1,6 @@
 import asyncio
 import datetime as dt
+import logging
 from collections import Counter
 
 import discord
@@ -8,6 +9,7 @@ from sqlalchemy import delete, func, select
 
 import models
 
+log = logging.getLogger(__name__)
 
 class Poll(commands.Cog):
     def __init__(self, bot):
@@ -58,7 +60,7 @@ class Poll(commands.Cog):
                     # if update_poll isn't running, start it
                     if not self.update_poll.is_running():
                         self.update_poll.start()
-        print("Polls are ready")
+        log.info("Polls are ready")
 
     @commands.command(aliases=["cep"])
     @commands.is_owner()
@@ -367,7 +369,7 @@ class Poll(commands.Cog):
                         )
                 except discord.Forbidden:
                     # If the user has DMs disabled, we can't notify them
-                    print(f"[Poll] Could not send DM to {member.display_name}")
+                    log.error(f"Could not send DM to {member.display_name}")
 
         # tidy up
         self.event_vcs = []
@@ -396,14 +398,14 @@ class Poll(commands.Cog):
                 ):
                     self.showed_up.add(member.id)
                     # await member.send("✅ You've been counted as attending the event.")
-                    print(f"[Poll] counted {member.display_name} as attended")  # debug
+                    log.info(f"counted {member.display_name} as attended")  # debug
 
             if not hasattr(self, "background_tasks"):
                 self.background_tasks = set()
             task = asyncio.create_task(wait_and_mark())
             self.background_tasks.add(task)
             task.add_done_callback(self.background_tasks.discard)
-            print("[Poll] added", member.display_name, "to pending attendance")
+            log.info("added", member.display_name, "to pending attendance")
 
         # User leaves VC
         elif (
@@ -414,7 +416,7 @@ class Poll(commands.Cog):
         ):
             self.pending_attendance.pop(member.id, None)
             self.showed_up.discard(member.id)
-            print("[Poll] removed", member.display_name, "from pending attendance")
+            log.info("removed", member.display_name, "from pending attendance")
             # await member.send("You left the VC. You won't be counted unless you stay 30 minutes next time.")
 
     @update_poll.before_loop
