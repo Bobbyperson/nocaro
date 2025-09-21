@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 import time
-import tomllib
 
 import discord
 from discord.ext import commands
@@ -11,10 +10,6 @@ from discord.ext import commands
 import utils.miscfuncs as mf
 
 log = logging.getLogger(__name__)
-
-with open("config.toml", "rb") as f:
-    config = tomllib.load(f)
-
 
 class Example(commands.Cog):
     def __init__(self, client):
@@ -159,7 +154,7 @@ class UpdateButton(discord.ui.Button):
         self.client = client
 
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user.id != config["general"]["owner_id"]:
+        if interaction.user.id != self.client.config["general"]["owner_id"]:
             await interaction.response.send_message(
                 "You do not have permission to update the bot.", ephemeral=True
             )
@@ -187,7 +182,7 @@ class RebaseButton(discord.ui.Button):
         self.client = client
 
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user.id != config["general"]["owner_id"]:
+        if interaction.user.id != self.client.config["general"]["owner_id"]:
             await interaction.response.send_message(
                 "You do not have permission to rebase the bot.", ephemeral=True
             )
