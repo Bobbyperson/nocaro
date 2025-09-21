@@ -6098,7 +6098,7 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
             )
             await channel.send(embed=embed)
             log.exception(error)
-            traceback.log.info_exception(
+            traceback.print_exception(
                 type(error), error, error.__traceback__, file=sys.stderr
             )
             await ctx.reply("An unexpected error occurred! Please try again.")
