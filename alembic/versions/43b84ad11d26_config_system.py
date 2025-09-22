@@ -1,7 +1,7 @@
 """config system
 
 Revision ID: 43b84ad11d26
-Revises: d084ddbee31f
+Revises: 3397fac93b9e
 Create Date: 2025-09-22 19:41:59.264499
 
 """
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '43b84ad11d26'
-down_revision: Union[str, None] = 'd084ddbee31f'
+down_revision: Union[str, None] = '3397fac93b9e'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
