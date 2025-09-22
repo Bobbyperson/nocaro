@@ -201,6 +201,22 @@ class database(commands.Cog):
             blacklisted = await mf.is_blacklisted(message.author.id)
             if blacklisted[0]:
                 continue
+            if msg in [
+                "hit",
+                "stand",
+                "double",
+                "split",
+                "h",
+                "s",
+                "d",
+                "p",
+                "cash out",
+                "c",
+                "co",
+            ]:
+                continue
+            if "nocaro" in msg:
+                continue
             async with self.client.session as session:
                 async with session.begin():
                     # Check if already exists to avoid duplicates
@@ -378,19 +394,6 @@ class database(commands.Cog):
         ]:
             return
 
-        # Add to Markov corpus if enabled
-        if await self.is_markov_enabled(message.guild.id):
-            async with self.client.session as session:
-                async with session.begin():
-                    session.add(
-                        models.database.MarkovCorpus(
-                            message_id=message.id,
-                            channel_id=message.channel.id,
-                            guild_id=message.guild.id,
-                            content=message.content,
-                        )
-                    )
-
         guild_member = message.guild.get_member(
             self.client.user.id
         )  # need member object
@@ -514,6 +517,18 @@ class database(commands.Cog):
                             guildID=message.guild.id,
                         )
                     )
+            # Add to Markov corpus if enabled
+            if await self.is_markov_enabled(message.guild.id):
+                async with self.client.session as session:
+                    async with session.begin():
+                        session.add(
+                            models.database.MarkovCorpus(
+                                message_id=message.id,
+                                channel_id=message.channel.id,
+                                guild_id=message.guild.id,
+                                content=message.content,
+                            )
+                        )
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
             "fixupx.com" not in msg
             and "fixvx.com" not in msg
