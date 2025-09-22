@@ -38,11 +38,11 @@ class database(commands.Cog):
                 )
             ).one_or_none() is not None
 
-    async def is_markov_enabled(self, guild_id: int) -> bool:
+    async def is_markov_enabled(self, channel_id: int) -> bool:
         async with self.client.session as session:
             settings = await session.scalar(
-                select(models.database.GuildSettings.markov_enabled).where(
-                    models.database.GuildSettings.guild_id == guild_id
+                select(models.database.ChannelSettings.markov_enabled).where(
+                    models.database.ChannelSettings.channel_id == channel_id
                 )
             )
             return settings if settings is not None else False
@@ -77,7 +77,7 @@ class database(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def enablebrain(self, ctx):
         """Enable intelligently responding to messages."""
-        if await self.is_markov_enabled(ctx.guild.id):
+        if await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My brain is already enabled.")
 
         await ctx.reply(
@@ -96,8 +96,8 @@ class database(commands.Cog):
             if msg.content.lower() == "yes":
                 async with self.client.session as session:
                     async with session.begin():
-                        settings = models.database.GuildSettings(
-                            guild_id=ctx.guild.id, markov_enabled=True
+                        settings = models.database.ChannelSettings(
+                            channel_id=ctx.channel.id, markov_enabled=True
                         )
                         session.add(settings)
                 await ctx.reply(
@@ -112,7 +112,7 @@ class database(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def disablebrain(self, ctx):
         """Disable my brain for this server. Requires confirmation and deletes stored data."""
-        if not await self.is_markov_enabled(ctx.guild.id):
+        if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My brain is not enabled.")
 
         await ctx.reply(
@@ -133,13 +133,15 @@ class database(commands.Cog):
                     async with session.begin():
                         await session.execute(
                             delete(models.database.MarkovCorpus).where(
-                                models.database.MarkovCorpus.guild_id == ctx.guild.id
+                                models.database.MarkovCorpus.channel_id
+                                == ctx.channel.id
                             )
                         )
                         await session.execute(
-                            update(models.database.GuildSettings)
+                            update(models.database.ChannelSettings)
                             .where(
-                                models.database.GuildSettings.guild_id == ctx.guild.id
+                                models.database.ChannelSettings.channel_id
+                                == ctx.channel.id
                             )
                             .values(markov_enabled=False)
                         )
@@ -158,7 +160,7 @@ class database(commands.Cog):
     )  # 3 days cooldown per guild
     async def train(self, ctx, clean: bool = True):
         """Train my brain on the last 100000 messages from a single channel."""
-        if not await self.is_markov_enabled(ctx.guild.id):
+        if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My brain must be enabled first.")
 
         if clean:
@@ -184,7 +186,7 @@ class database(commands.Cog):
                 async with session.begin():
                     await session.execute(
                         delete(models.database.MarkovCorpus).where(
-                            models.database.MarkovCorpus.guild_id == ctx.guild.id
+                            models.database.MarkovCorpus.channel_id == ctx.channel.id
                         )
                     )
 
@@ -288,7 +290,7 @@ class database(commands.Cog):
     @mf.generic_checks()
     async def speak(self, ctx):
         """Intelligently create a message"""
-        if not await self.is_markov_enabled(ctx.guild.id):
+        if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My intelligence is disabled. :(")
 
         # Fetch recent messages for context
@@ -372,7 +374,7 @@ class database(commands.Cog):
                         models.database.MarkovCorpus.message_id == before.id
                     )
                 )
-                if await self.is_markov_enabled(before.guild.id):
+                if await self.is_markov_enabled(before.channel.id):
                     session.add(
                         models.database.MarkovCorpus(
                             message_id=after.id,
@@ -455,7 +457,7 @@ class database(commands.Cog):
             ):
                 return
 
-            if await self.is_markov_enabled(message.guild.id):
+            if await self.is_markov_enabled(message.channel.id):
                 # Context-aware Markov generation
                 async with message.channel.typing():
                     async with self.client.session as session:
@@ -555,12 +557,12 @@ class database(commands.Cog):
                         models.database.Messages(
                             messageID=message.id,
                             channelID=message.channel.id,
-                            guildID=message.guild.id,
+                            guildID=message.channel.id,
                         )
                     )
             # Add to Markov corpus if enabled
             if await self.is_markov_enabled(
-                message.guild.id
+                message.channel.id
             ) and not await self._user_opted_out(message.author.id):
                 async with self.client.session as session:
                     async with session.begin():

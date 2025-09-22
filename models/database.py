@@ -28,10 +28,10 @@ class Blacklist(Base):
     timestamp = Column(Integer, nullable=False)
 
 
-class GuildSettings(Base):
-    __tablename__ = "guild_settings"
+class ChannelSettings(Base):
+    __tablename__ = "channel_settings"
 
-    guild_id = Column(Integer, primary_key=True)
+    channel_id = Column(Integer, primary_key=True)
     markov_enabled = Column(Boolean, default=False)
 
 
