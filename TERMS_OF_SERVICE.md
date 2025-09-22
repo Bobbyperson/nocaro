@@ -10,7 +10,7 @@ Nocaro is designed to enhance user interaction within your Discord server by per
 - Compliance with Laws: You agree to use Nocaro in a manner that complies with all applicable laws and regulations, including but not limited to those related to privacy, data collection, and user content.
 
 ### 3. Data Collection and Privacy
-Nocaro does not store or process actual message content. The only data stored are Message IDs for the purpose of bot functionality. For more details, please refer to our Privacy Policy.
+Please refer to the Privacy Policy.
 
 ### 4. Message Handling and Regurgitation
 Nocaro is not responsible for the content of any messages it regurgitates. Nocaro does not generate original content but may respond using previously seen messages from the active channel where the bot is running. If a message is deleted or Nocaro is removed from the server, the corresponding Message IDs will no longer be accessible.
