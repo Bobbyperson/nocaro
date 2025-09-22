@@ -43,3 +43,10 @@ class MarkovCorpus(Base):
     guild_id = Column(Integer, nullable=False)
     content = Column(String, nullable=False)
     message_id = Column(Integer, nullable=False)
+
+
+class MarkovOptOut(Base):
+    __tablename__ = "markov_opt_out"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, nullable=False, unique=True)

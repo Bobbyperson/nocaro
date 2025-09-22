@@ -5,7 +5,7 @@ import time
 
 import discord
 import discord.ext
-import markovify  # Ensure markovify is installed: pip install markovify
+import markovify
 from discord.ext import commands
 from sqlalchemy import delete, select, update
 
@@ -157,7 +157,7 @@ class database(commands.Cog):
         1, 259200, commands.BucketType.guild
     )  # 3 days cooldown per guild
     async def train(self, ctx, clean: bool = True):
-        """Train my brain on the last 50000 messages from a single channel."""
+        """Train my brain on the last 100000 messages from a single channel."""
         if not await self.is_markov_enabled(ctx.guild.id):
             return await ctx.reply("My brain must be enabled first.")
 
@@ -194,8 +194,8 @@ class database(commands.Cog):
 
         total_added = 0
         # for channel in non_ignored_channels:
-        # messages = [message async for message in ctx.channel.history(limit=50000)]
-        async for message in ctx.channel.history(limit=50000):
+        # messages = [message async for message in ctx.channel.history(limit=100000)]
+        async for message in ctx.channel.history(limit=100000):
             if message.author.bot or not message.content:
                 continue
             blacklisted = await mf.is_blacklisted(message.author.id)
@@ -216,6 +216,8 @@ class database(commands.Cog):
             ]:
                 continue
             if "nocaro" in message.content.lower():
+                continue
+            if await self._user_opted_out(message.author.id):
                 continue
             async with self.client.session as session:
                 async with session.begin():
@@ -241,6 +243,45 @@ class database(commands.Cog):
         await ctx.reply(
             f"Training complete. Added {total_added} new messages to the corpus."
         )
+
+    async def _user_opted_out(self, user_id: int) -> bool:
+        async with self.client.session as session:
+            existing = await session.scalar(
+                select(models.database.MarkovOptOut).where(
+                    models.database.MarkovOptOut.user_id == user_id
+                )
+            )
+            return existing is not None
+
+    @commands.hybrid_command()
+    @mf.generic_checks()
+    async def brainoptout(self, ctx, optingout: bool = True):
+        """Opt out of having your messages stored for Markov generation."""
+        async with self.client.session as session:
+            async with session.begin():
+                existing = await session.scalar(
+                    select(models.database.MarkovOptOut).where(
+                        models.database.MarkovOptOut.user_id == ctx.author.id
+                    )
+                )
+                if optingout:
+                    if existing:
+                        return await ctx.reply("You have already opted out.")
+                    session.add(models.database.MarkovOptOut(user_id=ctx.author.id))
+                    await ctx.reply(
+                        "You have opted out of having your messages stored for Markov generation. You can opt back in with ,brainoptout false."
+                    )
+                else:
+                    if not existing:
+                        return await ctx.reply("You are not currently opted out.")
+                    await session.execute(
+                        delete(models.database.MarkovOptOut).where(
+                            models.database.MarkovOptOut.user_id == ctx.author.id
+                        )
+                    )
+                    await ctx.reply(
+                        "You have opted back in to having your messages stored for Markov generation."
+                    )
 
     @commands.hybrid_command()
     @commands.cooldown(1, 2, commands.BucketType.user)
@@ -518,7 +559,9 @@ class database(commands.Cog):
                         )
                     )
             # Add to Markov corpus if enabled
-            if await self.is_markov_enabled(message.guild.id):
+            if await self.is_markov_enabled(
+                message.guild.id
+            ) and not await self._user_opted_out(message.author.id):
                 async with self.client.session as session:
                     async with session.begin():
                         session.add(
