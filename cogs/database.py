@@ -217,6 +217,8 @@ class database(commands.Cog):
                 continue
             if "nocaro" in message.content.lower():
                 continue
+            if await self._user_opted_out(message.author.id):
+                continue
             async with self.client.session as session:
                 async with session.begin():
                     # Check if already exists to avoid duplicates
@@ -241,6 +243,15 @@ class database(commands.Cog):
         await ctx.reply(
             f"Training complete. Added {total_added} new messages to the corpus."
         )
+
+    async def _user_opted_out(self, user_id: int) -> bool:
+        async with self.client.session as session:
+            existing = await session.scalar(
+                select(models.database.MarkovOptOut).where(
+                    models.database.MarkovOptOut.user_id == user_id
+                )
+            )
+            return existing is not None
 
     @commands.hybrid_command()
     @mf.generic_checks()
@@ -548,7 +559,9 @@ class database(commands.Cog):
                         )
                     )
             # Add to Markov corpus if enabled
-            if await self.is_markov_enabled(message.guild.id):
+            if await self.is_markov_enabled(
+                message.guild.id
+            ) and not await self._user_opted_out(message.author.id):
                 async with self.client.session as session:
                     async with session.begin():
                         session.add(
