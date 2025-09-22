@@ -17,6 +17,7 @@ fire = "🔥"
 
 log = logging.getLogger(__name__)
 
+
 def serialize_attachments(attachments: list[discord.Attachment]) -> str:
     # semicolon-separated URLs
     return ";".join(a.url for a in attachments) if attachments else ""
@@ -418,7 +419,9 @@ class Fire(commands.Cog):
 
     @tasks.loop(seconds=30)
     async def weekly(self):
-        async def getfuckingdata():
+        CUTOFF = 604800  # 7 days
+
+        async def get_pointer():
             async with self.client.session as session:
                 async with session.begin():
                     result = (
@@ -430,77 +433,79 @@ class Fire(commands.Cog):
                     ).one_or_none()
 
                     if result is not None:
-                        old = int(result.data)
-                    else:
-                        session.add(
-                            models.fire.Misc(
-                                pointer="weeklyFire",
-                                data=int(t.time()) + 604800,
-                            )
-                        )
-                        old = None
-            return old
+                        return int(result.data)
 
-        async def setfuckingdata(old):
+                    now = int(t.time())
+                    session.add(models.fire.Misc(pointer="weeklyFire", data=now))
+                    return now
+
+        async def bump_pointer(old):
             async with self.client.session as session:
                 async with session.begin():
                     await session.execute(
                         update(models.fire.Misc)
                         .where(models.fire.Misc.pointer == "weeklyFire")
-                        .values(data=(old + 604800))
+                        .values(data=old + CUTOFF)
                     )
 
-        async def getmessages(unix):
+        async def top_messages_since(unix_now: int) -> list[models.fire.Fire]:
+            cutoff = unix_now - CUTOFF
             async with self.client.session as session:
                 return (
                     await session.scalars(
                         select(models.fire.Fire)
                         .where(
-                            models.fire.Fire.timestamp > (unix - 604800),
+                            models.fire.Fire.timestamp > cutoff,
                             models.fire.Fire.emoji == "fire",
                         )
                         .order_by(models.fire.Fire.reacts.desc())
                     )
                 ).all()
 
-        old = await getfuckingdata()
-        unix = int(t.time())
-        if not old:
-            log.warning(
-                "Old returned none in getfuckingdata() in fire.py!!! This should never happen!!!"
-            )
-            return
-        if unix > old:
-            for server in self.client.guilds:
-                fireboard = None
-                for channel in server.text_channels:
-                    if channel.name == "fireboard":
-                        fireboard = channel
-                        log.debug("found fireboard")
-                if fireboard:
-                    result = await getmessages(unix)
-                    msgtosend = "Congrats to the following people for getting the top 5 hottest messages this week:\n"
-                    # num, reacts, channel_id, message_id, guild_id, user_id, fb_id, message, attachments, timestamp
-                    h = 0
-                    for i, msg in enumerate(result):
-                        if msg.fb_id == fireboard.id:
-                            h += 1
-                            if h == 6:
-                                break
-                            try:
-                                user = self.client.get_user(msg[5])
-                                msgtosend += f"{fire} **{msg[1]}** - {user.mention} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
-                            except:
-                                log.warning("couldn't get user!!!")
-                                user = msg[5]
-                                msgtosend += f"{fire} **{msg[1]}** - {user} - https://discord.com/channels/{msg[4]}/{msg[2]}/{msg[3]}\n"
-                    if (
-                        msgtosend
-                        != "Congrats to the following people for getting the top 5 hottest messages this week:\n"
-                    ):
-                        await fireboard.send(msgtosend)
+        try:
+            old = await get_pointer()
+            now = int(t.time())
+            if now <= old + CUTOFF:
+                return  # not time yet
 
-            await setfuckingdata(old)
+            for server in self.client.guilds:
+                fireboard = next(
+                    (ch for ch in server.text_channels if ch.name == "fireboard"), None
+                )
+                if not fireboard:
+                    continue
+
+                results = await top_messages_since(now)
+                server_msgs = [m for m in results if m.fb_id == fireboard.id]
+
+                top5 = server_msgs[:5]
+
+                if not top5:
+                    continue
+
+                lines = [
+                    "Congrats to the following people for getting the top 5 hottest messages this week:"
+                ]
+                for m in top5:
+                    try:
+                        user = await self.client.fetch_user(int(m.user_id))
+                        user_display = user.mention
+                    except Exception:
+                        log.warning("weekly: couldn't fetch user %s", m.user_id)
+                        user_display = str(m.user_id)
+
+                    lines.append(
+                        f"{fire} **{m.reacts}** - {user_display} - "
+                        f"https://discord.com/channels/{m.guild_id}/{m.channel_id}/{m.message_id}"
+                    )
+
+                await fireboard.send("\n".join(lines))
+
+            await bump_pointer(old)
+
+        except Exception:
+            # Log but don't let the task die
+            log.exception("weekly loop crashed")
 
     @commands.hybrid_command()
     @generic_checks(max_check=False)
