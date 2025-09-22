@@ -11,6 +11,7 @@ from utils.miscfuncs import is_blacklisted
 
 log = logging.getLogger(__name__)
 
+
 class Autoresponse(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -38,8 +39,6 @@ class Autoresponse(commands.Cog):
             return
         if await self.check_ignored(message.channel):
             return
-        if self.client.user.mentioned_in(message):
-            await message.channel.send(message.author.mention)
         if not message.content:
             return
         blacklisted = await is_blacklisted(message.author.id)

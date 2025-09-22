@@ -28,6 +28,7 @@ dependencies = [
     "soundfile>=0.13.1",
     "mutagen>=1.47.0",
     "pydub>=0.25.1",
+    "markovify>=0.9.4",
 ]
 
 [dependency-groups]

@@ -1055,6 +1055,18 @@ wheels = [
 ]
 
 [[package]]
+name = "markovify"
+version = "0.9.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "unidecode" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7a/e2/d0f7df1d6cc9e0b5ab6018d5d302caa1639fe702f492362baac794b6e578/markovify-0.9.4.tar.gz", hash = "sha256:eac0a156ed54bb6bede32ef20131813fbec9db70b515ead57b4d8887a16dfe39", size = 27850, upload-time = "2022-03-03T02:41:58.754Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/89/6c/daf4527ea22e9c9c7c7638c9b60a61b45f0a9b9aa181b512137b98fd83f1/markovify-0.9.4-py3-none-any.whl", hash = "sha256:0a64ab2fa44989248f4093bf93fbbeef23ca2a4610d53ab073523f600e88b7ae", size = 19140, upload-time = "2025-06-12T03:04:45.047Z" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1261,6 +1273,7 @@ dependencies = [
     { name = "discord-py", extra = ["voice"] },
     { name = "emoji" },
     { name = "ffmpy" },
+    { name = "markovify" },
     { name = "matplotlib" },
     { name = "mutagen" },
     { name = "numpy" },
@@ -1297,6 +1310,7 @@ requires-dist = [
     { name = "emoji", specifier = ">=2.14.1" },
     { name = "ffmpy", specifier = ">=0.5.0" },
     { name = "kittentts", marker = "extra == 'tts'", url = "https://github.com/KittenML/KittenTTS/releases/download/0.1/kittentts-0.1.0-py3-none-any.whl" },
+    { name = "markovify", specifier = ">=0.9.4" },
     { name = "matplotlib", specifier = ">=3.10.1" },
     { name = "mutagen", specifier = ">=1.47.0" },
     { name = "numpy", specifier = ">=2.2.1" },
@@ -2473,6 +2487,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e1/34/943888654477a574a86a98e9896bae89c7aa15078ec29f490fef2f1e5384/tzdata-2024.2.tar.gz", hash = "sha256:7d85cc416e9382e69095b7bdf4afd9e3880418a2413feec7069d533d6b4e31cc", size = 193282, upload-time = "2024-09-23T18:56:46.89Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/ab/7e5f53c3b9d14972843a647d8d7a853969a58aecc7559cb3267302c94774/tzdata-2024.2-py2.py3-none-any.whl", hash = "sha256:a48093786cdcde33cad18c2555e8532f34422074448fbc874186f0abd79565cd", size = 346586, upload-time = "2024-09-23T18:56:45.478Z" },
+]
+
+[[package]]
+name = "unidecode"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/7d/a8a765761bbc0c836e397a2e48d498305a865b70a8600fd7a942e85dcf63/Unidecode-1.4.0.tar.gz", hash = "sha256:ce35985008338b676573023acc382d62c264f307c8f7963733405add37ea2b23", size = 200149, upload-time = "2025-04-24T08:45:03.798Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/b7/559f59d57d18b44c6d1250d2eeaa676e028b9c527431f5d0736478a73ba1/Unidecode-1.4.0-py3-none-any.whl", hash = "sha256:c3c7606c27503ad8d501270406e345ddb480a7b5f38827eafe4fa82a137f0021", size = 235837, upload-time = "2025-04-24T08:45:01.609Z" },
 ]
 
 [[package]]
