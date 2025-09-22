@@ -2,11 +2,12 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-from . import achievements, api, database, economy, fire, osu, poll, stocks
+from . import achievements, api, config, database, economy, fire, osu, poll, stocks
 
 __all__ = [
     "achievements",
     "api",
+    "config",
     "database",
     "economy",
     "fire",
