@@ -158,10 +158,13 @@ class database(commands.Cog):
     @commands.cooldown(
         1, 259200, commands.BucketType.guild
     )  # 3 days cooldown per guild
-    async def train(self, ctx, clean: bool = True):
+    async def train(self, ctx, clean: bool = True, unlimited: bool = False):
         """Train my brain on the last 100000 messages from a single channel."""
         if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My brain must be enabled first.")
+
+        if unlimited and ctx.author.id != self.client.config["general"]["owner_id"]:
+            return await ctx.reply("Only the bot owner can use the unlimited option.")
 
         if clean:
             await ctx.reply(
@@ -197,7 +200,8 @@ class database(commands.Cog):
         total_added = 0
         # for channel in non_ignored_channels:
         # messages = [message async for message in ctx.channel.history(limit=100000)]
-        async for message in ctx.channel.history(limit=100000):
+        msg_limit = None if unlimited else 100000
+        async for message in ctx.channel.history(limit=msg_limit):
             if message.author.bot or not message.content:
                 continue
             blacklisted = await mf.is_blacklisted(message.author.id)
