@@ -201,7 +201,7 @@ class database(commands.Cog):
             blacklisted = await mf.is_blacklisted(message.author.id)
             if blacklisted[0]:
                 continue
-            if msg in [
+            if message.content in [
                 "hit",
                 "stand",
                 "double",
@@ -215,7 +215,7 @@ class database(commands.Cog):
                 "co",
             ]:
                 continue
-            if "nocaro" in msg:
+            if "nocaro" in message.content.lower():
                 continue
             async with self.client.session as session:
                 async with session.begin():
