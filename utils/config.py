@@ -20,22 +20,21 @@ async def get(session: AsyncSession, key: str, default: Any = None) -> any:
     return entry
 
 async def set(session: AsyncSession, key: str, value: any) -> None:
-    async with session.begin():
-        entry = await get_raw(session, key)
+    entry = await get_raw(session, key)
 
-        if value is None and entry is None:
-            pass
+    if value is None and entry is None:
+        pass
 
-        elif value is None:
-            await session.delete(entry)
+    elif value is None:
+        await session.delete(entry)
 
-        elif entry is None:
-            session.add(
-                Config(
-                    key=key,
-                    value=value,
-                )
+    elif entry is None:
+        session.add(
+            Config(
+                key=key,
+                value=value,
             )
+        )
 
-        else:
-            entry.value = value
+    else:
+        entry.value = value

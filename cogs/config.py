@@ -25,7 +25,8 @@ class Config(commands.Cog):
         real_value = eval(value)
 
         async with self.bot.session as session:
-            await config.set(session, key, real_value)
+            async with session.begin():
+                await config.set(session, key, real_value)
 
 async def setup(bot):
     await bot.add_cog(Config(bot))
