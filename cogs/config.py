@@ -14,11 +14,13 @@ class Config(commands.Cog):
         pass
 
     @config.command(name="get")
+    @commands.is_owner()
     async def get_config(self, ctx, key: str):
         async with self.bot.session as session:
             await ctx.send(repr(await config.get(session, key)))
 
     @config.command(name="set")
+    @commands.is_owner()
     async def set_config(self, ctx, key: str, *, value: str):
         real_value = eval(value)
 
