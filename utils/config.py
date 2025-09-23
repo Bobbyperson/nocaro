@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,10 +11,12 @@ async def get_raw(session: AsyncSession, key: str) -> any:
         await session.scalars(select(Config).where(Config.key == key))
     ).one_or_none()
 
-async def get(session: AsyncSession, key: str) -> any:
+async def get(session: AsyncSession, key: str, default: Any = None) -> any:
     entry = await get_raw(session, key)
     if entry is not None:
         entry = entry.value
+    else:
+        entry = default
     return entry
 
 async def set(session: AsyncSession, key: str, value: any) -> None:
