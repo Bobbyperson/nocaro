@@ -7,9 +7,7 @@ import time
 import discord
 import discord.ext
 import markovify
-import nltk
 from discord.ext import commands
-from nltk import pos_tag, word_tokenize
 from sqlalchemy import delete, select, update
 
 import models
@@ -17,59 +15,6 @@ import utils.miscfuncs as mf
 
 log = logging.getLogger(__name__)
 bank = "./data/database.sqlite"
-nltk.download("averaged_perceptron_tagger")
-nltk.download("punkt")
-nltk.download("punkt_tab")
-nltk.download("averaged_perceptron_tagger_eng")
-
-
-def _candidate_start_words(
-    context_words: list[str], max_len: int = 2
-) -> list[list[str]]:
-    cands = []
-    tail = context_words[-4:]
-    for n in range(min(max_len, len(tail)), 0, -1):
-        cands.append(tail[-n:])
-    if len(tail) >= 3:
-        cands.append(tail[-3:-2])
-    seen = set()
-    uniq = []
-    for cand in cands:
-        key = tuple(cand)
-        if key not in seen:
-            seen.add(key)
-            uniq.append(cand)
-    return uniq
-
-
-def _make_sentence_safely(
-    model: markovify.Text, context_words: list[str], **kwargs
-) -> str | None:
-    for cand in _candidate_start_words(
-        context_words, max_len=min(2, getattr(model, "state_size", 2))
-    ):
-        start_str = " ".join(cand)
-        try:
-            s = model.make_sentence_with_start(start_str, strict=False, **kwargs)
-            if s:
-                return s
-        except (markovify.text.ParamError, KeyError):
-            continue  # try next candidate
-
-    state_size = getattr(model, "state_size", 2)
-    if len(context_words) >= state_size:
-        init_state_tuple = tuple(context_words[-state_size:])
-        try:
-            s = model.make_sentence(init_state=init_state_tuple, **kwargs)
-            if s:
-                return s
-        except Exception:
-            pass
-
-    try:
-        return model.make_sentence(**kwargs)
-    except Exception:
-        return None
 
 
 MENTION_RE = re.compile(r"<(@[!&]?\d+|#\d+)>")
@@ -119,35 +64,6 @@ def _message_is_okay(message: discord.Message) -> bool:
     return True
 
 
-class POSifiedText(markovify.Text):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def word_split(self, sentence):
-        if not sentence or not isinstance(sentence, str):
-            log.warning(f"Invalid sentence in word_split: {sentence}")
-            return []
-        try:
-            words = word_tokenize(sentence)
-            tagged = pos_tag(words)
-            return [f"{w}_{t}" for w, t in tagged if w]
-        except Exception as e:
-            log.error(f"Error in word_split for sentence '{sentence}': {e}")
-            return []
-
-    def word_join(self, words):
-        if not words:
-            return ""
-        output = []
-        for w in words:
-            token = w.split("_", 1)[0] if isinstance(w, str) else str(w)
-            if token in ".,!?;:@<>&'\"/\\" and output:
-                output[-1] += token
-            else:
-                output.append(token)
-        return " ".join(output)
-
-
 class database(commands.Cog):
     """Commands which utilize a message database."""
 
@@ -157,7 +73,7 @@ class database(commands.Cog):
         # cache: {channel_id: {"model": model, "count": int}}
         self._markov_cache = {}
 
-    async def _get_markov_model(self, channel_id: int) -> POSifiedText | None:
+    async def _get_markov_model(self, channel_id: int) -> markovify.NewlineText | None:
         """Return a cached Markov model for a channel, rebuild if corpus changed."""
         async with self.client.session as session:
             contents = (
@@ -189,7 +105,7 @@ class database(commands.Cog):
             return cached["model"]
 
         # Rebuild model
-        model = POSifiedText(text, state_size=state_size)
+        model = markovify.NewlineText(text, state_size=state_size)
         self._markov_cache[channel_id] = {"model": model, "count": n_lines}
         return model
 
@@ -489,7 +405,7 @@ class database(commands.Cog):
                 for word in context.split()
                 if not word.startswith(",") and word.isalnum()
             ]
-
+            init_state = tuple(context_words[-2:]) if len(context_words) >= 2 else ()
             async with self.client.session as session:
                 contents = (
                     await session.scalars(
@@ -503,11 +419,15 @@ class database(commands.Cog):
                 return await ctx.reply("No data available to generate a sentence.")
 
             text = "\n".join(contents)
-            size = 2 if len(text) < 100000 else 3
-            # model = markovify.NewlineText(text, state_size=size)
-            model = POSifiedText(text, state_size=size)
-            kwargs = dict(tries=120, max_overlap_ratio=0.6, max_overlap_total=12)
-            sentence = _make_sentence_safely(model, context_words, **kwargs)
+
+            model = markovify.NewlineText(text, state_size=2)
+
+            sentence = None
+
+            if init_state and init_state in model.chain.model:
+                sentence = model.make_sentence(tries=100, init_state=init_state)
+            if not sentence:  # Fallback to random generation if init_state fails
+                sentence = model.make_sentence(tries=100)
             if sentence:
                 await ctx.send(discord.utils.escape_mentions(sentence))
             else:
@@ -664,17 +584,17 @@ class database(commands.Cog):
                         if not word.startswith(",") and word.isalnum()
                     ]
 
+                    init_state = (
+                        tuple(context_words[-2:]) if len(context_words) >= 2 else ()
+                    )
                     text = "\n".join(contents)
-                    size = 2 if len(text) < 100000 else 3
-                    # model = markovify.NewlineText(text, state_size=size)
-                    model = POSifiedText(text, state_size=size)
-                    kwargs = dict(
-                        tries=120, max_overlap_ratio=0.6, max_overlap_total=12
-                    )
-                    kwargs = dict(
-                        tries=120, max_overlap_ratio=0.6, max_overlap_total=12
-                    )
-                    sentence = _make_sentence_safely(model, context_words, **kwargs)
+                    model = markovify.NewlineText(text, state_size=2)
+                    sentence = None
+                    if init_state and init_state in model.chain.model:
+                        sentence = model.make_sentence(tries=100, init_state=init_state)
+                    if not sentence:
+                        # fallback
+                        sentence = model.make_sentence(tries=100)
                     if sentence:
                         await message.channel.send(
                             discord.utils.escape_mentions(sentence)
