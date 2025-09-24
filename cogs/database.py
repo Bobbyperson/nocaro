@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+import re
 import time
 
 import discord
@@ -71,6 +72,13 @@ def _make_sentence_safely(
         return None
 
 
+MENTION_RE = re.compile(r"<(@[!&]?\d+|#\d+)>")
+
+
+def strip_mentions(s: str) -> str:
+    return re.sub(r"\s+", " ", MENTION_RE.sub("", s)).strip()
+
+
 def _string_is_okay(s: str) -> bool:
     if not s or not isinstance(s, str):
         return False
@@ -95,6 +103,8 @@ def _string_is_okay(s: str) -> bool:
         "c",
         "co",
     ]:
+        return False
+    if s.startswith(","):
         return False
     return True
 
@@ -131,7 +141,7 @@ class POSifiedText(markovify.Text):
         output = []
         for w in words:
             token = w.split("_", 1)[0] if isinstance(w, str) else str(w)
-            if token in ".,!?;:@<>&'\"" and output:
+            if token in ".,!?;:@<>&'\"/\\" and output:
                 output[-1] += token
             else:
                 output.append(token)
@@ -385,6 +395,7 @@ class database(commands.Cog):
                 < 0.5
             ):
                 continue
+            message.content = strip_mentions(message.content)
             async with self.client.session as session:
                 async with session.begin():
                     # Check if already exists to avoid duplicates
@@ -725,6 +736,7 @@ class database(commands.Cog):
                 message.channel.id
             ) and not await self._user_opted_out(message.author.id):
                 if _message_is_okay(message):
+                    message.content = strip_mentions(message.content)
                     async with self.client.session as session:
                         async with session.begin():
                             session.add(
