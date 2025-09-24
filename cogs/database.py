@@ -19,6 +19,7 @@ bank = "./data/database.sqlite"
 nltk.download("averaged_perceptron_tagger")
 nltk.download("punkt")
 nltk.download("punkt_tab")
+nltk.download("averaged_perceptron_tagger_eng")
 
 
 class POSifiedText(markovify.Text):
@@ -26,14 +27,28 @@ class POSifiedText(markovify.Text):
         super().__init__(*args, **kwargs)
 
     def word_split(self, sentence):
-        # Tokenize and tag words with POS
-        words = word_tokenize(sentence)
-        tagged = pos_tag(words)
-        return [(word + "_" + tag, tag) for word, tag in tagged]
+        if not sentence or not isinstance(sentence, str):
+            log.warning(f"Invalid sentence in word_split: {sentence}")
+            return []
+        try:
+            words = word_tokenize(sentence)
+            tagged = pos_tag(words)
+            return [(word + "_" + tag, tag) for word, tag in tagged if word]
+        except Exception as e:
+            log.error(f"Error in word_split for sentence '{sentence}': {e}")
+            return []
 
     def word_join(self, words):
-        # Join words, removing POS tags
-        return " ".join(word.split("_")[0] for word in words)
+        if not words:
+            log.warning("Empty words list in word_join")
+            return ""
+        try:
+            return " ".join(
+                word.split("_")[0] for word in words if word and isinstance(word, str)
+            )
+        except Exception as e:
+            log.error(f"Error in word_join: {e}")
+            return ""
 
 
 class database(commands.Cog):
@@ -361,7 +376,7 @@ class database(commands.Cog):
 
             text = "\n".join(contents)
             size = 2 if len(text) < 100000 else 3
-            model = POSifiedText(text, state_size=size)
+            model = markovify.NewlineText(text, state_size=size)
             sentence = None
             if init_state and init_state in model.chain.model:
                 sentence = model.make_sentence(tries=100, init_state=init_state)
@@ -529,7 +544,7 @@ class database(commands.Cog):
 
                     text = "\n".join(contents)
                     size = 2 if len(text) < 100000 else 3
-                    model = POSifiedText(text, state_size=size)
+                    model = markovify.NewlineText(text, state_size=size)
                     sentence = None
                     if init_state and init_state in model.chain.model:
                         sentence = model.make_sentence(tries=100, init_state=init_state)
