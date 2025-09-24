@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 bank = "./data/database.sqlite"
 nltk.download("averaged_perceptron_tagger")
 nltk.download("punkt")
+nltk.download("punkt_tab")
 
 
 class POSifiedText(markovify.Text):
