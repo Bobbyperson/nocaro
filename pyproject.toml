@@ -29,6 +29,7 @@ dependencies = [
     "mutagen>=1.47.0",
     "pydub>=0.25.1",
     "markovify>=0.9.4",
+    "nltk>=3.9.1",
 ]
 
 [dependency-groups]

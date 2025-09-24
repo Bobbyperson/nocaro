@@ -6,6 +6,7 @@ import time
 import discord
 import discord.ext
 import markovify
+import nltk
 from discord.ext import commands
 from sqlalchemy import delete, select, update
 
@@ -14,6 +15,7 @@ import utils.miscfuncs as mf
 
 log = logging.getLogger(__name__)
 bank = "./data/database.sqlite"
+nltk.download("averaged_perceptron_tagger")
 
 
 class database(commands.Cog):
@@ -225,6 +227,15 @@ class database(commands.Cog):
                 continue
             if await self._user_opted_out(message.author.id):
                 continue
+            if (
+                len(message.content) < 5
+                or any(
+                    char in message.content for char in ["http://", "https://", "://"]
+                )
+                or sum(c.isalnum() for c in message.content) / len(message.content)
+                < 0.5
+            ):
+                continue
             async with self.client.session as session:
                 async with session.begin():
                     # Check if already exists to avoid duplicates
@@ -300,14 +311,13 @@ class database(commands.Cog):
         # Fetch recent messages for context
         async with ctx.typing():
             history = [
-                message
-                async for message in ctx.channel.history(limit=5)
-                if not message.author.bot and message.content
+                m
+                async for m in ctx.channel.history(limit=10)  # Increase limit
+                if not m.author.bot and m.content and len(m.content) > 5
             ]
             context = " ".join(
-                [msg.content for msg in history if msg.content]
-                + [ctx.message.content if ctx.message else ""]
-            )
+                [m.content for m in history[-3:] if m.content] + [ctx.message.content]
+            )  # Prioritize last 3
             if not context:
                 context = "Hello"
 
@@ -332,7 +342,8 @@ class database(commands.Cog):
                 return await ctx.reply("No data available to generate a sentence.")
 
             text = "\n".join(contents)
-            model = markovify.NewlineText(text, state_size=2)
+            size = 2 if len(text) < 100000 else 3
+            model = markovify.POSifiedText(text, state_size=size)
             sentence = None
             if init_state and init_state in model.chain.model:
                 sentence = model.make_sentence(tries=100, init_state=init_state)
@@ -499,7 +510,8 @@ class database(commands.Cog):
                     )
 
                     text = "\n".join(contents)
-                    model = markovify.NewlineText(text, state_size=2)
+                    size = 2 if len(text) < 100000 else 3
+                    model = markovify.POSifiedText(text, state_size=size)
                     sentence = None
                     if init_state and init_state in model.chain.model:
                         sentence = model.make_sentence(tries=100, init_state=init_state)
@@ -564,20 +576,28 @@ class database(commands.Cog):
                             guildID=message.channel.id,
                         )
                     )
-            # Add to Markov corpus if enabled
             if await self.is_markov_enabled(
                 message.channel.id
             ) and not await self._user_opted_out(message.author.id):
-                async with self.client.session as session:
-                    async with session.begin():
-                        session.add(
-                            models.database.MarkovCorpus(
-                                message_id=message.id,
-                                channel_id=message.channel.id,
-                                guild_id=message.guild.id,
-                                content=message.content,
+                if (
+                    len(message.content) < 5
+                    or any(
+                        char in message.content
+                        for char in ["http://", "https://", "://"]
+                    )
+                    or sum(c.isalnum() for c in message.content) / len(message.content)
+                    < 0.5
+                ):
+                    async with self.client.session as session:
+                        async with session.begin():
+                            session.add(
+                                models.database.MarkovCorpus(
+                                    message_id=message.id,
+                                    channel_id=message.channel.id,
+                                    guild_id=message.guild.id,
+                                    content=message.content,
+                                )
                             )
-                        )
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
             "fixupx.com" not in msg
             and "fixvx.com" not in msg
