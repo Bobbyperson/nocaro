@@ -22,6 +22,93 @@ nltk.download("punkt_tab")
 nltk.download("averaged_perceptron_tagger_eng")
 
 
+def _candidate_start_words(
+    context_words: list[str], max_len: int = 2
+) -> list[list[str]]:
+    cands = []
+    tail = context_words[-4:]
+    for n in range(min(max_len, len(tail)), 0, -1):
+        cands.append(tail[-n:])
+    if len(tail) >= 3:
+        cands.append(tail[-3:-2])
+    seen = set()
+    uniq = []
+    for cand in cands:
+        key = tuple(cand)
+        if key not in seen:
+            seen.add(key)
+            uniq.append(cand)
+    return uniq
+
+
+def _make_sentence_safely(
+    model: markovify.Text, context_words: list[str], **kwargs
+) -> str | None:
+    for cand in _candidate_start_words(
+        context_words, max_len=min(2, getattr(model, "state_size", 2))
+    ):
+        start_str = " ".join(cand)
+        try:
+            s = model.make_sentence_with_start(start_str, strict=False, **kwargs)
+            if s:
+                return s
+        except (markovify.text.ParamError, KeyError):
+            continue  # try next candidate
+
+    state_size = getattr(model, "state_size", 2)
+    if len(context_words) >= state_size:
+        init_state_tuple = tuple(context_words[-state_size:])
+        try:
+            s = model.make_sentence(init_state=init_state_tuple, **kwargs)
+            if s:
+                return s
+        except Exception:
+            pass
+
+    try:
+        return model.make_sentence(**kwargs)
+    except Exception:
+        return None
+
+
+def _string_is_okay(s: str) -> bool:
+    if not s or not isinstance(s, str):
+        return False
+    if len(s) < 5:
+        return False
+    if any(char in s for char in ["http://", "https://", "://"]):
+        return False
+    if (sum(c.isalnum() for c in s) / len(s)) < 0.5:
+        return False
+    if "nocaro" in s.lower():
+        return False
+    if s.lower() in [
+        "hit",
+        "stand",
+        "double",
+        "split",
+        "h",
+        "s",
+        "d",
+        "p",
+        "cash out",
+        "c",
+        "co",
+    ]:
+        return False
+    return True
+
+
+def _message_is_okay(message: discord.Message) -> bool:
+    if not message or not isinstance(message, discord.Message):
+        return False
+    if message.author.bot:
+        return False
+    if not _string_is_okay(message.content):
+        return False
+    return True
+
+
 class POSifiedText(markovify.Text):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -33,22 +120,22 @@ class POSifiedText(markovify.Text):
         try:
             words = word_tokenize(sentence)
             tagged = pos_tag(words)
-            return [(word + "_" + tag, tag) for word, tag in tagged if word]
+            return [f"{w}_{t}" for w, t in tagged if w]
         except Exception as e:
             log.error(f"Error in word_split for sentence '{sentence}': {e}")
             return []
 
     def word_join(self, words):
         if not words:
-            log.warning("Empty words list in word_join")
             return ""
-        try:
-            return " ".join(
-                word.split("_")[0] for word in words if word and isinstance(word, str)
-            )
-        except Exception as e:
-            log.error(f"Error in word_join: {e}")
-            return ""
+        output = []
+        for w in words:
+            token = w.split("_", 1)[0] if isinstance(w, str) else str(w)
+            if token in ".,!?;:@<>&'\"" and output:
+                output[-1] += token
+            else:
+                output.append(token)
+        return " ".join(output)
 
 
 class database(commands.Cog):
@@ -57,6 +144,44 @@ class database(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.nocaro_cooldowns = {}
+        # cache: {channel_id: {"model": model, "count": int}}
+        self._markov_cache = {}
+
+    async def _get_markov_model(self, channel_id: int) -> POSifiedText | None:
+        """Return a cached Markov model for a channel, rebuild if corpus changed."""
+        async with self.client.session as session:
+            contents = (
+                await session.scalars(
+                    select(models.database.MarkovCorpus.content).where(
+                        models.database.MarkovCorpus.channel_id == channel_id
+                    )
+                )
+            ).all()
+
+        if not contents:
+            return None
+
+        seen = set()
+        lines = []
+        for c in contents:
+            cl = c.strip()
+            if cl and cl.lower() not in seen:
+                seen.add(cl.lower())
+                lines.append(cl)
+
+        n_lines = len(lines)
+        state_size = 2 if n_lines < 2_000 else 3 if n_lines < 10_000 else 4
+        text = "\n".join(lines)
+
+        # Check cache
+        cached = self._markov_cache.get(channel_id)
+        if cached and cached["count"] in range(n_lines - 50, n_lines + 51):
+            return cached["model"]
+
+        # Rebuild model
+        model = POSifiedText(text, state_size=state_size)
+        self._markov_cache[channel_id] = {"model": model, "count": n_lines}
+        return model
 
     # events
     @commands.Cog.listener()
@@ -228,6 +353,10 @@ class database(commands.Cog):
                         )
                     )
 
+        main_msg = await ctx.reply(
+            "Training started... This may take a while. 0 messages have been added to corpus so far."
+        )
+
         # non_ignored_channels = [
         #     ch for ch in ctx.guild.text_channels if not await self.check_ignored(ch)
         # ]
@@ -240,25 +369,12 @@ class database(commands.Cog):
             if message.author.bot or not message.content:
                 continue
             blacklisted = await mf.is_blacklisted(message.author.id)
-            if blacklisted[0]:
+            if not _message_is_okay(message) or blacklisted[0]:
                 continue
-            if message.content in [
-                "hit",
-                "stand",
-                "double",
-                "split",
-                "h",
-                "s",
-                "d",
-                "p",
-                "cash out",
-                "c",
-                "co",
-            ]:
+            guild_member = message.guild.get_member(self.client.user.id)
+            if guild_member.nick and guild_member.nick in message.content:
                 continue
-            if "nocaro" in message.content.lower():
-                continue
-            if await self._user_opted_out(message.author.id):
+            if self.client.user.mentioned_in(message):
                 continue
             if (
                 len(message.content) < 5
@@ -288,7 +404,9 @@ class database(commands.Cog):
                         )
                         total_added += 1
             if total_added % 1000 == 0 and total_added > 0:
-                logging.debug(f"Added {total_added} messages so far...")
+                main_msg = await main_msg.edit(
+                    content=f"Training started... This may take a while. {total_added} messages have been added to corpus so far."
+                )
 
         await ctx.reply(
             f"Training complete. Added {total_added} new messages to the corpus."
@@ -360,7 +478,6 @@ class database(commands.Cog):
                 for word in context.split()
                 if not word.startswith(",") and word.isalnum()
             ]
-            init_state = tuple(context_words[-2:]) if len(context_words) >= 2 else ()
 
             async with self.client.session as session:
                 contents = (
@@ -376,13 +493,10 @@ class database(commands.Cog):
 
             text = "\n".join(contents)
             size = 2 if len(text) < 100000 else 3
-            model = markovify.NewlineText(text, state_size=size)
-            sentence = None
-            if init_state and init_state in model.chain.model:
-                sentence = model.make_sentence(tries=100, init_state=init_state)
-            if not sentence:  # Fallback to random generation if init_state fails
-                sentence = model.make_sentence(tries=100)
-
+            # model = markovify.NewlineText(text, state_size=size)
+            model = POSifiedText(text, state_size=size)
+            kwargs = dict(tries=120, max_overlap_ratio=0.6, max_overlap_total=12)
+            sentence = _make_sentence_safely(model, context_words, **kwargs)
             if sentence:
                 await ctx.send(discord.utils.escape_mentions(sentence))
             else:
@@ -538,25 +652,23 @@ class database(commands.Cog):
                         for word in context.split()
                         if not word.startswith(",") and word.isalnum()
                     ]
-                    init_state = (
-                        tuple(context_words[-2:]) if len(context_words) >= 2 else ()
-                    )
 
                     text = "\n".join(contents)
                     size = 2 if len(text) < 100000 else 3
-                    model = markovify.NewlineText(text, state_size=size)
-                    sentence = None
-                    if init_state and init_state in model.chain.model:
-                        sentence = model.make_sentence(tries=100, init_state=init_state)
-                    if (
-                        not sentence
-                    ):  # Fallback to random generation if init_state fails
-                        sentence = model.make_sentence(tries=100)
-
+                    # model = markovify.NewlineText(text, state_size=size)
+                    model = POSifiedText(text, state_size=size)
+                    kwargs = dict(
+                        tries=120, max_overlap_ratio=0.6, max_overlap_total=12
+                    )
+                    kwargs = dict(
+                        tries=120, max_overlap_ratio=0.6, max_overlap_total=12
+                    )
+                    sentence = _make_sentence_safely(model, context_words, **kwargs)
                     if sentence:
                         await message.channel.send(
                             discord.utils.escape_mentions(sentence)
                         )
+
             else:
                 # Legacy random message
                 async with self.client.session as session:
@@ -612,15 +724,7 @@ class database(commands.Cog):
             if await self.is_markov_enabled(
                 message.channel.id
             ) and not await self._user_opted_out(message.author.id):
-                if (
-                    len(message.content) < 5
-                    or any(
-                        char in message.content
-                        for char in ["http://", "https://", "://"]
-                    )
-                    or sum(c.isalnum() for c in message.content) / len(message.content)
-                    < 0.5
-                ):
+                if _message_is_okay(message):
                     async with self.client.session as session:
                         async with session.begin():
                             session.add(
@@ -631,6 +735,7 @@ class database(commands.Cog):
                                     content=message.content,
                                 )
                             )
+
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
             "fixupx.com" not in msg
             and "fixvx.com" not in msg
