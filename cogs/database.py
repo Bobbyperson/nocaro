@@ -8,6 +8,7 @@ import discord.ext
 import markovify
 import nltk
 from discord.ext import commands
+from nltk import pos_tag, word_tokenize
 from sqlalchemy import delete, select, update
 
 import models
@@ -16,6 +17,22 @@ import utils.miscfuncs as mf
 log = logging.getLogger(__name__)
 bank = "./data/database.sqlite"
 nltk.download("averaged_perceptron_tagger")
+nltk.download("punkt")
+
+
+class POSifiedText(markovify.Text):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def word_split(self, sentence):
+        # Tokenize and tag words with POS
+        words = word_tokenize(sentence)
+        tagged = pos_tag(words)
+        return [(word + "_" + tag, tag) for word, tag in tagged]
+
+    def word_join(self, words):
+        # Join words, removing POS tags
+        return " ".join(word.split("_")[0] for word in words)
 
 
 class database(commands.Cog):
@@ -343,7 +360,7 @@ class database(commands.Cog):
 
             text = "\n".join(contents)
             size = 2 if len(text) < 100000 else 3
-            model = markovify.POSifiedText(text, state_size=size)
+            model = POSifiedText(text, state_size=size)
             sentence = None
             if init_state and init_state in model.chain.model:
                 sentence = model.make_sentence(tries=100, init_state=init_state)
@@ -511,7 +528,7 @@ class database(commands.Cog):
 
                     text = "\n".join(contents)
                     size = 2 if len(text) < 100000 else 3
-                    model = markovify.POSifiedText(text, state_size=size)
+                    model = POSifiedText(text, state_size=size)
                     sentence = None
                     if init_state and init_state in model.chain.model:
                         sentence = model.make_sentence(tries=100, init_state=init_state)
