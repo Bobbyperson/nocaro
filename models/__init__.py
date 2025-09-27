@@ -2,7 +2,7 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-from . import achievements, api, config, database, economy, fire, osu, stocks
+from . import achievements, api, config, database, economy, event, fire, osu, stocks
 
 __all__ = [
     "achievements",
@@ -10,6 +10,7 @@ __all__ = [
     "config",
     "database",
     "economy",
+    "event",
     "fire",
     "osu",
     "stocks",

@@ -13,3 +13,4 @@ blacklisted_dms = []
 
 [channels]
 error_reporting_channel = 0
+event_poll_channel = 0
