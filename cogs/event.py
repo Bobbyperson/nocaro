@@ -96,7 +96,9 @@ class Event(commands.Cog):
         self.message_id: int | None = None
         self.end_timestamp: datetime.datetime | None = None
         self.warn_timestamp: datetime.datetime | None = None
+        self.recalc_timestamp: datetime.datetime | None = None
         self.entries: list[models.event.EventEntry] = []
+        self.votes = Counter()
 
         self.poll_lock = asyncio.Lock()
 
@@ -130,6 +132,81 @@ class Event(commands.Cog):
         # The cog cannot load before the bot is ready
         await self.cog_load()
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        log.debug("Received a reaction")
+        if not self.poll_active:
+            return
+        elif payload.message_id != self.message_id:
+            return
+
+        emoji = str(payload.emoji)
+
+        try:
+            index = EMOJIS.index(emoji)
+        except ValueError:
+            return
+
+        user = self.bot.get_user(payload.user_id)
+        if not user or user.bot:
+            return
+
+        # This is inaccurate and only used for visuals
+        # the real results get recalculated.
+        self.votes[index] += await self.__get_vote_value(emoji, user)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        log.debug("Removed a reaction")
+        if not self.poll_active:
+            return
+        elif payload.message_id != self.message_id:
+            return
+
+        emoji = str(payload.emoji)
+
+        try:
+            index = EMOJIS.index(emoji)
+        except ValueError:
+            return
+
+        user = self.bot.get_user(payload.user_id)
+        if not user or user.bot:
+            return
+
+        # This is inaccurate and only used for visuals
+        # the real results get recalculated.
+        self.votes[index] -= await self.__get_vote_value(emoji, user)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_clear(self, payload: discord.RawReactionActionEvent):
+        # This is unlikely to happen but we need to handle this case
+        log.debug("All reactions were removed")
+        if not self.poll_active:
+            return
+        elif payload.message_id != self.message_id:
+            return
+
+        self.votes.clear()
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_clear_emoji(
+        self, payload: discord.RawReactionActionEvent
+    ):
+        # This is unlikely to happen but we need to handle this case
+        log.debug("One reaction was completely removed")
+        if not self.poll_active:
+            return
+        elif payload.message_id != self.message_id:
+            return
+
+        try:
+            index = EMOJIS.index(payload.emoji)
+        except ValueError:
+            return
+
+        self.votes[index] = 0
+
     def state_decorator(func):
         @functools.wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -147,13 +224,21 @@ class Event(commands.Cog):
             if not result:
                 return
 
-            log.info("Found an existing event poll, restoring")
+            log.info("Found an existing event poll, restoring...")
 
             self.poll_active = True
             self.message_id = result.message_id
             self.end_timestamp = result.end_timestamp.replace(tzinfo=datetime.UTC)
             self.warn_timestamp = result.warn_timestamp.replace(tzinfo=datetime.UTC)
+            self.recalc_timestamp = datetime.datetime.now(
+                datetime.UTC
+            ) + datetime.timedelta(minutes=1)
             self.entries = await self.__load_entries()
+
+            poll_message = await self.__get_poll_message()
+            self.votes = await self.__get_votes(poll_message)
+
+            log.info("Done restoring")
 
     async def start_state(self, entries):
         assert (
@@ -207,13 +292,15 @@ class Event(commands.Cog):
 
         self.poll_active = False
 
+        poll_message = await self.__get_poll_message()
+
+        # Updated the votes to have the real state incase inaccuracies were introduced
+        self.votes = await self.__get_votes(poll_message)
+
         # Update the poll one more time to reflect the last state
         await self.__update_poll()
 
-        poll_message = await self.__get_poll_message()
-
-        votes = await self.__get_votes(poll_message)
-        percentages, _ = await self.__get_percentages(votes)
+        percentages, _ = await self.__get_percentages(self.votes)
         winning_index = await self.__determine_winning_index(percentages)
 
         if winning_index > -1:
@@ -275,7 +362,7 @@ class Event(commands.Cog):
             log.info("removed", member.display_name, "from pending attendance")
             # await member.send("You left the VC. You won't be counted unless you stay 30 minutes next time.")
 
-    @tasks.loop(seconds=15.0)
+    @tasks.loop(seconds=8.0)
     @state_decorator
     async def update_task(self):
         log.debug("update_task")
@@ -344,6 +431,17 @@ class Event(commands.Cog):
 
             self.warn_timestamp = None
 
+        log.debug(f"Checking if we should to recalc votes {self.recalc_timestamp}")
+        if self.recalc_timestamp is not None and now >= self.recalc_timestamp:
+            log.debug("Recalculating votes")
+
+            poll_message = await self.__get_poll_message()
+
+            self.recalc_timestamp = datetime.datetime.now(
+                datetime.UTC
+            ) + datetime.timedelta(minutes=1)
+            self.votes = await self.__get_votes(poll_message)
+
         await self.__update_poll()
 
     async def __inactive_poll(self):
@@ -381,8 +479,7 @@ class Event(commands.Cog):
 
         poll_message = await self.__get_poll_message()
 
-        votes = await self.__get_votes(poll_message)
-        percentages, _ = await self.__get_percentages(votes)
+        percentages, _ = await self.__get_percentages(self.votes)
         winning_index = await self.__determine_winning_index(percentages)
 
         now = datetime.datetime.now()
@@ -390,7 +487,7 @@ class Event(commands.Cog):
         msg = "What game Friday?\n"
         for i, entry in enumerate(self.entries):
             name = entry.name
-            count = votes[i]
+            count = self.votes[i]
 
             if i == winning_index:
                 name = f"**{name}**"
@@ -477,17 +574,22 @@ class Event(commands.Cog):
                     continue
 
                 index = EMOJIS.index(reaction.emoji)
-                entry = self.entries[index]
-
-                multiplier = await self.__get_karma(user)
-                value = multiplier * entry.weight
-                votes[index] += round(value / 100, 3)
+                votes[index] += await self.__get_vote_value(reaction.emoji, user)
 
         return votes
 
+    async def __get_vote_value(self, emoji, user) -> float:
+        index = EMOJIS.index(emoji)
+        entry = self.entries[index]
+
+        multiplier = await self.__get_karma(user)
+        value = multiplier * entry.weight
+
+        return round(value / 100, 3)
+
     async def __get_percentages(self, votes) -> tuple[list[float], int]:
         assert self.entries, "Nothing to calculate percentages with"
-        percentages = [0] * len(self.entries)
+        percentages = [0.0] * len(self.entries)
 
         total = sum(votes.values())
 
@@ -532,7 +634,7 @@ class Event(commands.Cog):
         channel_id = self.bot.config["channels"]["event_poll_channel"]
         assert channel_id != 0, "Poll channel ID is 0"
 
-        poll_channel = await self.bot.fetch_channel(channel_id)
+        poll_channel = self.bot.get_channel(channel_id)
         assert poll_channel, "no channel to get message from"
 
         return poll_channel
