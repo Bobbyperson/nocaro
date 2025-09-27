@@ -3,6 +3,7 @@ import contextlib
 import datetime
 import functools
 import logging
+import random
 from collections import Counter
 
 import discord
@@ -214,7 +215,8 @@ class Event(commands.Cog):
 
         votes = await self.__get_votes(poll_message)
         percentages, _ = await self.__get_percentages(votes)
-        winning_index = await self.__determine_winning_index(percentages)
+        all_winners = await self.__determine_winning_index(percentages)
+        winning_index = random.choice(list(all_winners))
 
         if winning_index > -1:
             winner_reaction = discord.utils.get(
@@ -383,7 +385,7 @@ class Event(commands.Cog):
 
         votes = await self.__get_votes(poll_message)
         percentages, _ = await self.__get_percentages(votes)
-        winning_index = await self.__determine_winning_index(percentages)
+        all_winners = await self.__determine_winning_index(percentages)
 
         now = datetime.datetime.now()
 
@@ -392,7 +394,7 @@ class Event(commands.Cog):
             name = entry.name
             count = votes[i]
 
-            if i == winning_index:
+            if i in all_winners:
                 name = f"**{name}**"
 
             percentage = int(percentages[i])
@@ -505,12 +507,29 @@ class Event(commands.Cog):
 
     async def __determine_winning_index(self, percentages) -> int:
         winning_percentage = max(percentages)
-        if winning_percentage == 0:
-            winning_index = -1
-        else:
-            winning_index = percentages.index(winning_percentage)
+        all_winners = set()
 
-        return winning_index
+        if winning_percentage == 0:
+            return all_winners
+
+        elif percentages.count(winning_percentage) > 1:
+            log.debug("There are multiple winners, finding one at random")
+            last_start = 0
+
+            while True:
+                try:
+                    i = percentages.index(winning_percentage, last_start)
+                except ValueError:
+                    break
+
+                last_start = i + 1
+
+                all_winners.add(i)
+
+        else:
+            all_winners.add(percentages.index(winning_percentage))
+
+        return all_winners
 
     async def __update_weights(self, winner) -> None:
         async with self.bot.session as session:
