@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import random
 
@@ -67,7 +68,8 @@ class Autoresponse(commands.Cog):
             await message.channel.send("he's literally me")
         elif "jackbox" in str.lower(message.content):
             jackbox = "<:GO:893517923472277536>"
-            await message.add_reaction(jackbox)
+            with contextlib.suppress(discord.errors.HTTPException):
+                await message.add_reaction(jackbox)
         elif "pick it up" in str.lower(message.content):
             await message.channel.send("SKAAAAAAAAAA!")
 
