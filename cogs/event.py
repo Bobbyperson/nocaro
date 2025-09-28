@@ -913,6 +913,49 @@ class Event(commands.Cog):
         with contextlib.suppress(discord.Forbidden):
             await ctx.message.add_reaction("✅")
 
+    @event.command(name="change")
+    async def changeevent(self, ctx, weight: int, *, name: str):
+        """
+        Change the weight of an event
+        """
+
+        if not name:
+            await ctx.send("No name specified")
+            return
+
+        if self.poll_active:
+            await ctx.send("Cannot remove event while poll is active")
+            return
+
+        existing_entries = await self.__load_entries()
+
+        if len(existing_entries) == 0:
+            await ctx.send("There are no events to modify")
+            return
+
+        for entry in existing_entries:
+            if entry.name.lower() == name.lower():
+                async with self.bot.session as session:
+                    async with session.begin():
+                        event_entry = (
+                            await session.scalars(
+                                select(models.event.EventEntry).where(
+                                    models.event.EventEntry.entry_id == entry.entry_id
+                                )
+                            )
+                        ).one_or_none()
+                        assert event_entry != None, "Somehow the event is not real"
+
+                        event_entry.weight = weight
+
+                        await ctx.send(
+                            f"{event_entry.name} has a new weight of {event_entry.weight}"
+                        )
+                    return
+
+        await ctx.send("Could not find event")
+        return
+
     @event.command(name="list")
     async def listevent(self, ctx):
         """
