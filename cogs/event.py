@@ -35,9 +35,9 @@ EMOJIS = [
     "🇪",
     "🇫",
 ]
-assert (
-    len(EMOJIS) >= MAX_ENTRIES
-), "Not enough emojis for the max amount of possible entries"
+assert len(EMOJIS) >= MAX_ENTRIES, (
+    "Not enough emojis for the max amount of possible entries"
+)
 
 WINNING_OFFSET = -0.2
 LOSING_OFFSET = 0.1
@@ -242,9 +242,9 @@ class Event(commands.Cog):
             log.info("Done restoring")
 
     async def start_state(self, entries):
-        assert (
-            self.poll_active is not True
-        ), "Trying to start state when its already active"
+        assert self.poll_active is not True, (
+            "Trying to start state when its already active"
+        )
 
         self.entries = entries
         assert self.entries, "No entries to start poll with"
@@ -638,7 +638,6 @@ class Event(commands.Cog):
     async def __update_weights(self, winner) -> None:
         async with self.bot.session as session:
             async with session.begin():
-
                 entries = (await session.scalars(select(models.event.EventEntry))).all()
 
                 for entry in entries:
@@ -914,7 +913,7 @@ class Event(commands.Cog):
             await ctx.message.add_reaction("✅")
 
     @event.command(name="change")
-    async def changeevent(self, ctx, weight: int, *, name: str):
+    async def changeevent(self, ctx, weight: float, *, name: str):
         """
         Change the weight of an event
         """
