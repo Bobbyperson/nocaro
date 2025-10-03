@@ -197,12 +197,12 @@ class database(commands.Cog):
     @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
     async def disablebrain(self, ctx):
-        """Disable my brain for this server. Requires confirmation and deletes stored data."""
+        """Disable my brain for this channel. Requires confirmation and deletes stored data."""
         if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My brain is not enabled.")
 
         await ctx.reply(
-            "Disabling my brain will delete all stored message contents for this server. Confirm? (yes/no)"
+            "Disabling my brain will delete all stored message contents for this channel. Confirm? (yes/no)"
         )
 
         def check(m):
