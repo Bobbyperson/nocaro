@@ -1097,7 +1097,7 @@ class Event(commands.Cog):
                             timestamp=datetime.datetime.now(datetime.UTC),
                         )
                     )
-        karma = await self.__get_karma(user.id)
+        karma = await self.__get_karma(user)
 
         await ctx.send(
             f"Attendance updated for {user.name} for event ID {event_id}. Their karma is now {karma}."
