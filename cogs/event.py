@@ -39,7 +39,7 @@ assert len(EMOJIS) >= MAX_ENTRIES, (
     "Not enough emojis for the max amount of possible entries"
 )
 
-WINNING_OFFSET = -0.2
+WINNING_OFFSET = -0.21
 LOSING_OFFSET = 0.1
 
 AUTOMATIC_STATE_KEY = "event_automatic_state"
