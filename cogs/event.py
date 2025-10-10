@@ -498,7 +498,7 @@ class Event(commands.Cog):
 
             percentage = int(percentages[i])
 
-            msg += f" {EMOJIS[i]} - {name}: `{count} votes ({round(percentage, 2)}%)`\n"
+            msg += f" {EMOJIS[i]} - {name}: `{round(count, 2)} votes ({round(percentage, 2)}%)`\n"
 
         msg += f"-# Last Updated <t:{int(now.timestamp())}:R>\n"
         msg += f"-# Poll ends <t:{int(self.end_timestamp.timestamp())}:R>\n"
