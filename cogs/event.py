@@ -497,8 +497,10 @@ class Event(commands.Cog):
                 name = f"**{name}**"
 
             percentage = int(percentages[i])
-
-            msg += f" {EMOJIS[i]} - {name}: `{round(count, 2)} votes ({round(percentage, 2)}%)`\n"
+            # We use :.2f to show percentages without truncating zeroes, 
+            # but use round on count specifically to truncate zeros. 1.0 looks better than 1.00, 
+            # but two points of shown precision may be necessary at some points (e.g. 0.9 * 0.6)
+            msg += f" {EMOJIS[i]} - {name}: `{round(count, 2)} votes ({percentage:.2f}%)`\n"
 
         msg += f"-# Last Updated <t:{int(now.timestamp())}:R>\n"
         msg += f"-# Poll ends <t:{int(self.end_timestamp.timestamp())}:R>\n"
