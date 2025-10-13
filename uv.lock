@@ -608,11 +608,11 @@ wheels = [
 
 [[package]]
 name = "ffmpy"
-version = "0.6.2"
+version = "0.6.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b1/11/d1cf103779efaf9fd165b4ef5f7b8f44c4e692bb44638082d3980f83afc8/ffmpy-0.6.2.tar.gz", hash = "sha256:24fdb5d6476e7d73e6d5aaa95a6c34f66a214fb0f905d459609b3ba452dd940b", size = 4958, upload-time = "2025-10-08T06:34:50.063Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/dd/80760526c2742074c004e5a434665b577ddaefaedad51c5b8fa4526c77e0/ffmpy-0.6.3.tar.gz", hash = "sha256:306f3e9070e11a3da1aee3241d3a6bd19316ff7284716e15a1bc98d7a1939eaf", size = 4975, upload-time = "2025-10-11T07:34:56.609Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/57/699c8b55080248027b97a910818de7ce32e87e2dd60de5e81cff3a353745/ffmpy-0.6.2-py3-none-any.whl", hash = "sha256:ce6b8582e236a272f39f341dc37e7ddf313cb061eca52f9acf1b60062fe8e2fe", size = 5495, upload-time = "2025-10-08T06:34:48.665Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/50/e9409c94a0e9a9d1ec52c6f60e086c52aa0178a0f6f00d7f5e809a201179/ffmpy-0.6.3-py3-none-any.whl", hash = "sha256:f7b25c85a4075bf5e68f8b4eb0e332cb8f1584dfc2e444ff590851eaef09b286", size = 5495, upload-time = "2025-10-11T07:34:55.124Z" },
 ]
 
 [[package]]
