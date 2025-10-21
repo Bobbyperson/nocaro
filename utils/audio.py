@@ -233,9 +233,9 @@ async def play(
     vol: float = 1.0,
     repeat: bool = False,
     pitch: float = 0.0,
-) -> tuple[str, float | None] | None:
+) -> tuple[str, float | None] | tuple[None, None]:
     if not ctx.voice_client:
-        return None
+        return None, None
     try:
         duration = None if repeat else _probe_duration(filename)
         before_opts = "-stream_loop -1" if repeat else None
@@ -254,7 +254,7 @@ async def play(
         return source_id, duration
     except Exception as exc:
         await ctx.send(f"Error playing `{filename}`: {exc}")
-        return None
+        return None, None
 
 
 async def stop(ctx, source_id: str) -> bool:
