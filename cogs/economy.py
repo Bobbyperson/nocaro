@@ -1909,6 +1909,8 @@ Example command: `,bougegram normal 100`"""
                 img = Image.open("templates/custombal/karma.jpg")
             if member.id == 402550402140340224:  # neko
                 img = Image.open("templates/custombal/neko.jpg")
+            if member.id == 924779672401764403:  # walm
+                img = Image.open("templates/custombal/walm.jpg")
         wid, hig = (500, 500)
         if amount == 1:
             msg = f"{amount} bouge buck"
