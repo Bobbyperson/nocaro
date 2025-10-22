@@ -865,7 +865,7 @@ Example command: `,bougegram normal 100`"""
             await misc.send_webhook(
                 ctx=ctx,
                 name="Peppy",
-                avatar="https://bleach.my-ey.es/7FW3uUo.png",
+                avatar="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
                 message=msg,
             )
 
@@ -873,7 +873,7 @@ Example command: `,bougegram normal 100`"""
             await misc.send_webhook(
                 ctx=ctx,
                 name="Mrekk",
-                avatar="https://wolf.girlsare.life/4jVQKJZ.png",
+                avatar="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/mrekk.png",
                 message=msg,
             )
 
@@ -958,7 +958,7 @@ Example command: `,bougegram normal 100`"""
             await webhook.send(
                 content=f"{ctx.author.mention}! Hey I found a wallet with {misc.commafy(amnt)} bouge bucks in it, should we turn it in or keep it? (**turn in**, **keep**)",
                 username="Peppy",
-                avatar_url="https://bleach.my-ey.es/7FW3uUo.png",
+                avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
             )
             try:
                 moosage = await self.client.wait_for(
@@ -968,21 +968,21 @@ Example command: `,bougegram normal 100`"""
                 await webhook.send(
                     content=f"{ctx.author.mention} uhhhh ok I guess I'll keep it for myself...",
                     username="Peppy",
-                    avatar_url="https://bleach.my-ey.es/7FW3uUo.png",
+                    avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
                 )
                 return
             if moosage.content.lower() == "turn in":
                 await webhook.send(
                     content=f"{ctx.author.mention} Ok, I'll go turn it in.",
                     username="Peppy",
-                    avatar_url="https://bleach.my-ey.es/7FW3uUo.png",
+                    avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
                 )
                 await asyncio.sleep(rd.randint(120, 180))
                 if rd.randint(1, 2) == 1:
                     await webhook.send(
                         content=f"Hey {ctx.author.mention} is that you? The Division of Returning Cash Holdings (DORCH) said you turned in my wallet. When I got it back I bet it all on slots and got the jackpot! I wanted to come and reward your honesty, because if it weren't for you I wouldn't have won. Here's **{misc.commafy(int(amnt * 2.25))}** bouge bucks.",
                         username="Mrekk",
-                        avatar_url="https://wolf.girlsare.life/4jVQKJZ.png",
+                        avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/mrekk.png",
                     )
                     await econ.update_amount(
                         ctx.author, int(amnt * 2.25), tracker_reason="event"
@@ -992,14 +992,14 @@ Example command: `,bougegram normal 100`"""
                     await webhook.send(
                         content=f"Hey {ctx.author.mention} is that you? The Division of Returning Cash Holdings (DORCH) said you turned in my wallet. When I got it back I bet it all on slots and lost it all. Thank you for your honesty.",
                         username="Mrekk",
-                        avatar_url="https://wolf.girlsare.life/4jVQKJZ.png",
+                        avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/mrekk.png",
                     )
                     return
             if moosage.content.lower() == "keep":
                 await webhook.send(
                     content=f"{ctx.author.mention} Ok, here it is.",
                     username="Peppy",
-                    avatar_url="https://bleach.my-ey.es/7FW3uUo.png",
+                    avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
                 )
                 await econ.update_amount(ctx.author, amnt, tracker_reason="event")
                 if rd.randint(1, 4) == 1:
@@ -1007,7 +1007,7 @@ Example command: `,bougegram normal 100`"""
                     await webhook.send(
                         content=f"Hey {ctx.author.mention}! You're the bastard that took my wallet!",
                         username="Mrekk",
-                        avatar_url="https://wolf.girlsare.life/4jVQKJZ.png",
+                        avatar_url="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/mrekk.png",
                     )
                     await asyncio.sleep(3)
                     await ctx.channel.send(
@@ -3893,14 +3893,14 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await misc.send_webhook(
                 ctx,
                 "Peppy",
-                "https://bleach.my-ey.es/7FW3uUo.png",
+                "https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
                 "You aren't in debt!",
             )
             return
         await misc.send_webhook(
             ctx,
             "Peppy",
-            "https://bleach.my-ey.es/7FW3uUo.png",
+            "https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
             f"Ok step 1: do the command `,lb`. \nStep 2: Ping the person at the top of the list 3 times in a row. \nStep 3: Beg for {-1 * amount} bouge bucks. \nStep 4: ??? \nStep 5: No more debt",
         )
 
@@ -3918,7 +3918,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         await misc.send_webhook(
             ctx,
             "Peppy",
-            "https://bleach.my-ey.es/7FW3uUo.png",
+            "https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
             "Alternatively, keep `,map`ing",
         )
 
@@ -5043,10 +5043,10 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
         class tree:  # for the purpose of creating while loops based on tree.content
             content = None
 
-        rrtyuipfp = "https://cdn.discordapp.com/attachments/739191665142530058/1045537458093314138/unknown.png"
-        blurrypfp = "https://cdn.discordapp.com/attachments/739191665142530058/1045537818895712307/blur2.png"
+        rrtyuipfp = "https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/rrtyui.webp"
+        blurrypfp = "https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/blurry.webp"
+        pishipfp = "https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/pishi.jpg"
         nervous = "https://cdn.discordapp.com/emojis/803645346256388146.png"
-        pishipfp = "https://cat.girlsare.life/87BCW9q.jpg"
         bruh = "https://cdn.discordapp.com/emojis/857485566383751209.png"
         rage = "https://cdn.discordapp.com/emojis/801109914860781609.png"
         peeved = "https://cdn.discordapp.com/emojis/883899728692138026.png"
