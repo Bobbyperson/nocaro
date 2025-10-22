@@ -1964,7 +1964,7 @@ Example command: `,bougegram normal 100`"""
                 file=discord.File(fp=image_binary, filename="bal.png"),
                 # lol
                 content=(
-                    f"{member} has {misc.commafy(amount)} bouge buck{'s' if amount != 1 else ''} {f'{econ.unmoneyfy(amount)}' if amount > MAX_INT else ''}"
+                    f"{member} has {misc.commafy(amount)} bouge buck{'s' if amount != 1 else ''} {f'(`{econ.unmoneyfy(amount)}`)' if amount > MAX_INT else ''}"
                 ),
             )
 
