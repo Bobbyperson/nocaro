@@ -5480,8 +5480,8 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                                 )
                             )
                             await session.execute(
-                                delete(models.osu.OSU).where(
-                                    models.osu.OSU.user_id == ctx.author.id
+                                delete(models.osu.Osu).where(
+                                    models.osu.Osu.user_id == ctx.author.id
                                 )
                             )
 
