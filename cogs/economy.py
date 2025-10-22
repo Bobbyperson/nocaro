@@ -41,6 +41,9 @@ getcontext().prec = 200
 
 log = logging.getLogger(__name__)
 
+# max 64 bit signed integer
+MAX_INT = (2 ** (64 - 1)) - 1
+
 
 class InventorySource(menus.ListPageSource):
     def __init__(self, data):
@@ -1959,10 +1962,9 @@ Example command: `,bougegram normal 100`"""
             image_binary.seek(0)
             await ctx.send(
                 file=discord.File(fp=image_binary, filename="bal.png"),
+                # lol
                 content=(
-                    f"{member} has {misc.commafy(amount)} bogue buck" + "s"
-                    if amount != 1
-                    else ""
+                    f"{member} has {misc.commafy(amount)} bouge buck{'s' if amount != 1 else ''} {f'{econ.unmoneyfy(amount)}' if amount > MAX_INT else ''}"
                 ),
             )
 
