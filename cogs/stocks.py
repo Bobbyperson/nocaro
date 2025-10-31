@@ -15,6 +15,7 @@ import utils.miscfuncs as mf
 
 log = logging.getLogger(__name__)
 
+
 class Stocks(commands.Cog):
     """Buy real stocks with bouge bucks"""
 
@@ -33,7 +34,7 @@ class Stocks(commands.Cog):
                     models.stocks.Stocks(
                         user_id=user_id,
                         ticker=ticker,
-                        amount=amount,
+                        amount=str(amount),
                         purchase_price=purchase_price,
                     )
                 )
@@ -54,11 +55,11 @@ class Stocks(commands.Cog):
                     if amount <= 0:
                         break
 
-                    if row.amount <= amount:
+                    if int(row.amount) <= amount:
                         await session.delete(row)
-                        amount -= row.amount
+                        amount -= int(row.amount)
                     else:
-                        row.amount = amount
+                        row.amount = str(amount)
                         amount = 0
 
     async def fetch_stock_price(self, stock_ticker):
@@ -176,7 +177,7 @@ class Stocks(commands.Cog):
                     await ctx.send("You don't have any stocks of that type")
                     return
 
-                total_stocks = sum([stock.amount for stock in results])
+                total_stocks = sum([int(stock.amount) for stock in results])
                 if total_stocks < amount:
                     await ctx.send("You don't have enough stocks to sell")
                     return
@@ -235,7 +236,7 @@ class Stocks(commands.Cog):
                 for stock in results:
                     if stock.ticker not in stocktable:
                         stocktable[stock.ticker] = {
-                            "amount": stock.amount,
+                            "amount": int(stock.amount),
                             "purchase_price": stock.purchase_price,
                         }
 
