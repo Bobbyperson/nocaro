@@ -4,6 +4,7 @@ import datetime
 import functools
 import logging
 import random
+import time
 from collections import Counter
 
 import discord
@@ -35,9 +36,9 @@ EMOJIS = [
     "🇪",
     "🇫",
 ]
-assert len(EMOJIS) >= MAX_ENTRIES, (
-    "Not enough emojis for the max amount of possible entries"
-)
+assert (
+    len(EMOJIS) >= MAX_ENTRIES
+), "Not enough emojis for the max amount of possible entries"
 
 WINNING_OFFSET = -0.21
 LOSING_OFFSET = 0.1
@@ -47,6 +48,47 @@ AUTOMATIC_LAST_START_KEY = "event_automatic_last_start"
 
 log = logging.getLogger(__name__)
 # log.setLevel(logging.DEBUG)
+
+
+class InverseDstUtcZone(datetime.tzinfo):
+
+    def fromutc(self, dt):
+        return dt
+
+    def utcoffset(self, dt):
+        # Make somewhat DST aware
+        assert dt.tzinfo is self
+
+        # If its not DST go one hour ahead
+        if self._isdst(dt):
+            return datetime.timedelta(hours=0)
+        else:
+            return datetime.timedelta(hours=1)
+
+    def dst(self, dt):
+        return self.utcoffset(dt)
+
+    def tzname(self, dt):
+        return "InverseDstUtc"
+
+    def _isdst(self, dt):
+        tt = (
+            dt.year,
+            dt.month,
+            dt.day,
+            dt.hour,
+            dt.minute,
+            dt.second,
+            dt.weekday(),
+            0,
+            0,
+        )
+        stamp = time.mktime(tt)
+        tt = time.localtime(stamp)
+        return tt.tm_isdst > 0
+
+
+InverseDstUtc = InverseDstUtcZone()
 
 
 def get_next_weekday(weekday: int) -> datetime.datetime:
@@ -63,7 +105,7 @@ def get_next_weekday(weekday: int) -> datetime.datetime:
         minute=0,
         second=0,
         microsecond=0,
-        tzinfo=datetime.UTC,
+        tzinfo=InverseDstUtc,
     ) + datetime.timedelta(days=1)
 
     # Gets the next specified weekday exlcuding today
@@ -83,7 +125,7 @@ def get_prev_weekday(weekday: int) -> datetime.datetime:
         minute=0,
         second=0,
         microsecond=0,
-        tzinfo=datetime.UTC,
+        tzinfo=InverseDstUtc,
     )
 
     # Gets the previous specified weekday including today
@@ -229,10 +271,10 @@ class Event(commands.Cog):
 
             self.poll_active = True
             self.message_id = result.message_id
-            self.end_timestamp = result.end_timestamp.replace(tzinfo=datetime.UTC)
-            self.warn_timestamp = result.warn_timestamp.replace(tzinfo=datetime.UTC)
+            self.end_timestamp = result.end_timestamp.replace(tzinfo=InverseDstUtc)
+            self.warn_timestamp = result.warn_timestamp.replace(tzinfo=InverseDstUtc)
             self.recalc_timestamp = datetime.datetime.now(
-                datetime.UTC
+                InverseDstUtc
             ) + datetime.timedelta(minutes=1)
             self.entries = await self.__load_entries()
 
@@ -242,9 +284,9 @@ class Event(commands.Cog):
             log.info("Done restoring")
 
     async def start_state(self, entries):
-        assert self.poll_active is not True, (
-            "Trying to start state when its already active"
-        )
+        assert (
+            self.poll_active is not True
+        ), "Trying to start state when its already active"
 
         self.entries = entries
         assert self.entries, "No entries to start poll with"
@@ -333,7 +375,7 @@ class Event(commands.Cog):
             return
         # User joins VC
         if after.channel and after.channel.id in self.event_vcs:
-            self.pending_attendance[member.id] = datetime.datetime.now(datetime.UTC)
+            self.pending_attendance[member.id] = datetime.datetime.now(InverseDstUtc)
 
             async def wait_and_mark():
                 await asyncio.sleep(30 * 60)  # 30 minutes
@@ -381,7 +423,7 @@ class Event(commands.Cog):
 
     async def __active_poll(self):
         # Event starts at 12AM UTC so we end it a few hours before that
-        now = datetime.datetime.now(datetime.UTC)
+        now = datetime.datetime.now(InverseDstUtc)
         log.debug(f"now {now}")
 
         if await self.__get_automatic_state():
@@ -442,7 +484,7 @@ class Event(commands.Cog):
             poll_message = await self.__get_poll_message()
 
             self.recalc_timestamp = datetime.datetime.now(
-                datetime.UTC
+                InverseDstUtc
             ) + datetime.timedelta(minutes=1)
             self.votes = await self.__get_votes(poll_message)
 
@@ -497,8 +539,8 @@ class Event(commands.Cog):
                 name = f"**{name}**"
 
             percentage = int(percentages[i])
-            # We use :.2f to show percentages without truncating zeroes, 
-            # but use round on count specifically to truncate zeros. 1.0 looks better than 1.00, 
+            # We use :.2f to show percentages without truncating zeroes,
+            # but use round on count specifically to truncate zeros. 1.0 looks better than 1.00,
             # but two points of shown precision may be necessary at some points (e.g. 0.9 * 0.6)
             msg += f" {EMOJIS[i]} - {name}: `{round(count, 2)} votes ({percentage:.2f}%)`\n"
 
@@ -1096,7 +1138,7 @@ class Event(commands.Cog):
                             user_id=user.id,
                             attended=attended,
                             voted_for_winner=voted_for_winner,
-                            timestamp=datetime.datetime.now(datetime.UTC),
+                            timestamp=datetime.datetime.now(InverseDstUtc),
                         )
                     )
         karma = await self.__get_karma(user)
@@ -1120,7 +1162,7 @@ class Event(commands.Cog):
         if not self.event_vcs:
             return await ctx.send("No voice channel is being monitored.")
 
-        timestamp = datetime.datetime.now(datetime.UTC)
+        timestamp = datetime.datetime.now(InverseDstUtc)
 
         # merge winners + showed_up
         attendees = set(self.winners) | self.showed_up
