@@ -56,17 +56,17 @@ class InverseDstUtcZone(datetime.tzinfo):
         return dt
 
     def utcoffset(self, dt):
-        # Make somewhat DST aware
+        # since we have no offset we just return dst
+        return self.dst(dt)
+
+    def dst(self, dt):
         assert dt.tzinfo is self
 
-        # If its not DST go one hour ahead
+        # If its not DST go one hour ahead by pretending we are in the past
         if self._isdst(dt):
             return datetime.timedelta(hours=0)
         else:
-            return datetime.timedelta(hours=1)
-
-    def dst(self, dt):
-        return self.utcoffset(dt)
+            return datetime.timedelta(hours=-1)
 
     def tzname(self, dt):
         return "InverseDstUtc"
