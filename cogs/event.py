@@ -423,7 +423,7 @@ class Event(commands.Cog):
 
     async def __active_poll(self):
         # Event starts at 12AM UTC so we end it a few hours before that
-        now = datetime.datetime.now(InverseDstUtc)
+        now = datetime.datetime.now(datetime.UTC)
         log.debug(f"now {now}")
 
         if await self.__get_automatic_state():
@@ -1138,7 +1138,7 @@ class Event(commands.Cog):
                             user_id=user.id,
                             attended=attended,
                             voted_for_winner=voted_for_winner,
-                            timestamp=datetime.datetime.now(InverseDstUtc),
+                            timestamp=datetime.datetime.now(datetime.UTC),
                         )
                     )
         karma = await self.__get_karma(user)
@@ -1162,7 +1162,7 @@ class Event(commands.Cog):
         if not self.event_vcs:
             return await ctx.send("No voice channel is being monitored.")
 
-        timestamp = datetime.datetime.now(InverseDstUtc)
+        timestamp = datetime.datetime.now(datetime.UTC)
 
         # merge winners + showed_up
         attendees = set(self.winners) | self.showed_up
