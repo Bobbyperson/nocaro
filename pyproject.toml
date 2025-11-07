@@ -3,13 +3,13 @@ name = "nocaro"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Bobbyperson", email = "bobbyperson12345@gmail.com" }]
-requires-python = ">=3.11,<3.13,!=3.12.5"
+requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "GNU GPLv3"
 dependencies = [
-    "sqlalchemy[aiosqlite]>=2.0.40",
+    "sqlalchemy[aiosqlite]>=2.0.44",
     "pillow>=11.2.0",
-    "discord-py[voice]>=2.6.3",
+    "discord-py[voice]>=2.6.4",
     "discord-pretty-help>=2.0.7",
     "ffmpy>=0.5.0",
     "pyquery>=2.0.1",
@@ -33,7 +33,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.11.4",
+    "ruff>=0.14.4",
 ]
 
 [project.optional-dependencies]
