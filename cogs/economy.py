@@ -3214,7 +3214,7 @@ Example command: `,bougegram normal 100`"""
 
     @commands.hybrid_command(aliases=["qd"])
     @commands.max_concurrency(1, per=commands.BucketType.channel, wait=False)
-    @misc.generic_checks(max_check=False)
+    @misc.generic_checks()
     async def quickdraw(self, ctx, member: discord.Member = None, amount: str = "0"):
         """Play a reaction based game against someone."""
         amount = econ.moneyfy(amount)
@@ -3342,6 +3342,7 @@ Example command: `,bougegram normal 100`"""
                 )  # 30 seconds to reply
             except TimeoutError:
                 await ctx.send(f"{member} did not accept your duel! Cancelling.")
+                return
             if msg.content.lower() == "i accept":
                 await econ.update_amount(
                     ctx.author, -1 * amount, False, tracker_reason="quickdraw"
