@@ -338,24 +338,25 @@ class Fire(commands.Cog):
             "unfireboard",
         ]:
             return
+        if react != fire and react != "unfire":
+            return
         if len(added_msg.reactions) == 1:  # wooo i love inconsistencies woooo
             total_reacts = added_msg.reactions[0].count
         else:
             for i, reaction in enumerate(added_msg.reactions):
-                if reaction.emoji == fire:
+                if reaction.emoji == react:
                     total_reacts = added_msg.reactions[i].count
                     break
-        if react == fire:
-            if total_reacts >= 5:
-                fireboard = None
-                for channel in added_msg.guild.text_channels:
-                    if channel.name == "fireboard":
-                        fireboard = channel
-                        break
-                if fireboard:
-                    if fireboard.id == react_channel.id:
-                        return
-                    await self.add_to_board(added_msg, fireboard, total_reacts, "fire")
+        if react == fire and total_reacts >= 5:
+            fireboard = None
+            for channel in added_msg.guild.text_channels:
+                if channel.name == "fireboard":
+                    fireboard = channel
+                    break
+            if fireboard:
+                if fireboard.id == react_channel.id:
+                    return
+                await self.add_to_board(added_msg, fireboard, total_reacts, "fire")
         elif react == "unfire" and total_reacts >= 5:
             fireboard = None
             for channel in added_msg.guild.text_channels:
@@ -380,37 +381,35 @@ class Fire(commands.Cog):
             "unfireboard",
         ]:
             return
+        if react != fire and react != "unfire":
+            return
         if len(added_msg.reactions) == 1:  # wooo i love inconsistencies woooo
             total_reacts = added_msg.reactions[0].count
         else:
             for i, reaction in enumerate(added_msg.reactions):
-                if reaction.emoji == fire:
+                if reaction.emoji == react:
                     total_reacts = added_msg.reactions[i].count
                     break
-        if react == fire:
-            if total_reacts >= 5:
-                fireboard = None
-                for channel in added_msg.guild.text_channels:
-                    if channel.name == "fireboard":
-                        fireboard = channel
-                        break
-                if fireboard:
-                    if fireboard.id == react_channel.id:
-                        return
-                    await self.add_to_board(added_msg, fireboard, total_reacts, "fire")
-        elif react == "unfire":
-            if total_reacts >= 5:
-                fireboard = None
-                for channel in added_msg.guild.text_channels:
-                    if channel.name == "unfireboard":
-                        fireboard = channel
-                        break
-                if fireboard:
-                    if fireboard.id == react_channel.id:
-                        return
-                    await self.add_to_board(
-                        added_msg, fireboard, total_reacts, "unfire"
-                    )
+        if react == fire and total_reacts >= 5:
+            fireboard = None
+            for channel in added_msg.guild.text_channels:
+                if channel.name == "fireboard":
+                    fireboard = channel
+                    break
+            if fireboard:
+                if fireboard.id == react_channel.id:
+                    return
+                await self.add_to_board(added_msg, fireboard, total_reacts, "fire")
+        elif react == "unfire" and total_reacts >= 5:
+            fireboard = None
+            for channel in added_msg.guild.text_channels:
+                if channel.name == "unfireboard":
+                    fireboard = channel
+                    break
+            if fireboard:
+                if fireboard.id == react_channel.id:
+                    return
+                await self.add_to_board(added_msg, fireboard, total_reacts, "unfire")
 
     @commands.command(hidden=True)
     @generic_checks(max_check=False)
