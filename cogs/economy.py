@@ -1369,59 +1369,59 @@ Example command: `,bougegram normal 100`"""
         await ctx.send("Tradein successful.")
         await econ.update_banana(ctx.author, 1)
 
-    @commands.hybrid_command(aliases=["levelup", "prestiege"])
-    @commands.cooldown(1, 43200, commands.BucketType.user)
-    @misc.generic_checks()
-    async def bbtobananapipeline(self, ctx):
-        """Prestiege to earn bouge bananas."""
+    # @commands.hybrid_command(aliases=["levelup", "prestiege"])
+    # @commands.cooldown(1, 43200, commands.BucketType.user)
+    # @misc.generic_checks()
+    # async def bbtobananapipeline(self, ctx):
+    #     """Prestiege to earn bouge bananas."""
 
-        def check(moosage):
-            return (
-                moosage.author == ctx.author
-                and moosage.channel == ctx.channel
-                and moosage.content.lower() in ["yes", "no"]
-            )
+    #     def check(moosage):
+    #         return (
+    #             moosage.author == ctx.author
+    #             and moosage.channel == ctx.channel
+    #             and moosage.content.lower() in ["yes", "no"]
+    #         )
 
-        bal = await econ.get_bal(ctx.author)
-        level = await econ.get_level(ctx.author)
-        reqamnt = 20000 + (1000 * (level + 1))
-        earn = math.ceil(
-            (
-                math.log10(bal / 6000)
-                + (2 * math.log10(bal / 6000) - 1)
-                + math.sqrt(bal / 35000)
-            )
-            / 1.15
-        )
-        if bal < reqamnt:
-            await ctx.send(
-                f"Not enough bouge bucks to prestige, you need {misc.commafy(reqamnt)}!"
-            )
-            ctx.command.reset_cooldown(ctx)
-            return
-        await ctx.reply(
-            f"If you prestige, you'll lose all of your bouge bucks (**{misc.commafy(bal)}**), you'll earn **{earn} bouge bananas**, and you will become **level {level + 1}**. Are you absolutely sure you want to prestige? (**yes**/**no**)"
-        )
-        try:
-            msg = await self.client.wait_for(
-                "message", check=check, timeout=15
-            )  # 15 seconds to reply
-        except TimeoutError:
-            await ctx.send("Timeout...")
-            return
-        if msg.content.lower() == "yes":
-            await econ.update_amount(
-                ctx.author, -1 * bal, False, tracker_reason="prestige"
-            )
-            await econ.update_banana(ctx.author, earn)
-            await econ.update_level(ctx.author, 1)
-            await ctx.send(
-                f"You are now level {level + 1}, you have earned {earn} bouge bananas, and you have lost all of your bouge bucks!"
-            )
-            return
-        if msg.content.lower() == "no":
-            await ctx.send("<:WTF:871245957168246835>")
-            ctx.command.reset_cooldown(ctx)
+    #     bal = await econ.get_bal(ctx.author)
+    #     level = await econ.get_level(ctx.author)
+    #     reqamnt = 20000 + (1000 * (level + 1))
+    #     earn = math.ceil(
+    #         (
+    #             math.log10(bal / 6000)
+    #             + (2 * math.log10(bal / 6000) - 1)
+    #             + math.sqrt(bal / 35000)
+    #         )
+    #         / 1.15
+    #     )
+    #     if bal < reqamnt:
+    #         await ctx.send(
+    #             f"Not enough bouge bucks to prestige, you need {misc.commafy(reqamnt)}!"
+    #         )
+    #         ctx.command.reset_cooldown(ctx)
+    #         return
+    #     await ctx.reply(
+    #         f"If you prestige, you'll lose all of your bouge bucks (**{misc.commafy(bal)}**), you'll earn **{earn} bouge bananas**, and you will become **level {level + 1}**. Are you absolutely sure you want to prestige? (**yes**/**no**)"
+    #     )
+    #     try:
+    #         msg = await self.client.wait_for(
+    #             "message", check=check, timeout=15
+    #         )  # 15 seconds to reply
+    #     except TimeoutError:
+    #         await ctx.send("Timeout...")
+    #         return
+    #     if msg.content.lower() == "yes":
+    #         await econ.update_amount(
+    #             ctx.author, -1 * bal, False, tracker_reason="prestige"
+    #         )
+    #         await econ.update_banana(ctx.author, earn)
+    #         await econ.update_level(ctx.author, 1)
+    #         await ctx.send(
+    #             f"You are now level {level + 1}, you have earned {earn} bouge bananas, and you have lost all of your bouge bucks!"
+    #         )
+    #         return
+    #     if msg.content.lower() == "no":
+    #         await ctx.send("<:WTF:871245957168246835>")
+    #         ctx.command.reset_cooldown(ctx)
 
     @commands.hybrid_command()
     @commands.cooldown(1, 5, commands.BucketType.user)
