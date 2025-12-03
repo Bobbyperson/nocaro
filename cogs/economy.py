@@ -2235,7 +2235,7 @@ Example command: `,bougegram normal 100`"""
             if (
                 double == 2
                 and hand.cards[0].value + hand.cards[1].value == 21
-                and dealer.get_value() < hand.get_value()
+                and (dealer.get_value() < hand.get_value() or dealer.get_value() > 21)
             ):
                 x_ray = await ach.get_achievement("x_ray")
                 if not await x_ray.is_achieved(ctx.author):
