@@ -4478,7 +4478,8 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         ]
         if bet is None:
             await ctx.send(
-                "Simply supply your bet, and which horse 1-6 you'd like to bet on. For example, `,horserace 100 3` to bet 100 bouge bucks on horse 3."
+                "Simply supply your bet, and which horse 1-6 you'd like to bet on. "
+                "For example, `,horserace 100 3` to bet 100 bouge bucks on horse 3."
             )
             ctx.command.reset_cooldown(ctx)
             return
@@ -4488,18 +4489,21 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
             await ctx.send("You can't bet negative bouge bucks.")
             ctx.command.reset_cooldown(ctx)
             return
+
         balance = await econ.get_bal(ctx.author)
         if amount > balance:
             await ctx.send("You don't have enough! Go `,map`!")
             ctx.command.reset_cooldown(ctx)
             return
+
         if horse > 6 or horse < 1:
             await ctx.send("Please choose a horse between 1 and 6.")
             ctx.command.reset_cooldown(ctx)
             return
+
         horse_progress = [0, 0, 0, 0, 0, 0]
-        win_order = []
-        done = False
+        winner_index: int | None = None
+
         main_msg = await ctx.send(
             f"""
 {emojis[0]}{"-" * 50}:checkered_flag:
@@ -4510,38 +4514,40 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
 {emojis[5]}{"-" * 50}:checkered_flag:
 """
         )
-        while not done:
+
+        while winner_index is None:
             await asyncio.sleep(3)
-            done = True
+
             for i in range(6):
                 horse_progress[i] += rd.randint(0, 10)
                 if horse_progress[i] >= 100:
-                    if i not in win_order:
-                        win_order.append(i)
                     horse_progress[i] = 100
-                if horse_progress[i] < 100:
-                    done = False
+                    if winner_index is None:
+                        winner_index = i
+                        break
+
             new_msg = ""
             for i in range(6):
-                if len(win_order) > 0 and win_order[0] == i:
-                    new_msg += f"{'-' * math.ceil(horse_progress[i] / 2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i]) / 2))}:checkered_flag::trophy:\n"
-                # elif len(win_order) > 0:
-                #     if i in win_order:
-                #         for j in range(6):
-                #             if win_order[j] == i:
-                #                 new_msg += f"{'-' * math.ceil(horse_progress[i]/2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i])/2))}:checkered_flag::{numbersdict[j]}:\n"
+                progress = horse_progress[i]
+                left_dashes = "-" * math.ceil(progress / 2)
+                right_dashes = "-" * math.floor((100 - progress) / 2)
+
+                if winner_index == i:
+                    new_msg += f"{left_dashes}{emojis[i]}{right_dashes}:checkered_flag::trophy:\n"
                 else:
-                    new_msg += f"{'-' * math.ceil(horse_progress[i] / 2)}{emojis[i]}{'-' * (math.floor((100 - horse_progress[i]) / 2))}:checkered_flag:\n"
+                    new_msg += (
+                        f"{left_dashes}{emojis[i]}{right_dashes}:checkered_flag:\n"
+                    )
+
             await main_msg.edit(content=new_msg)
-        if horse == win_order[0] + 1:
+
+        if horse == winner_index + 1:
             await ctx.send(f"Congratulations! You won {amount * 7} bouge bucks!")
             await econ.update_amount(ctx.author, amount * 7, tracker_reason="horserace")
             await econ.update_winloss(ctx.author, "w")
         else:
             await ctx.send("Your horse didn't win... womp womp....")
-            await econ.update_amount(
-                ctx.author, -1 * amount, tracker_reason="horserace"
-            )
+            await econ.update_amount(ctx.author, -amount, tracker_reason="horserace")
             await econ.update_winloss(ctx.author, "l")
 
     @commands.command(hidden=True, aliases=["cf"])
