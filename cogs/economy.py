@@ -2855,9 +2855,9 @@ Example command: `,bougegram normal 100`"""
         if totalmoney < 1000:
             await ctx.reply("You need at least 1000 bouge bucks to buy immunity")
             return
-        cost = math.ceil(totalmoney * 0.1)
+        cost = math.ceil(totalmoney * 0.05)
         await ctx.reply(
-            f"Are you sure you want to spend 10% of your bouge bucks ({econ.unmoneyfy(cost)}) for immunity from stealing for 24 hours? "
+            f"Are you sure you want to spend 5% of your bouge bucks ({econ.unmoneyfy(cost)}) for immunity from stealing for 24 hours? "
             "Repond **Yes** or **No**"
         )
         try:
