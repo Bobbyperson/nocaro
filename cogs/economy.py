@@ -2837,7 +2837,7 @@ Example command: `,bougegram normal 100`"""
             return (
                 mosage.author == ctx.author
                 and mosage.channel == ctx.channel
-                and mosage.content.lower() in ["yes"]
+                and mosage.content.lower() in ["yes", "no", "y", "n"]
             )
 
         unix = int(round(time.time(), 0))
@@ -2866,7 +2866,7 @@ Example command: `,bougegram normal 100`"""
             )  # 30 seconds to reply
         except TimeoutError:
             return
-        if msg.content.lower() == "yes":
+        if msg.content.lower() in ["yes", "y"]:
             if current > unix:
                 await econ.update_amount(user, -1 * cost, tracker_reason="immunity")
                 await econ.update_immunity(user, current + 86400)
