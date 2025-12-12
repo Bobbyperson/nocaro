@@ -11,6 +11,7 @@ import utils.miscfuncs as mf
 
 log = logging.getLogger(__name__)
 
+
 def array_to_string(arr):
     x = ", ".join(str(x) for x in arr)
     return x
@@ -52,7 +53,9 @@ class Moderation(commands.Cog):
         for guild in self.client.guilds:
             if guild.id in self.client.config["blacklists"]["blacklisted_dms"]:
                 await guild.leave()
-                me = await self.client.fetch_user(self.client.config["general"]["owner_id"])
+                me = await self.client.fetch_user(
+                    self.client.config["general"]["owner_id"]
+                )
                 await me.send(f"Left blacklisted server: {guild.name}: `{guild.id}`")
 
     @commands.Cog.listener()
@@ -83,6 +86,9 @@ class Moderation(commands.Cog):
     async def clear(self, ctx, amount=5 + 1):
         """Clean messages."""
         await ctx.channel.purge(limit=amount)
+        msg = await ctx.send(f"Cleared `{amount - 1}` messages.")
+        await anyio.sleep(3)
+        await msg.delete()
 
     @commands.hybrid_command()
     @commands.has_permissions(ban_members=True, manage_messages=True)
