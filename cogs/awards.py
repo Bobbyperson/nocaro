@@ -115,22 +115,23 @@ class Awards(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def addnominate(self, ctx, user_id: int):
+    async def addnominate(self, ctx, *users):
         """Add a user to the list of users who may nominate for awards."""
-        async with self.client.session as session:
-            async with session.begin():
-                award_user = AwardUsers(user_id=str(user_id))
-                session.add(award_user)
-        await ctx.send(f"User {user_id} added to nomination list.")
-        if await self.__get_nominate():
-            try:
-                user = await self.client.fetch_user(int(user_id))
-                await user.send(
-                    "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 9th, 2026 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 2nd, 2026. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
-                )
-            except Exception as e:
-                log.error(f"Failed to send message to user {user_id}: {e}")
-                await ctx.send(f"Failed to send message to user {user_id}: {e}")
+        for user_id in users:
+            async with self.client.session as session:
+                async with session.begin():
+                    award_user = AwardUsers(user_id=str(user_id))
+                    session.add(award_user)
+            if await self.__get_nominate():
+                try:
+                    user = await self.client.fetch_user(int(user_id))
+                    await user.send(
+                        "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 9th, 2026 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 2nd, 2026. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
+                    )
+                except Exception as e:
+                    log.error(f"Failed to send message to user {user_id}: {e}")
+                    await ctx.send(f"Failed to send message to user {user_id}: {e}")
+        await ctx.send("Users added to nomination list.")
 
     @commands.command()
     @commands.is_owner()
