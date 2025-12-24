@@ -98,7 +98,7 @@ class Awards(commands.Cog):
                 return m.author == ctx.author and m.channel == ctx.channel
 
             try:
-                msg = await self.client.wait_for("message", check=check, timeout=300)
+                msg = await self.client.wait_for("message", check=check, timeout=900)
             except Exception:
                 await ctx.send(
                     "You took too long to respond. Nothing you inputted has been saved. Please run the command again if you wish to nominate."
