@@ -110,7 +110,11 @@ class Awards(commands.Cog):
         nomination_message = f"Nominations from {ctx.author} ({ctx.author.id}):\n\n"
         for question, answer in zip(questions, answers):
             nomination_message += f"**{question}**\n{answer}\n\n"
-        await owner.send(nomination_message)
+        if len(nomination_message) > 2000:
+            for i in range(0, len(nomination_message), 1990):
+                await owner.send(nomination_message[i : i + 1990])
+        else:
+            await owner.send(nomination_message)
         await ctx.send("Thank you for your nominations! They have been recorded.")
 
     @commands.command()
