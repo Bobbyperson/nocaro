@@ -106,7 +106,7 @@ class Awards(commands.Cog):
                 return
             answers.append(msg.content)
         # send to me
-        owner = await self.client.fetch_user(self.client.owner_id)
+        owner = await self.client.fetch_user(self.client.config["general"]["owner_id"])
         nomination_message = f"Nominations from {ctx.author} ({ctx.author.id}):\n\n"
         for question, answer in zip(questions, answers):
             nomination_message += f"**{question}**\n{answer}\n\n"
