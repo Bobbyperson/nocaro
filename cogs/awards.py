@@ -1,14 +1,75 @@
 import logging
+from random import shuffle
 
 from discord.ext import commands
 from sqlalchemy import select
 
-from models.awards import AwardUsers
+from models.awards import AwardUsers, Votes
 from utils import config
 
 log = logging.getLogger(__name__)
 
 NOMINATE_STATE_KEY = "nominate_state"
+
+VOTING_STATE_KEY = "voting_state"
+
+NOMINEES = {
+    "Most likely to ragebait and succeed": ["Ping", "War", "Walm"],
+    "Most likely to ragebait and fail": ["Bobbyperson", "Fuddge", "Spicy"],
+    "Most likely to fall for ragebait": ["Kirby", "Spicy", "Bobbyperson", "Fuddge"],
+    "Best event": [
+        "Among Us",
+        "Titanfall 2",
+        "Tabletop Simulator",
+        "Garry's Mod",
+        "Lethal Company",
+    ],
+    "Most impactful member": [
+        "Rena",
+        "War",
+        "Ping",
+        "Bobbyperson",
+        "Yote",
+        "Deed",
+        "Nori",
+    ],
+    "VC Award": ["Coffee", "Yote", "War", "Rena", "Bobbyperson"],
+    "VC hijack": ["Walm", "War", "Bobbyperson", "Spicy"],
+    "Most talented": [
+        "Moonsy - Art",
+        "Jan - Programming",
+        "Bobbyperson - Programming",
+        "Flairon - Art",
+        "Spungus - Aim",
+    ],
+    "Shining beacon": [
+        "Yote",
+        "Cyan",
+        "Spungus",
+        "War",
+        "Nori",
+        "Bobbyperson",
+        "Rena",
+    ],
+    "Member of the year": ["Bobbyperson", "Spungus", "War"],
+    "Best quote": [
+        "https://discord.com/channels/929895874799226881/949523674229248010/1376470800387014769",
+        "https://discord.com/channels/929895874799226881/949523674229248010/1419815543074066623",
+        "https://discord.com/channels/929895874799226881/949523674229248010/1341291181308510288",
+        "https://discord.com/channels/929895874799226881/949523674229248010/1442283996053766296",
+        "https://discord.com/channels/929895874799226881/949523674229248010/1418750863437987911",
+    ],
+    "Best clip": [
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1401058812873408712",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1348163871294226505",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1449310748739375196",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1384447513049698356",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1379286896555069541",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1310047019527831563",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1447413359480803630",
+        "https://discord.com/channels/929895874799226881/1096518296293093518/1360419026907430912",
+    ],
+}
 
 
 class Awards(commands.Cog):
@@ -24,6 +85,35 @@ class Awards(commands.Cog):
         async with self.client.session as session:
             return bool(await config.get(session, NOMINATE_STATE_KEY, False))
 
+    async def __set_voting(self, value: bool) -> None:
+        async with self.client.session as session:
+            async with session.begin():
+                await config.set(session, VOTING_STATE_KEY, bool(value))
+
+    async def __get_voting(self) -> bool:
+        async with self.client.session as session:
+            return bool(await config.get(session, VOTING_STATE_KEY, False))
+
+    async def create_or_update_vote(
+        self, user_id: int, question: str, answer: int
+    ) -> None:
+        async with self.client.session as session:
+            async with session.begin():
+                result = await session.execute(
+                    select(Votes).where(
+                        Votes.user_id == str(user_id),
+                        Votes.question == question,
+                    )
+                )
+                vote = result.scalar_one_or_none()
+
+                if vote is None:
+                    session.add(
+                        Votes(user_id=str(user_id), question=question, answer=answer)
+                    )
+                else:
+                    vote.answer = answer
+
     async def __user_may_nominate(self, user_id: int) -> bool:
         async with self.client.session as session:
             async with session.begin():
@@ -34,6 +124,73 @@ class Awards(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         log.info("Awards ready")
+
+    @commands.command()
+    @commands.is_owner()
+    async def startvoting(self, ctx):
+        await self.__set_voting(True)
+        async with self.client.session as session:
+            result = await session.execute(select(AwardUsers.user_id).distinct())
+            user_ids = result.scalars().all()
+            for user_id in user_ids:
+                try:
+                    # get user from id
+                    user = await self.client.fetch_user(int(user_id))
+                    # send message to user
+                    await user.send(
+                        "Hello.\n\nThe second phase of voting has begun. Please type `,vote` in this dm to vote for your favorite nominees. You may vote for yourself this time around. Voting ends Thursday. Please do not share who you voted for until after January 9th, as to avoid spoiling the winners.\n\n**Please join us for our award ceremony on our 4th anniversary, Friday, January 9th, 2026 at 8:00 PM EST.** It will be recorded if you cannot attend. Also deadass I wanted to send this out ages ago but I got the Flu sorry."
+                    )
+                except Exception as e:
+                    log.error(f"Failed to send message to user {user_id}: {e}")
+                    await ctx.send(f"Failed to send message to user {user_id}: {e}")
+        await ctx.send("Voting started")
+
+    @commands.command()
+    @commands.max_concurrency(1, commands.BucketType.user)
+    async def vote(self, ctx):
+        if not await self.__get_voting():
+            await ctx.send("Voting is not currently open.")
+            return
+        # check if dm
+        if ctx.guild is not None:
+            await ctx.send("Please run this command in a dm with me.")
+            return
+        if not await self.__user_may_nominate(ctx.author.id):
+            await ctx.send(
+                "You are not eligible to nominate for awards, if you believe this is an error or an oversight, please dm Bobbyperson. Sorry."
+            )
+            return
+
+        await ctx.send(
+            "I will ask you a question one at a time. Respond to each question with the number of your favorite nominee. You may type `0` to skip. If you have any questions, please dm Bobbyperson."
+        )
+
+        for question, nominees in NOMINEES.items():
+            msg = f"Question: {question}\n"
+            shuffle(nominees)
+            for i, nominee in enumerate(nominees):
+                msg += f"{i + 1}. {nominee}\n"
+            await ctx.send(msg)
+            try:
+                response = await self.client.wait_for(
+                    "message",
+                    check=lambda m: m.author.id == ctx.author.id
+                    and m.channel == ctx.channel
+                    and m.content.isdigit()
+                    and int(m.content) <= len(nominees)
+                    and int(m.content) >= 0,
+                    timeout=300,
+                )
+            except TimeoutError:
+                await ctx.send(
+                    "You took too long to answer. Please run the command again."
+                )
+                return
+            await self.create_or_update_vote(
+                ctx.author.id, question, int(response.content)
+            )
+
+        await ctx.send("Thanks for voting!")
 
     @commands.command()
     @commands.is_owner()
@@ -57,6 +214,7 @@ class Awards(commands.Cog):
         await ctx.send("Nominations started")
 
     @commands.command()
+    @commands.max_concurrency(1, commands.BucketType.user)
     async def nominate(self, ctx):
         if not await self.__get_nominate():
             await ctx.send("Nominations are not currently open.")
