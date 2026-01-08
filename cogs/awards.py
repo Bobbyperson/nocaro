@@ -1,6 +1,5 @@
 import logging
 from collections import defaultdict
-from random import shuffle
 
 from discord.ext import commands
 from sqlalchemy import select
@@ -219,7 +218,6 @@ class Awards(commands.Cog):
 
         for question, nominees in NOMINEES.items():
             msg = f"Question: {question}\n"
-            shuffle(nominees)
             for i, nominee in enumerate(nominees):
                 msg += f"{i + 1}. {nominee}\n"
             await ctx.send(msg)
