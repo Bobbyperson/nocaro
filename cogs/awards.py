@@ -358,6 +358,25 @@ class Awards(commands.Cog):
                 else:
                     await ctx.send(f"User {user_id} not found in nomination list.")
 
+    @commands.command()
+    @commands.is_owner()
+    async def revote(self, ctx):
+        async with self.client.session as session:
+            result = await session.execute(select(AwardUsers.user_id).distinct())
+            user_ids = result.scalars().all()
+            for user_id in user_ids:
+                try:
+                    # get user from id
+                    user = await self.client.fetch_user(int(user_id))
+                    # send message to user
+                    await user.send(
+                        "Hello. There was a bug in the vote recording. This has caused all responses to be unusable. **Please re-vote as soon as possible.** The voting deadline has been extended to 1 hour before the awards ceremony. You may vote again with `,vote`."
+                    )
+                except Exception as e:
+                    log.error(f"Failed to send message to user {user_id}: {e}")
+                    await ctx.send(f"Failed to send message to user {user_id}: {e}")
+        await ctx.send("Revote started")
+
 
 async def setup(client):
     await client.add_cog(Awards(client))
