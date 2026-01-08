@@ -136,7 +136,7 @@ class Awards(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def getvoteresults(self, ctx):
+    async def getvoteresults(self, ctx, show_voters: bool = False):
         async with self.client.session as session:
             for question, nominees in NOMINEES.items():
                 result = await session.execute(
@@ -149,27 +149,27 @@ class Awards(commands.Cog):
                 by_answer: dict[int, list[int]] = defaultdict(list)
                 for user_id, answer in rows:
                     try:
-                        ans = int(answer)
+                        by_answer[int(answer)].append(int(user_id))
                     except (TypeError, ValueError):
                         continue
-                    by_answer[ans].append(int(user_id))
 
-                msg_lines = [f"Question: {question}"]
+                msg_lines = [f"**Question:** {question}"]
 
                 for i, nominee in enumerate(nominees, start=1):
                     voter_ids = by_answer.get(i, [])
-                    names = []
-                    for uid in voter_ids:
-                        try:
-                            u = await self.client.fetch_user(uid)
-                            names.append(u.name)
-                        except Exception:
-                            names.append(str(uid))
+                    line = f"{i}. {nominee}: {len(voter_ids)} votes"
 
-                    msg_lines.append(
-                        f"{i}. {nominee}: {len(voter_ids)} votes"
-                        + (f" ({' '.join(names)})" if names else "")
-                    )
+                    if show_voters and voter_ids:
+                        names = []
+                        for uid in voter_ids:
+                            try:
+                                user = await self.client.fetch_user(uid)
+                                names.append(user.name)
+                            except Exception:
+                                names.append(str(uid))
+                        line += f" ({', '.join(names)})"
+
+                    msg_lines.append(line)
 
                 skips = by_answer.get(0, [])
                 if skips:
