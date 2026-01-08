@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from random import shuffle
 
 from discord.ext import commands
@@ -114,6 +115,14 @@ class Awards(commands.Cog):
                 else:
                     vote.answer = answer
 
+    async def get_voters(self, question: str) -> list[int]:
+        async with self.client.session as session:
+            async with session.begin():
+                result = await session.execute(
+                    select(Votes.user_id).where(Votes.question == question)
+                )
+                return result.scalars().all()
+
     async def __user_may_nominate(self, user_id: int) -> bool:
         async with self.client.session as session:
             async with session.begin():
@@ -124,6 +133,49 @@ class Awards(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         log.info("Awards ready")
+
+    @commands.command()
+    @commands.is_owner()
+    async def getvoteresults(self, ctx):
+        async with self.client.session as session:
+            for question, nominees in NOMINEES.items():
+                result = await session.execute(
+                    select(Votes.user_id, Votes.answer).where(
+                        Votes.question == question
+                    )
+                )
+                rows = result.all()
+
+                by_answer: dict[int, list[int]] = defaultdict(list)
+                for user_id, answer in rows:
+                    try:
+                        ans = int(answer)
+                    except (TypeError, ValueError):
+                        continue
+                    by_answer[ans].append(int(user_id))
+
+                msg_lines = [f"Question: {question}"]
+
+                for i, nominee in enumerate(nominees, start=1):
+                    voter_ids = by_answer.get(i, [])
+                    names = []
+                    for uid in voter_ids:
+                        try:
+                            u = await self.client.fetch_user(uid)
+                            names.append(u.name)
+                        except Exception:
+                            names.append(str(uid))
+
+                    msg_lines.append(
+                        f"{i}. {nominee}: {len(voter_ids)} votes"
+                        + (f" ({' '.join(names)})" if names else "")
+                    )
+
+                skips = by_answer.get(0, [])
+                if skips:
+                    msg_lines.append(f"0. Skipped: {len(skips)}")
+
+                await ctx.send("\n".join(msg_lines))
 
     @commands.command()
     @commands.is_owner()
