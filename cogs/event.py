@@ -36,9 +36,9 @@ EMOJIS = [
     "🇪",
     "🇫",
 ]
-assert (
-    len(EMOJIS) >= MAX_ENTRIES
-), "Not enough emojis for the max amount of possible entries"
+assert len(EMOJIS) >= MAX_ENTRIES, (
+    "Not enough emojis for the max amount of possible entries"
+)
 
 WINNING_OFFSET = -0.21
 LOSING_OFFSET = 0.1
@@ -51,7 +51,6 @@ log = logging.getLogger(__name__)
 
 
 class InverseDstUtcZone(datetime.tzinfo):
-
     def fromutc(self, dt):
         return dt
 
@@ -284,9 +283,9 @@ class Event(commands.Cog):
             log.info("Done restoring")
 
     async def start_state(self, entries):
-        assert (
-            self.poll_active is not True
-        ), "Trying to start state when its already active"
+        assert self.poll_active is not True, (
+            "Trying to start state when its already active"
+        )
 
         self.entries = entries
         assert self.entries, "No entries to start poll with"
@@ -567,7 +566,7 @@ class Event(commands.Cog):
                 select(models.event.EventMultipliers)
                 .where(models.event.EventMultipliers.user_id == user.id)
                 .order_by(models.event.EventMultipliers.timestamp.desc())
-                .limit(10)
+                .limit(4)
             )
             recent_records = recent_records.scalars().all()
 
@@ -1032,7 +1031,7 @@ class Event(commands.Cog):
                     models.event.EventMultipliers.user_id == user.id,
                     models.event.EventMultipliers.attended.is_(True),
                 )
-                .limit(10)
+                .limit(4)
             )
             missed_count = await session.scalar(
                 select(func.count())
@@ -1042,10 +1041,10 @@ class Event(commands.Cog):
                     models.event.EventMultipliers.voted_for_winner.is_(True),
                     models.event.EventMultipliers.attended.is_(False),
                 )
-                .limit(10)
+                .limit(4)
             )
         await ctx.send(
-            f"Out of the last 10 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma."
+            f"Out of the last 4 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma."
         )
 
     @commands.command(hidden=True)
