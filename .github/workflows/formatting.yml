@@ -1,4 +1,6 @@
 name: Format check
+permissions:
+  contents: read
 on:
   push:
     branches:
@@ -6,7 +8,6 @@ on:
   pull_request:
     branches:
       - main
-
 
 
 jobs:
