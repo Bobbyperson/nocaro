@@ -152,6 +152,11 @@ async def update_amount(
                 time=int(time.time()),
             )
         )
+
+    # Unlock connection for achievements
+    await session.commit()
+    await session.close()
+
     for achievement in money_achievements_list:
         if not await achievement.is_achieved(user):
             if achievement.needed_progress <= new_balance:
