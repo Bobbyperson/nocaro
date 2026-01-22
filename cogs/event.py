@@ -657,7 +657,7 @@ class Event(commands.Cog):
         all_winners = set()
 
         if winning_percentage == 0:
-            return all_winners
+            return {-1}
 
         elif percentages.count(winning_percentage) > 1:
             log.debug("There are multiple winners, finding one at random")
