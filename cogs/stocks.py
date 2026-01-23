@@ -241,15 +241,19 @@ class Stocks(commands.Cog):
                         }
 
             stocks = ""
+            total_change = 0
             for stock_name, stock in stocktable.items():
                 stock_amount = stock["amount"]
                 stock_purchase_price = stock["purchase_price"]
                 new_stock_price = await self.fetch_stock_price(stock_name)
 
+                total_change += (new_stock_price * stock_amount) - stock_purchase_price
+
                 if new_stock_price > stock_purchase_price / stock_amount:
-                    stocks += f"{stock_name}: {stock_amount} stocks | + {mf.commafy(round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
+                    stocks += f"{stock_name}: {mf.commafy(stock_amount)} stocks | + {mf.commafy(round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
                 else:
-                    stocks += f"{stock_name}: {stock_amount} stocks | - {mf.commafy(-1 * round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
+                    stocks += f"{stock_name}: {mf.commafy(stock_amount)} stocks | - {mf.commafy(-1 * round((new_stock_price * stock_amount) - stock_purchase_price))} $BB\n"
+            stocks += f"Total change: {mf.commafy(round(total_change))} $BB"
             await ctx.send(f"{user.name}'s current stocks:\n{stocks}")
 
 
