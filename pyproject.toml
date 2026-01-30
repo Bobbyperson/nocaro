@@ -7,7 +7,7 @@ requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "GNU GPLv3"
 dependencies = [
-    "sqlalchemy[aiosqlite]>=2.0.45",
+    "sqlalchemy[aiosqlite]>=2.0.46",
     "pillow>=12.1.0",
     "discord-py[voice]>=2.6.4",
     "discord-pretty-help>=2.0.7",
@@ -22,18 +22,20 @@ dependencies = [
     "pandas_market_calendars>=5.2.4",
     "discord-ext-menus",
     "anyio>=4.12.1",
-    "alembic>=1.18.1",
+    "alembic>=1.18.2",
     "numpy>=2.4.1",
     "aiohttp>=3.13.3",
     "soundfile>=0.13.1",
     "mutagen>=1.47.0",
     "pydub>=0.25.1",
     "markovify>=0.9.4",
+    "ty>=0.0.14",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.14.13",
+    "pytest>=9.0.2",
+    "ruff>=0.9.0.2",
 ]
 
 [project.optional-dependencies]

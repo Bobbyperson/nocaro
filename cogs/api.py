@@ -133,6 +133,8 @@ class API(commands.Cog):
         user_prestiege = prestiege_result.scalars().first()
         if user_prestiege is not None:
             pres_allowed = user_prestiege.pres4 == 0
+        else:
+            pres_allowed = False
         blacklisted, _ = await is_blacklisted(user_id)
         return (
             user_main.api_consent

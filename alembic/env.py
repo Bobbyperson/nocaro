@@ -1,7 +1,9 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 
@@ -20,7 +22,11 @@ from models import Base
 # changs made to it will be compared to the actual database
 target_metadata = Base.metadata
 
-from bot import engine
+DEFAULT_DB_URL = "sqlite+aiosqlite:///data/database.sqlite"
+
+
+def get_database_url() -> str:
+    return os.getenv("NOCARO_DB_URL", DEFAULT_DB_URL)
 
 
 def do_run_migrations(connection: Connection) -> None:
@@ -31,20 +37,12 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    global engine
+    connectable = create_async_engine(get_database_url(), echo=None)
 
-    async with engine.connect() as connection:
+    async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
 
-    await engine.dispose()
-
-
-async def bla() -> None:
-    async with engine.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
-
-        with context.begin_transaction():
-            context.run_migrations()
+    await connectable.dispose()
 
 
 def run_migrations_online() -> None:
