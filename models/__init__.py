@@ -5,6 +5,7 @@ Base = declarative_base()
 from . import (
     achievements,
     api,
+    betting,
     awards,
     config,
     database,
@@ -18,6 +19,7 @@ from . import (
 __all__ = [
     "achievements",
     "api",
+    "betting",
     "awards",
     "config",
     "database",
