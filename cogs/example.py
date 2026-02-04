@@ -11,6 +11,7 @@ import utils.miscfuncs as mf
 
 log = logging.getLogger(__name__)
 
+
 class Example(commands.Cog):
     def __init__(self, client):
         self.client = client

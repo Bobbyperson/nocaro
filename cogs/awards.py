@@ -224,11 +224,13 @@ class Awards(commands.Cog):
             try:
                 response = await self.client.wait_for(
                     "message",
-                    check=lambda m: m.author.id == ctx.author.id
-                    and m.channel == ctx.channel
-                    and m.content.isdigit()
-                    and int(m.content) <= len(nominees)
-                    and int(m.content) >= 0,
+                    check=lambda m: (
+                        m.author.id == ctx.author.id
+                        and m.channel == ctx.channel
+                        and m.content.isdigit()
+                        and int(m.content) <= len(nominees)
+                        and int(m.content) >= 0
+                    ),
                     timeout=300,
                 )
             except TimeoutError:

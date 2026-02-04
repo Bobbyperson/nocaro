@@ -156,7 +156,13 @@ class Fire(commands.Cog):
                 file = added_msg.attachments[0]
                 spoiler = file.is_spoiler()
                 if not spoiler and file.url.lower().endswith(
-                    ("png", "jpeg", "jpg", "gif", "webp")
+                    (
+                        "png",
+                        "jpeg",
+                        "jpg",
+                        "gif",
+                        "webp",
+                    )
                 ):
                     em.set_image(url=file.url)
                 elif spoiler:

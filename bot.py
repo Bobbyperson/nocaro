@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 log = logging.getLogger(__name__)
 
+
 async def main():
     # start the client
     async with client:
