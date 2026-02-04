@@ -1,4 +1,3 @@
-import os
 import random as rd
 import re
 import time
@@ -353,7 +352,7 @@ async def get_random_item():
 # get specific map
 async def get_item(item):
     file_path = "maps/maps.txt"
-    if os.path.exists(file_path):
+    if anyio.path.exists(file_path):
         async with await anyio.open_file(file_path, encoding="utf-8") as f:
             maps = [line.rstrip() for line in await f.readlines()]
             for thing in maps:

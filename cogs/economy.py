@@ -11,7 +11,6 @@ import time
 import traceback
 from collections import Counter
 from decimal import Decimal, getcontext
-from pathlib import Path
 from typing import ClassVar
 
 import anyio
@@ -1165,10 +1164,12 @@ Example command: `,bougegram normal 100`"""
         try:
             msg = await self.client.wait_for(
                 "message",
-                check=lambda m: m.author == ctx.author
-                and m.channel == ctx.channel
-                and m.content
-                and m.content in ["red", "black", "r", "b"],
+                check=lambda m: (
+                    m.author == ctx.author
+                    and m.channel == ctx.channel
+                    and m.content
+                    and m.content in ["red", "black", "r", "b"]
+                ),
                 timeout=30,
             )
         except TimeoutError:
@@ -1192,10 +1193,12 @@ Example command: `,bougegram normal 100`"""
         try:
             msg = await self.client.wait_for(
                 "message",
-                check=lambda m: m.author == ctx.author
-                and m.channel == ctx.channel
-                and m.content
-                and m.content in ["higher", "lower", "cash out", "h", "l", "c"],
+                check=lambda m: (
+                    m.author == ctx.author
+                    and m.channel == ctx.channel
+                    and m.content
+                    and m.content in ["higher", "lower", "cash out", "h", "l", "c"]
+                ),
                 timeout=30,
             )
         except TimeoutError:
@@ -1227,10 +1230,12 @@ Example command: `,bougegram normal 100`"""
         try:
             msg = await self.client.wait_for(
                 "message",
-                check=lambda m: m.author == ctx.author
-                and m.channel == ctx.channel
-                and m.content
-                and m.content in ["in", "out", "cash out", "i", "o", "c"],
+                check=lambda m: (
+                    m.author == ctx.author
+                    and m.channel == ctx.channel
+                    and m.content
+                    and m.content in ["in", "out", "cash out", "i", "o", "c"]
+                ),
                 timeout=30,
             )
         except TimeoutError:
@@ -1270,11 +1275,13 @@ Example command: `,bougegram normal 100`"""
         try:
             msg = await self.client.wait_for(
                 "message",
-                check=lambda m: m.author == ctx.author
-                and m.channel == ctx.channel
-                and m.content
-                and m.content
-                in ["hearts", "diamonds", "clubs", "spades", "cash out", "c"],
+                check=lambda m: (
+                    m.author == ctx.author
+                    and m.channel == ctx.channel
+                    and m.content
+                    and m.content
+                    in ["hearts", "diamonds", "clubs", "spades", "cash out", "c"]
+                ),
                 timeout=30,
             )
         except TimeoutError:
@@ -1659,8 +1666,9 @@ Example command: `,bougegram normal 100`"""
                 try:
                     msg = await self.client.wait_for(
                         "message",
-                        check=lambda m: m.author == ctx.author
-                        and m.channel == ctx.channel,
+                        check=lambda m: (
+                            m.author == ctx.author and m.channel == ctx.channel
+                        ),
                         timeout=60,
                     )
                     if msg.content.lower() == "yes":
@@ -4666,7 +4674,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         # )
         async def track_manager():
             nonlocal main_track_id, bg_vol
-            music_dir = Path("audio/roulette/music")
+            music_dir = anyio.path("audio/roulette/music")
             while ctx.guild.voice_client and ctx.guild.voice_client.is_connected():
                 filename = rd.choice(list(music_dir.glob("*.mp3")))
                 log.debug(filename)
@@ -5258,9 +5266,11 @@ Roulette will end when everyone leaves the VC, or when the original invoker type
                 try:
                     msg = await self.client.wait_for(
                         "message",
-                        check=lambda m: m.author == ctx.author
-                        and m.channel == ctx.channel
-                        and m.content.lower() in ["yes", "no"],
+                        check=lambda m: (
+                            m.author == ctx.author
+                            and m.channel == ctx.channel
+                            and m.content.lower() in ["yes", "no"]
+                        ),
                         timeout=30,
                     )
                 except TimeoutError:

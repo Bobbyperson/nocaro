@@ -4,7 +4,6 @@ from utils import config
 
 
 class Config(commands.Cog):
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -27,6 +26,7 @@ class Config(commands.Cog):
         async with self.bot.session as session:
             async with session.begin():
                 await config.set(session, key, real_value)
+
 
 async def setup(bot):
     await bot.add_cog(Config(bot))
