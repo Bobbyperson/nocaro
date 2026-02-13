@@ -417,31 +417,31 @@ def unmoneyfy(amount):  # converts int to string, so 1,000 to 1k
     if amount >= 1e42:
         return f"{amount:.2e}"
     if amount >= 1e39:
-        return f"{amount / 1e39:.2f}".rstrip("0").rstrip(".") + "D"
+        return f"{amount / Decimal("1e39"):.2f}".rstrip("0").rstrip(".") + "D"
     if amount >= 1e36:
-        return f"{amount / 1e36:.2f}".rstrip("0").rstrip(".") + "u"
+        return f"{amount / Decimal("1e36"):.2f}".rstrip("0").rstrip(".") + "u"
     if amount >= 1e33:
-        return f"{amount / 1e33:.2f}".rstrip("0").rstrip(".") + "d"
+        return f"{amount / Decimal("1e33"):.2f}".rstrip("0").rstrip(".") + "d"
     if amount >= 1e30:
-        return f"{amount / 1e30:.2f}".rstrip("0").rstrip(".") + "n"
+        return f"{amount / Decimal("1e30"):.2f}".rstrip("0").rstrip(".") + "n"
     if amount >= 1e27:
-        return f"{amount / 1e27:.2f}".rstrip("0").rstrip(".") + "o"
+        return f"{amount / Decimal("1e27"):.2f}".rstrip("0").rstrip(".") + "o"
     if amount >= 1e24:
-        return f"{amount / 1e24:.2f}".rstrip("0").rstrip(".") + "S"
+        return f"{amount / Decimal("1e24"):.2f}".rstrip("0").rstrip(".") + "S"
     if amount >= 1e21:
-        return f"{amount / 1e21:.2f}".rstrip("0").rstrip(".") + "s"
+        return f"{amount / Decimal("1e21"):.2f}".rstrip("0").rstrip(".") + "s"
     if amount >= 1e18:
-        return f"{amount / 1e18:.2f}".rstrip("0").rstrip(".") + "Q"
+        return f"{amount / Decimal("1e18"):.2f}".rstrip("0").rstrip(".") + "Q"
     if amount >= 1e15:
-        return f"{amount / 1e15:.2f}".rstrip("0").rstrip(".") + "q"
+        return f"{amount / Decimal("1e15"):.2f}".rstrip("0").rstrip(".") + "q"
     if amount >= 1e12:
-        return f"{amount / 1e12:.2f}".rstrip("0").rstrip(".") + "t"
+        return f"{amount / Decimal("1e12"):.2f}".rstrip("0").rstrip(".") + "t"
     if amount >= 1e9:
-        return f"{amount / 1e9:.2f}".rstrip("0").rstrip(".") + "b"
+        return f"{amount / Decimal("1e9"):.2f}".rstrip("0").rstrip(".") + "b"
     if amount >= 1e6:
-        return f"{amount / 1e6:.2f}".rstrip("0").rstrip(".") + "m"
+        return f"{amount / Decimal("1e6"):.2f}".rstrip("0").rstrip(".") + "m"
     if amount >= 1e3:
-        return f"{amount / 1e3:.2f}".rstrip("0").rstrip(".") + "k"
+        return f"{amount / Decimal("1e3"):.2f}".rstrip("0").rstrip(".") + "k"
 
     return amount
 
