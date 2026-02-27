@@ -7,9 +7,9 @@ requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "GNU GPLv3"
 dependencies = [
-    "sqlalchemy[aiosqlite]>=2.0.46",
-    "pillow>=12.1.0",
-    "discord-py[voice]>=2.6.4",
+    "sqlalchemy[aiosqlite]>=2.0.47",
+    "pillow>=12.1.1",
+    "discord-py[voice]>=2.7.0",
     "discord-pretty-help>=2.0.7",
     "ffmpy>=1.0.0",
     "pyquery>=2.0.1",
