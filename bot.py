@@ -61,17 +61,16 @@ async def load(ctx, extension):
     if ctx.author.id == client.config["general"]["owner_id"]:
         await client.load_extension(f"cogs.{extension}")
         await ctx.send(f"{extension} loaded.")
-    if ctx.author.id != client.config["general"]["owner_id"]:
+    else:
         await ctx.send("no")
 
 
 @client.command(hidden=True)
 async def unload(ctx, extension):
-    if ctx.author.id == client.config:
+    if ctx.author.id == client.config["general"]["owner_id"]:
         await client.unload_extension(f"cogs.{extension}")
         await ctx.send(f"{extension} unloaded.")
-
-    if ctx.author.id != client.config["general"]["owner_id"]:
+    else:
         await ctx.send("no")
 
 
