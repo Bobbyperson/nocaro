@@ -259,7 +259,7 @@ class Betting(commands.Cog):
         if await econ.checkmax(user):
             raise BetMaxxer()
 
-        if index < 0 or index > len(self.bet_options) or amount <= 0:
+        if index < 0 or index >= len(self.bet_options) or amount <= 0:
             return BetInvalid()
 
         user_bal = await econ.get_bal(user)
