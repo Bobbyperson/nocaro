@@ -208,6 +208,15 @@ class API(commands.Cog):
             )
         if await self.check_cooldown(user_id, "slots"):
             return web.Response(status=429, text="Cooldown active", headers=CORSHEADERS)
+        user_main.balance = str(int(user_main.balance) - bet)
+        session.add(
+            models.economy.History(
+                user_id=user_main.user_ID,
+                amount=str(-bet),
+                reason="api_slots_bet",
+                time=int(time.time()),
+            )
+        )
         result = {}
         jackpot = rd.randint(1, 350)
         s1 = rd.randint(0, 4)
