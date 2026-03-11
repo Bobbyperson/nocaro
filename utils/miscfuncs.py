@@ -144,10 +144,10 @@ async def send_webhook(ctx, name, avatar, message):
                 name="Nocaro_NPC", reason="npc event"
             )
         msg = await webhook.send(content=message, avatar_url=avatar, username=name)
-    except:
+    except Exception:
         try:
             msg = await ctx.send(f"{name}: {message}")
-        except:
+        except Exception:
             msg = await ctx.channel.send(f"{name}: {message}")
     return msg
 
