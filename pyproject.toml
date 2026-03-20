@@ -7,9 +7,9 @@ requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "GNU GPLv3"
 dependencies = [
-    "sqlalchemy[aiosqlite]>=2.0.47",
+    "sqlalchemy[aiosqlite]>=2.0.48",
     "pillow>=12.1.1",
-    "discord-py[voice]>=2.7.0",
+    "discord-py[voice]>=2.7.1",
     "discord-pretty-help>=2.0.7",
     "ffmpy>=1.0.0",
     "pyquery>=2.0.1",
@@ -29,13 +29,13 @@ dependencies = [
     "mutagen>=1.47.0",
     "pydub>=0.25.1",
     "markovify>=0.9.4",
-    "ty>=0.0.14",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
-    "ruff>=0.9.0.2",
+    "ruff>=0.15.7",
+    "ty>=0.0.24",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +48,7 @@ package = false
 
 [tool.uv.sources]
 discord-ext-menus = { git = "https://github.com/Rapptz/discord-ext-menus" }
-kittentts = { url = "https://github.com/KittenML/KittenTTS/releases/download/0.1/kittentts-0.1.0-py3-none-any.whl" }
+kittentts = { url = "https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl" }
 
 [tool.ruff]
 exclude = [
