@@ -4674,7 +4674,7 @@ To begin, retype this command with a bet, minimum 500 bouge bucks."""
         # )
         async def track_manager():
             nonlocal main_track_id, bg_vol
-            music_dir = anyio.path("audio/roulette/music")
+            music_dir = anyio.Path("audio/roulette/music")
             while ctx.guild.voice_client and ctx.guild.voice_client.is_connected():
                 filename = rd.choice(list(music_dir.glob("*.mp3")))
                 log.debug(filename)
