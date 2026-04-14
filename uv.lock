@@ -1261,7 +1261,7 @@ requires-dist = [
     { name = "pyquery", specifier = ">=2.0.1" },
     { name = "soundfile", specifier = ">=0.13.1" },
     { name = "sqlalchemy", extras = ["aiosqlite"], specifier = ">=2.0.49" },
-    { name = "yfinance", specifier = ">=1.0" },
+    { name = "yfinance", specifier = ">=1.2.2" },
 ]
 provides-extras = ["tts"]
 
@@ -2483,7 +2483,7 @@ wheels = [
 
 [[package]]
 name = "yfinance"
-version = "1.2.1"
+version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -2499,7 +2499,7 @@ dependencies = [
     { name = "requests" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/01/9ac5b69922c0f0680b6856748c68774a9f6f19c2f888f9d1d9e94c5cf35f/yfinance-1.2.1.tar.gz", hash = "sha256:3f8d2f5984c26a8bb398a7aa3a2a79aa92e19867c2ea075ad5e56549513406f4", size = 140455, upload-time = "2026-04-07T18:30:33.289Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/e5/6b5bbdd1165595005cb01234a0d7db6fe7a83cfee74f3c9668e32debee74/yfinance-1.2.2.tar.gz", hash = "sha256:00e4fb8f054c36a3b5dfa6920ba5f12301c4dc77d573f6b6872b94ec1a4fef3c", size = 141609, upload-time = "2026-04-13T18:05:05.954Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/42/69e5329c30a967a0349a2d611e635374380e4fb2333f7ca09eb3c7ce7fc1/yfinance-1.2.1-py2.py3-none-any.whl", hash = "sha256:6737c69f2c8872a259ce7a7fdc214336701cadc4ebe94390f852979aaf5e78b4", size = 130243, upload-time = "2026-04-07T18:30:32.062Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/db/c26791912c20b07c52849a651837e639eccfeb62a764f51cb6707901c601/yfinance-1.2.2-py2.py3-none-any.whl", hash = "sha256:3b292f609e5ff27a8c2d850f5a3c6f10d7290f3b403346705d8d33524ff5745b", size = 130777, upload-time = "2026-04-13T18:05:04.638Z" },
 ]
