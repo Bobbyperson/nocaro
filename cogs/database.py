@@ -7,7 +7,7 @@ import time
 import discord
 import discord.ext
 import markovify
-from discord.ext import commands
+from discord.ext import commands, tasks
 from sqlalchemy import delete, select, update
 
 import models
@@ -16,12 +16,15 @@ import utils.miscfuncs as mf
 log = logging.getLogger(__name__)
 bank = "./data/database.sqlite"
 
+# Strips mentions, channels, roles, and custom/animated emotes
+DISCORD_TOKEN_RE = re.compile(r"<a?:[^:]+:\d+>|<[@#&!?][^>]*>")
 
-MENTION_RE = re.compile(r"<(@[!&]?\d+|#\d+)>")
+_REBUILD_AFTER = 50  # invalidate cached model after this many new corpus additions
+_MODEL_TTL = 600  # seconds before an idle model is evicted (10 minutes)
 
 
-def strip_mentions(s: str) -> str:
-    return re.sub(r"\s+", " ", MENTION_RE.sub("", s)).strip()
+def strip_discord_tokens(s: str) -> str:
+    return re.sub(r"\s+", " ", DISCORD_TOKEN_RE.sub("", s)).strip()
 
 
 def _string_is_okay(s: str) -> bool:
@@ -70,11 +73,44 @@ class database(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.nocaro_cooldowns = {}
-        # cache: {channel_id: {"model": model, "count": int}}
-        self._markov_cache = {}
+        self._markov_cache: dict[int, markovify.NewlineText] = {}
+        self._pending_adds: dict[int, int] = {}
+        self._last_used: dict[int, float] = {}
+        self._evict_idle_models.start()
+
+    def _on_corpus_add(self, channel_id: int):
+        """Debounced cache invalidation: evict after _REBUILD_AFTER new messages."""
+        count = self._pending_adds.get(channel_id, 0) + 1
+        if count >= _REBUILD_AFTER:
+            self._markov_cache.pop(channel_id, None)
+            self._pending_adds[channel_id] = 0
+        else:
+            self._pending_adds[channel_id] = count
+
+    def _invalidate_cache(self, channel_id: int):
+        """Immediately evict a channel's cached model."""
+        self._markov_cache.pop(channel_id, None)
+        self._last_used.pop(channel_id, None)
+        self._pending_adds[channel_id] = 0
+
+    def cog_unload(self):
+        self._evict_idle_models.cancel()
+
+    @tasks.loop(minutes=2)
+    async def _evict_idle_models(self):
+        cutoff = time.monotonic() - _MODEL_TTL
+        stale = [cid for cid, t in self._last_used.items() if t < cutoff]
+        for cid in stale:
+            self._markov_cache.pop(cid, None)
+            self._last_used.pop(cid, None)
+            log.debug("Evicted idle Markov model for channel %d", cid)
 
     async def _get_markov_model(self, channel_id: int) -> markovify.NewlineText | None:
-        """Return a cached Markov model for a channel, rebuild if corpus changed."""
+        """Return a cached Markov model, rebuilding only on cache miss."""
+        if channel_id in self._markov_cache:
+            self._last_used[channel_id] = time.monotonic()
+            return self._markov_cache[channel_id]
+
         async with self.client.session as session:
             contents = (
                 await session.scalars(
@@ -87,8 +123,8 @@ class database(commands.Cog):
         if not contents:
             return None
 
-        seen = set()
-        lines = []
+        seen: set[str] = set()
+        lines: list[str] = []
         for c in contents:
             cl = c.strip()
             if cl and cl.lower() not in seen:
@@ -99,15 +135,39 @@ class database(commands.Cog):
         state_size = 2 if n_lines < 2_000 else 3 if n_lines < 10_000 else 4
         text = "\n".join(lines)
 
-        # Check cache
-        cached = self._markov_cache.get(channel_id)
-        if cached and cached["count"] in range(n_lines - 50, n_lines + 51):
-            return cached["model"]
-
-        # Rebuild model
-        model = markovify.NewlineText(text, state_size=state_size)
-        self._markov_cache[channel_id] = {"model": model, "count": n_lines}
+        model = await asyncio.to_thread(
+            lambda: markovify.NewlineText(text, state_size=state_size)
+        )
+        self._markov_cache[channel_id] = model
+        self._last_used[channel_id] = time.monotonic()
+        self._pending_adds[channel_id] = 0
         return model
+
+    async def _generate_sentence(self, channel_id: int) -> str | None:
+        """Generate a sentence via the cached model, with a state_size=2 fallback."""
+        model = await self._get_markov_model(channel_id)
+        if model is None:
+            return None
+        sentence = await asyncio.to_thread(lambda: model.make_sentence(tries=200))
+        if sentence is None and model.state_size > 2:
+            # corpus too small for chosen state_size; fall back to bigrams
+            async with self.client.session as session:
+                contents = (
+                    await session.scalars(
+                        select(models.database.MarkovCorpus.content).where(
+                            models.database.MarkovCorpus.channel_id == channel_id
+                        )
+                    )
+                ).all()
+            if contents:
+                text = "\n".join(c.strip() for c in contents if c.strip())
+                fallback = await asyncio.to_thread(
+                    lambda: markovify.NewlineText(text, state_size=2)
+                )
+                sentence = await asyncio.to_thread(
+                    lambda: fallback.make_sentence(tries=100)
+                )
+        return sentence
 
     # events
     @commands.Cog.listener()
@@ -182,10 +242,17 @@ class database(commands.Cog):
             if msg.content.lower() == "yes":
                 async with self.client.session as session:
                     async with session.begin():
-                        settings = models.database.ChannelSettings(
-                            channel_id=ctx.channel.id, markov_enabled=True
+                        existing = await session.get(
+                            models.database.ChannelSettings, ctx.channel.id
                         )
-                        session.add(settings)
+                        if existing:
+                            existing.markov_enabled = True
+                        else:
+                            session.add(
+                                models.database.ChannelSettings(
+                                    channel_id=ctx.channel.id, markov_enabled=True
+                                )
+                            )
                 await ctx.reply(
                     "My brain is enabled. Use ,train to initially load data from history."
                 )
@@ -231,6 +298,7 @@ class database(commands.Cog):
                             )
                             .values(markov_enabled=False)
                         )
+                self._invalidate_cache(ctx.channel.id)
                 await ctx.reply(
                     "My brain is disabled and all stored message data deleted."
                 )
@@ -241,11 +309,9 @@ class database(commands.Cog):
 
     @commands.hybrid_command()
     @commands.has_permissions(manage_messages=True)
-    @commands.cooldown(
-        1, 259200, commands.BucketType.guild
-    )  # 3 days cooldown per guild
+    @commands.cooldown(1, 259200, commands.BucketType.guild)  # 3 days per guild
     async def train(self, ctx, clean: bool = True, unlimited: bool = False):
-        """Train my brain on the last 100000 messages from a single channel."""
+        """Train my brain on the last 100000 messages from this channel."""
         if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My brain must be enabled first.")
 
@@ -279,62 +345,66 @@ class database(commands.Cog):
                         )
                     )
 
+        msg_limit = None if unlimited else 100000
         main_msg = await ctx.reply(
-            "Training started... This may take a while. 0 messages have been added to corpus so far."
+            "Training started... This may take a while. 0 messages added so far."
         )
 
-        # non_ignored_channels = [
-        #     ch for ch in ctx.guild.text_channels if not await self.check_ignored(ch)
-        # ]
-
         total_added = 0
-        # for channel in non_ignored_channels:
-        # messages = [message async for message in ctx.channel.history(limit=100000)]
-        msg_limit = None if unlimited else 100000
+        guild_member = ctx.guild.get_member(self.client.user.id)
+        pending: list[tuple[int, int, int, str]] = []
+
         async for message in ctx.channel.history(limit=msg_limit):
-            if message.author.bot or not message.content:
+            if not _message_is_okay(message):
                 continue
             blacklisted = await mf.is_blacklisted(message.author.id)
-            if not _message_is_okay(message) or blacklisted[0]:
+            if blacklisted[0]:
                 continue
-            guild_member = message.guild.get_member(self.client.user.id)
             if guild_member.nick and guild_member.nick in message.content:
                 continue
             if self.client.user.mentioned_in(message):
                 continue
-            if (
-                len(message.content) < 5
-                or any(
-                    char in message.content for char in ["http://", "https://", "://"]
-                )
-                or sum(c.isalnum() for c in message.content) / len(message.content)
-                < 0.5
-            ):
+            cleaned = strip_discord_tokens(message.content)
+            if not _string_is_okay(cleaned):
                 continue
-            message.content = strip_mentions(message.content)
+            pending.append((message.id, ctx.channel.id, ctx.guild.id, cleaned))
+
+        # Batch-insert with one duplicate check per batch of 500
+        batch_size = 500
+        for i in range(0, len(pending), batch_size):
+            batch = pending[i : i + batch_size]
+            batch_ids = [m[0] for m in batch]
             async with self.client.session as session:
                 async with session.begin():
-                    # Check if already exists to avoid duplicates
-                    exists = await session.scalar(
-                        select(models.database.MarkovCorpus).where(
-                            models.database.MarkovCorpus.message_id == message.id
-                        )
-                    )
-                    if not exists:
-                        session.add(
-                            models.database.MarkovCorpus(
-                                message_id=message.id,
-                                channel_id=ctx.channel.id,
-                                guild_id=ctx.guild.id,
-                                content=message.content,
+                    existing_ids = set(
+                        (
+                            await session.scalars(
+                                select(models.database.MarkovCorpus.message_id).where(
+                                    models.database.MarkovCorpus.message_id.in_(
+                                        batch_ids
+                                    )
+                                )
                             )
-                        )
-                        total_added += 1
+                        ).all()
+                    )
+                    for msg_id, ch_id, guild_id, content in batch:
+                        if msg_id not in existing_ids:
+                            session.add(
+                                models.database.MarkovCorpus(
+                                    message_id=msg_id,
+                                    channel_id=ch_id,
+                                    guild_id=guild_id,
+                                    content=content,
+                                )
+                            )
+                            total_added += 1
+
             if total_added % 1000 == 0 and total_added > 0:
                 main_msg = await main_msg.edit(
-                    content=f"Training started... This may take a while. {total_added} messages have been added to corpus so far."
+                    content=f"Training started... This may take a while. {total_added} messages added so far."
                 )
 
+        self._invalidate_cache(ctx.channel.id)
         await ctx.reply(
             f"Training complete. Added {total_added} new messages to the corpus."
         )
@@ -386,52 +456,13 @@ class database(commands.Cog):
         if not await self.is_markov_enabled(ctx.channel.id):
             return await ctx.reply("My intelligence is disabled. :(")
 
-        # Fetch recent messages for context
         async with ctx.typing():
-            history = [
-                m
-                async for m in ctx.channel.history(limit=10)  # Increase limit
-                if not m.author.bot and m.content and len(m.content) > 5
-            ]
-            context = " ".join(
-                [m.content for m in history[-3:] if m.content] + [ctx.message.content]
-            )  # Prioritize last 3
-            if not context:
-                context = "Hello"
+            sentence = await self._generate_sentence(ctx.channel.id)
 
-            # Clean context to remove command prefixes and non-words
-            context_words = [
-                word
-                for word in context.split()
-                if not word.startswith(",") and word.isalnum()
-            ]
-            init_state = tuple(context_words[-2:]) if len(context_words) >= 2 else ()
-            async with self.client.session as session:
-                contents = (
-                    await session.scalars(
-                        select(models.database.MarkovCorpus.content).where(
-                            models.database.MarkovCorpus.channel_id == ctx.channel.id
-                        )
-                    )
-                ).all()
-
-            if not contents:
-                return await ctx.reply("No data available to generate a sentence.")
-
-            text = "\n".join(contents)
-
-            model = markovify.NewlineText(text, state_size=2)
-
-            sentence = None
-
-            if init_state and init_state in model.chain.model:
-                sentence = model.make_sentence(tries=100, init_state=init_state)
-            if not sentence:  # Fallback to random generation if init_state fails
-                sentence = model.make_sentence(tries=100)
-            if sentence:
-                await ctx.send(discord.utils.escape_mentions(sentence))
-            else:
-                await ctx.reply("Could not generate a sentence.")
+        if sentence:
+            await ctx.send(discord.utils.escape_mentions(sentence))
+        else:
+            await ctx.reply("Not enough data to generate a sentence yet.")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -447,6 +478,8 @@ class database(commands.Cog):
                         models.database.MarkovCorpus.message_id == message.id
                     )
                 )
+        if message.guild:
+            self._invalidate_cache(message.channel.id)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -468,14 +501,17 @@ class database(commands.Cog):
                     )
                 )
                 if await self.is_markov_enabled(before.channel.id):
-                    session.add(
-                        models.database.MarkovCorpus(
-                            message_id=after.id,
-                            channel_id=after.channel.id,
-                            guild_id=after.guild.id,
-                            content=after.content,
+                    cleaned = strip_discord_tokens(after.content)
+                    if _string_is_okay(cleaned):
+                        session.add(
+                            models.database.MarkovCorpus(
+                                message_id=after.id,
+                                channel_id=after.channel.id,
+                                guild_id=after.guild.id,
+                                content=cleaned,
+                            )
                         )
-                    )
+        self._invalidate_cache(before.channel.id)
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
@@ -491,6 +527,7 @@ class database(commands.Cog):
                         models.database.MarkovCorpus.channel_id == channel.id
                     )
                 )
+        self._invalidate_cache(channel.id)
 
     @commands.hybrid_command(aliases=["privacy", "policy", "pp", "dinfo"])
     async def privacypolicy(self, ctx):
@@ -551,55 +588,12 @@ class database(commands.Cog):
                 return
 
             if await self.is_markov_enabled(message.channel.id):
-                # Context-aware Markov generation
                 async with message.channel.typing():
-                    async with self.client.session as session:
-                        contents = (
-                            await session.scalars(
-                                select(models.database.MarkovCorpus.content).where(
-                                    models.database.MarkovCorpus.channel_id
-                                    == message.channel.id
-                                )
-                            )
-                        ).all()
-
-                    if not contents:
-                        return
-
-                    history = [
-                        m
-                        async for m in message.channel.history(limit=5)
-                        if not m.author.bot and m.content
-                    ]
-                    context = " ".join(
-                        [m.content for m in history if m.content] + [message.content]
+                    sentence = await self._generate_sentence(message.channel.id)
+                if sentence:
+                    await message.channel.send(
+                        discord.utils.escape_mentions(sentence)
                     )
-                    if not context:
-                        context = "Hello"
-
-                    # Clean context to remove command prefixes and non-words
-                    context_words = [
-                        word
-                        for word in context.split()
-                        if not word.startswith(",") and word.isalnum()
-                    ]
-
-                    init_state = (
-                        tuple(context_words[-2:]) if len(context_words) >= 2 else ()
-                    )
-                    text = "\n".join(contents)
-                    model = markovify.NewlineText(text, state_size=2)
-                    sentence = None
-                    if init_state and init_state in model.chain.model:
-                        sentence = model.make_sentence(tries=100, init_state=init_state)
-                    if not sentence:
-                        # fallback
-                        sentence = model.make_sentence(tries=100)
-                    if sentence:
-                        await message.channel.send(
-                            discord.utils.escape_mentions(sentence)
-                        )
-
             else:
                 # Legacy random message
                 async with self.client.session as session:
@@ -655,18 +649,25 @@ class database(commands.Cog):
             if await self.is_markov_enabled(
                 message.channel.id
             ) and not await self._user_opted_out(message.author.id):
-                if _message_is_okay(message):
-                    message.content = strip_mentions(message.content)
-                    async with self.client.session as session:
-                        async with session.begin():
-                            session.add(
-                                models.database.MarkovCorpus(
-                                    message_id=message.id,
-                                    channel_id=message.channel.id,
-                                    guild_id=message.guild.id,
-                                    content=message.content,
+                cleaned = strip_discord_tokens(message.content)
+                if _message_is_okay(message) and _string_is_okay(cleaned):
+                    guild_member2 = message.guild.get_member(self.client.user.id)
+                    if guild_member2.nick and guild_member2.nick in message.content:
+                        pass
+                    elif self.client.user.mentioned_in(message):
+                        pass
+                    else:
+                        async with self.client.session as session:
+                            async with session.begin():
+                                session.add(
+                                    models.database.MarkovCorpus(
+                                        message_id=message.id,
+                                        channel_id=message.channel.id,
+                                        guild_id=message.guild.id,
+                                        content=cleaned,
+                                    )
                                 )
-                            )
+                        self._on_corpus_add(message.channel.id)
 
         if ("https://x.com" in msg or "https://twitter.com" in msg) and (
             "fixupx.com" not in msg
