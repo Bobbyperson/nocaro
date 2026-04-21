@@ -157,7 +157,22 @@ class database(commands.Cog):
 
         context_words = {w.lower() for w in context.split() if len(w) > 1}
 
+        context_split = context.split()
+
         def _pick_best(m: markovify.NewlineText, tries_each: int) -> str | None:
+            # For short messages try seeding the chain from the message words
+            if len(context_split) <= 3:
+                for n in (min(2, len(context_split)), 1):
+                    if len(context_split) >= n:
+                        for variant in (
+                            tuple(context_split[-n:]),
+                            tuple(w.lower() for w in context_split[-n:]),
+                        ):
+                            if variant in m.chain.model:
+                                s = m.make_sentence(tries=100, init_state=variant)
+                                if s:
+                                    return s
+
             candidates = [s for _ in range(10) if (s := m.make_sentence(tries=tries_each))]
             if not candidates:
                 return None
