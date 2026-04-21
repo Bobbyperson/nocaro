@@ -143,12 +143,33 @@ class database(commands.Cog):
         self._pending_adds[channel_id] = 0
         return model
 
-    async def _generate_sentence(self, channel_id: int) -> str | None:
-        """Generate a sentence via the cached model, with a state_size=2 fallback."""
+    async def _generate_sentence(
+        self, channel_id: int, context: str = ""
+    ) -> str | None:
+        """Generate a sentence via the cached model, with a state_size=2 fallback.
+
+        Generates 10 candidates and returns the one with the most word overlap
+        with `context` so responses feel more topically relevant.
+        """
         model = await self._get_markov_model(channel_id)
         if model is None:
             return None
-        sentence = await asyncio.to_thread(lambda: model.make_sentence(tries=200))
+
+        context_words = {w.lower() for w in context.split() if len(w) > 1}
+
+        def _pick_best(m: markovify.NewlineText, tries_each: int) -> str | None:
+            candidates = [s for _ in range(10) if (s := m.make_sentence(tries=tries_each))]
+            if not candidates:
+                return None
+            if not context_words:
+                return candidates[0]
+            return max(
+                candidates,
+                key=lambda s: sum(1 for w in s.lower().split() if w in context_words),
+            )
+
+        sentence = await asyncio.to_thread(lambda: _pick_best(model, 20))
+
         if sentence is None and model.state_size > 2:
             # corpus too small for chosen state_size; fall back to bigrams
             async with self.client.session as session:
@@ -165,7 +186,7 @@ class database(commands.Cog):
                     lambda: markovify.NewlineText(text, state_size=2)
                 )
                 sentence = await asyncio.to_thread(
-                    lambda: fallback.make_sentence(tries=100)
+                    lambda: _pick_best(fallback, 10)
                 )
         return sentence
 
@@ -457,7 +478,13 @@ class database(commands.Cog):
             return await ctx.reply("My intelligence is disabled. :(")
 
         async with ctx.typing():
-            sentence = await self._generate_sentence(ctx.channel.id)
+            history = [
+                m.content
+                async for m in ctx.channel.history(limit=5)
+                if not m.author.bot and m.content
+            ]
+            context = " ".join(history)
+            sentence = await self._generate_sentence(ctx.channel.id, context)
 
         if sentence:
             await ctx.send(discord.utils.escape_mentions(sentence))
@@ -589,7 +616,9 @@ class database(commands.Cog):
 
             if await self.is_markov_enabled(message.channel.id):
                 async with message.channel.typing():
-                    sentence = await self._generate_sentence(message.channel.id)
+                    sentence = await self._generate_sentence(
+                        message.channel.id, message.content
+                    )
                 if sentence:
                     await message.channel.send(
                         discord.utils.escape_mentions(sentence)
