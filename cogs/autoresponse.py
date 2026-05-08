@@ -87,14 +87,9 @@ class Autoresponse(commands.Cog):
             random_emoji = random.choice(guild_emojis)
             await message.add_reaction(random_emoji)
         elif emoji_type == 2:
-            done = False
-            while not done:
-                try:  # keep trying until we get a valid emoji
-                    random_emoji = random.choice(default_emojis_maybe)
-                    await message.add_reaction(random_emoji)
-                    done = True
-                except discord.HTTPException:
-                    pass
+            with contextlib.suppress(discord.HTTPException):
+                random_emoji = random.choice(default_emojis_maybe)
+                await message.add_reaction(random_emoji)
 
 
 async def setup(client):
