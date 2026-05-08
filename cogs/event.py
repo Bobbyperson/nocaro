@@ -570,27 +570,25 @@ class Event(commands.Cog):
             )
             recent_records = recent_records.scalars().all()
 
-            # has_attended_once = (
-            #     await session.scalar(
-            #         select(func.count())
-            #         .select_from(models.event.EventMultipliers)
-            #         .where(
-            #             models.event.EventMultipliers.user_id == user_id,
-            #             models.event.EventMultipliers.attended.is_(True),
-            #         )
-            #     )
-            # ) > 0
+            has_attended_once = (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(models.event.EventMultipliers)
+                    .where(
+                        models.event.EventMultipliers.user_id == user.id,
+                        models.event.EventMultipliers.attended.is_(True),
+                    )
+                )
+            ) > 0
 
-            # has_global_records = (
-            #     await session.scalar(
-            #         select(func.count()).select_from(models.event.EventMultipliers)
-            #     )
-            # ) > 0
+            has_global_records = (
+                await session.scalar(
+                    select(func.count()).select_from(models.event.EventMultipliers)
+                )
+            ) > 0
 
-            # if not has_attended_once and has_global_records:
-            #     return 0
-
-            # to be uncommented if whomegalols start swaying votes too hard
+            if not has_attended_once and has_global_records:
+                return 0
 
             # attended = sum(1 for r in recent_records if r.attended)
             missed = sum(
@@ -605,7 +603,7 @@ class Event(commands.Cog):
                 )
             ) or 0
 
-            karma = 100 - missed * 10
+            karma = 100 - missed * 25
             return min(100, karma) + bonus
 
     # This is very slow, takes upwards of N seconds where N is the number of entries
