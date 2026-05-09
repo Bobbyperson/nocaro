@@ -1022,25 +1022,17 @@ class Event(commands.Cog):
 
         karma = await self.__get_karma(user)
         async with self.bot.session as session:
-            attended_count = await session.scalar(
-                select(func.count())
-                .select_from(models.event.EventMultipliers)
-                .where(
-                    models.event.EventMultipliers.user_id == user.id,
-                    models.event.EventMultipliers.attended.is_(True),
+            recent_records = (
+                await session.execute(
+                    select(models.event.EventMultipliers)
+                    .where(models.event.EventMultipliers.user_id == user.id)
+                    .order_by(models.event.EventMultipliers.timestamp.desc())
+                    .limit(4)
                 )
-                .limit(4)
-            )
-            missed_count = await session.scalar(
-                select(func.count())
-                .select_from(models.event.EventMultipliers)
-                .where(
-                    models.event.EventMultipliers.user_id == user.id,
-                    models.event.EventMultipliers.voted_for_winner.is_(True),
-                    models.event.EventMultipliers.attended.is_(False),
-                )
-                .limit(4)
-            )
+            ).scalars().all()
+
+        attended_count = sum(1 for r in recent_records if r.attended)
+        missed_count = sum(1 for r in recent_records if r.voted_for_winner and not r.attended)
         await ctx.send(
             f"Out of the last 4 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma."
         )
