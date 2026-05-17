@@ -1023,18 +1023,35 @@ class Event(commands.Cog):
         karma = await self.__get_karma(user)
         async with self.bot.session as session:
             recent_records = (
-                await session.execute(
-                    select(models.event.EventMultipliers)
-                    .where(models.event.EventMultipliers.user_id == user.id)
-                    .order_by(models.event.EventMultipliers.timestamp.desc())
-                    .limit(4)
+                (
+                    await session.execute(
+                        select(models.event.EventMultipliers)
+                        .where(models.event.EventMultipliers.user_id == user.id)
+                        .order_by(models.event.EventMultipliers.timestamp.desc())
+                        .limit(4)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
 
         attended_count = sum(1 for r in recent_records if r.attended)
-        missed_count = sum(1 for r in recent_records if r.voted_for_winner and not r.attended)
+        missed_count = sum(
+            1 for r in recent_records if r.voted_for_winner and not r.attended
+        )
+        miss_positions = [
+            i
+            for i, r in enumerate(recent_records)
+            if r.voted_for_winner and not r.attended
+        ]
+        events_needed = (4 - min(miss_positions)) if miss_positions else 0
+        forgiveness_msg = (
+            f" They need to attend {events_needed} more event(s) to get 100 karma."
+            if events_needed > 0
+            else ""
+        )
         await ctx.send(
-            f"Out of the last 4 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma."
+            f"Out of the last 4 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma.{forgiveness_msg}"
         )
 
     @commands.command(hidden=True)
@@ -1080,14 +1097,14 @@ class Event(commands.Cog):
 
         message = f"Results for event ID {event_id}:\n"
         for result in results:
+            status = "Attended" if result.attended else "Did not attend"
+            voted_status = (
+                "Voted for winner"
+                if result.voted_for_winner
+                else "Did not vote for winner"
+            )
             user = ctx.guild.get_member(result.user_id)
             if user:
-                status = "Attended" if result.attended else "Did not attend"
-                voted_status = (
-                    "Voted for winner"
-                    if result.voted_for_winner
-                    else "Did not vote for winner"
-                )
                 message += f"{user.name}: {status}, {voted_status}\n"
             else:
                 message += f"User ID {result.user_id} (not in server): {status}, {voted_status}\n"
@@ -1185,9 +1202,9 @@ class Event(commands.Cog):
                 attended = member_id in self.showed_up
                 voted_for_winner = member_id in self.winners
                 member = ctx.guild.get_member(member_id)
-                karma = await self.__get_karma(member)
                 if not member:
                     continue  # user might have left
+                karma = await self.__get_karma(member)
 
                 try:
                     if attended and voted_for_winner:
