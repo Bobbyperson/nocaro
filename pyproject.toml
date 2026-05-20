@@ -23,7 +23,7 @@ dependencies = [
     "discord-ext-menus",
     "anyio>=4.12.1",
     "alembic>=1.18.2",
-    "numpy>=2.4.1",
+    "numpy>=2.4.6",
     "aiohttp>=3.13.3",
     "soundfile>=0.13.1",
     "mutagen>=1.47.0",
