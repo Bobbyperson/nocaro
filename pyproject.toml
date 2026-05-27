@@ -19,7 +19,7 @@ dependencies = [
     "emoji>=2.15.0",
     "yfinance>=1.4.0",
     "pandas>=3.0.3",
-    "pandas_market_calendars>=5.2.4",
+    "pandas_market_calendars>=5.4.0",
     "discord-ext-menus",
     "anyio>=4.12.1",
     "alembic>=1.18.2",
