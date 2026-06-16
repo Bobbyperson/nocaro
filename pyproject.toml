@@ -21,7 +21,7 @@ dependencies = [
     "pandas>=3.0.3",
     "pandas_market_calendars>=5.4.0",
     "discord-ext-menus",
-    "anyio>=4.12.1",
+    "anyio>=4.14.0",
     "alembic>=1.18.2",
     "numpy>=2.4.6",
     "aiohttp>=3.14.1",
