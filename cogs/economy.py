@@ -1439,12 +1439,14 @@ Example command: `,bougegram normal 100`"""
         if member is None:
             await ctx.send("You need to specify a member to trade with!")
             return
-        prestiege = await econ.get_prestiege(ctx.author)
+        prestiege = await econ.get_prestiege(member)
         if prestiege and prestiege[3]:
             await ctx.send("You cannot trade $BB with this person.")
+            return
         prestiege = await econ.get_prestiege(ctx.author)
         if prestiege and prestiege[3]:
             await ctx.send("You cannot trade $BB.")
+            return
         if await econ.checkmax(member):
             await ctx.send("You cannot trade with this person. They have work to do.")
             return
@@ -1463,6 +1465,8 @@ Example command: `,bougegram normal 100`"""
         invitedinv = await econ.get_inv(member)
 
         def authorcheck(msg):
+            if msg.author != ctx.author or msg.channel != ctx.channel:
+                return False
             args = msg.content.split("|")
             if len(args) == 3:
                 try:
@@ -1487,11 +1491,12 @@ Example command: `,bougegram normal 100`"""
                 for map in maps:
                     if map not in authorinv:
                         return False
-                if msg.author == ctx.author and msg.channel == ctx.channel:
-                    return True
+                return True
             return False
 
         def invitedcheck(msg):
+            if msg.author != member or msg.channel != ctx.channel:
+                return False
             args = msg.content.split("|")
             if len(args) == 3:
                 try:
@@ -1516,8 +1521,7 @@ Example command: `,bougegram normal 100`"""
                 for map in maps:
                     if map not in invitedinv:
                         return False
-                if msg.author == ctx.author and msg.channel == ctx.channel:
-                    return True
+                return True
             return False
 
         await ctx.send(
@@ -2415,7 +2419,7 @@ Example command: `,bougegram normal 100`"""
                         )
                         await econ.update_amount(
                             ctx.author,
-                            (amount // 2) + amount,
+                            amount // 2,
                             tracker_reason="blackjack",
                         )
                         return
@@ -2424,7 +2428,9 @@ Example command: `,bougegram normal 100`"""
                             f"Both you and the dealer have blackjack! You won {amount} bouge bucks!"
                         )
                         await econ.update_amount(
-                            ctx.author, amount, tracker_reason="blackjack"
+                            ctx.author,
+                            amount + (amount // 2),
+                            tracker_reason="blackjack",
                         )
                         return
                 else:

@@ -1206,21 +1206,72 @@ class Event(commands.Cog):
                     continue  # user might have left
                 karma = await self.__get_karma(member)
 
+                async with self.bot.session as session:
+                    recent_records = (
+                        (
+                            await session.execute(
+                                select(models.event.EventMultipliers)
+                                .where(
+                                    models.event.EventMultipliers.user_id == member_id
+                                )
+                                .order_by(
+                                    models.event.EventMultipliers.timestamp.desc()
+                                )
+                                .limit(4)
+                            )
+                        )
+                        .scalars()
+                        .all()
+                    )
+
+                    first_time_loss = False
+                    if not attended and voted_for_winner and karma == 0:
+                        has_attended_ever = (
+                            await session.scalar(
+                                select(func.count())
+                                .select_from(models.event.EventMultipliers)
+                                .where(
+                                    models.event.EventMultipliers.user_id == member_id,
+                                    models.event.EventMultipliers.attended.is_(True),
+                                )
+                            )
+                        ) > 0
+                        first_time_loss = not has_attended_ever
+
+                miss_positions = [
+                    i
+                    for i, r in enumerate(recent_records)
+                    if r.voted_for_winner and not r.attended
+                ]
+                events_needed = (4 - min(miss_positions)) if miss_positions else 0
+                forgiveness_msg = (
+                    f" You need to attend {events_needed} more event(s) to get 100 karma."
+                    if events_needed > 0
+                    else ""
+                )
+
                 try:
                     if attended and voted_for_winner:
-                        # showed up and voted for the winner
                         await member.send(
-                            f"🎉 Thanks for attending! Your voting karma is now {karma}."
+                            f"🎉 Thanks for attending! Your voting karma is now {karma}.{forgiveness_msg}"
                         )
                     elif attended:
                         await member.send(
-                            f"Thanks for attending the event! Your voting karma is now {karma}."
+                            f"Thanks for attending the event! Your voting karma is now {karma}.{forgiveness_msg}"
                         )
                     else:  # voted_for_winner but didn't attend
-                        await member.send(
-                            f"You voted for the winner but didn't attend the event. "
-                            f"Your voting karma is now {karma}."
-                        )
+                        if first_time_loss:
+                            await member.send(
+                                f"You voted for the winner but didn't attend the event. "
+                                f"Since this was your first event, you've lost all your voting power. "
+                                f"This is to prevent alts and randoms from swaying the vote. "
+                                f"Your voting karma is now {karma}. You only need to attend one event to regain 75 karma."
+                            )
+                        else:
+                            await member.send(
+                                f"You voted for the winner but didn't attend the event. "
+                                f"Your voting karma is now {karma}.{forgiveness_msg}"
+                            )
                 except discord.Forbidden:
                     # If the user has DMs disabled, we can't notify them
                     log.info(f"Could not send DM to {member.display_name}")
