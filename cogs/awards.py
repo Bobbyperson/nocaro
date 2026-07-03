@@ -4,12 +4,14 @@ from collections import defaultdict
 from discord.ext import commands
 from sqlalchemy import select
 
-from models.awards import AwardUsers, Votes
+from models.awards import AwardUsers, Nominations, Votes
 from utils import config
 
 log = logging.getLogger(__name__)
 
 NOMINATE_STATE_KEY = "nominate_state"
+
+NOMINATE_HALF_KEY = "nominate_half"
 
 VOTING_STATE_KEY = "voting_state"
 
@@ -85,6 +87,15 @@ class Awards(commands.Cog):
         async with self.client.session as session:
             return bool(await config.get(session, NOMINATE_STATE_KEY, False))
 
+    async def __set_nominate_half(self, value: bool) -> None:
+        async with self.client.session as session:
+            async with session.begin():
+                await config.set(session, NOMINATE_HALF_KEY, bool(value))
+
+    async def __get_nominate_half(self) -> bool:
+        async with self.client.session as session:
+            return bool(await config.get(session, NOMINATE_HALF_KEY, False))
+
     async def __set_voting(self, value: bool) -> None:
         async with self.client.session as session:
             async with session.begin():
@@ -113,6 +124,32 @@ class Awards(commands.Cog):
                     )
                 else:
                     vote.answer = answer
+
+    async def create_or_update_nomination(
+        self, user_id: int, question: str, answer: str, half: bool
+    ) -> None:
+        async with self.client.session as session:
+            async with session.begin():
+                result = await session.execute(
+                    select(Nominations).where(
+                        Nominations.user_id == str(user_id),
+                        Nominations.question == question,
+                        Nominations.half == half,
+                    )
+                )
+                nomination = result.scalar_one_or_none()
+
+                if nomination is None:
+                    session.add(
+                        Nominations(
+                            user_id=str(user_id),
+                            question=question,
+                            answer=answer,
+                            half=half,
+                        )
+                    )
+                else:
+                    nomination.answer = answer
 
     async def get_voters(self, question: str) -> list[int]:
         async with self.client.session as session:
@@ -248,6 +285,7 @@ class Awards(commands.Cog):
     @commands.is_owner()
     async def startnominate(self, ctx):
         await self.__set_nominate(True)
+        await self.__set_nominate_half(False)
 
         async with self.client.session as session:
             result = await session.execute(select(AwardUsers.user_id).distinct())
@@ -258,12 +296,35 @@ class Awards(commands.Cog):
                     user = await self.client.fetch_user(int(user_id))
                     # send message to user
                     await user.send(
-                        "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 9th, 2026 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 2nd, 2026. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
+                        "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 8th, 2027 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 1st, 2027. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
                     )
                 except Exception as e:
                     log.error(f"Failed to send message to user {user_id}: {e}")
                     await ctx.send(f"Failed to send message to user {user_id}: {e}")
         await ctx.send("Nominations started")
+
+    @commands.command()
+    @commands.is_owner()
+    async def starthalfnominate(self, ctx):
+        """Open a mid-year nomination round so memorable moments don't fall into obscurity by the time the annual ceremony rolls around."""
+        await self.__set_nominate(True)
+        await self.__set_nominate_half(True)
+
+        async with self.client.session as session:
+            result = await session.execute(select(AwardUsers.user_id).distinct())
+            user_ids = result.scalars().all()
+            for user_id in user_ids:
+                try:
+                    # get user from id
+                    user = await self.client.fetch_user(int(user_id))
+                    # send message to user
+                    await user.send(
+                        "Hello.\n\nWe're about halfway through the year, and it's easy for great moments from earlier on to be forgotten by the time our annual awards ceremony rolls around. So we're doing a mid-year check-in: if there's anything memorable from the last few months you'd like to nominate someone for, now's a great time to jot it down. When you're ready, please type `,nominate` in this dm. Your nominations will be kept confidential, and you'll get another chance to add to or update them closer to the ceremony. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
+                    )
+                except Exception as e:
+                    log.error(f"Failed to send message to user {user_id}: {e}")
+                    await ctx.send(f"Failed to send message to user {user_id}: {e}")
+        await ctx.send("Mid-year nominations started")
 
     @commands.command()
     @commands.max_concurrency(1, commands.BucketType.user)
@@ -280,6 +341,8 @@ class Awards(commands.Cog):
                 "You are not eligible to nominate for awards, if you believe this is an error or an oversight, please dm Bobbyperson. Sorry."
             )
             return
+
+        half = await self.__get_nominate_half()
 
         await ctx.send(
             'I will ask you a question one at a time, please answer each one to the best of your ability. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you believe your response may be interpreted as "out there" or a joke, you may provide a brief explanation. All answers will be reviewed and kept confidential. If you have any questions, please dm Bobbyperson.'
@@ -315,6 +378,10 @@ class Awards(commands.Cog):
                 )
                 return
             answers.append(msg.content)
+        for question, answer in zip(questions, answers):
+            await self.create_or_update_nomination(
+                ctx.author.id, question, answer, half
+            )
         # send to me
         owner = await self.client.fetch_user(self.client.config["general"]["owner_id"])
         nomination_message = f"Nominations from {ctx.author} ({ctx.author.id}):\n\n"

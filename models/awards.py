@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String
 
 from . import Base
 
@@ -16,3 +16,13 @@ class Votes(Base):
     user_id = Column(String)
     question = Column(String)
     answer = Column(Integer)
+
+
+class Nominations(Base):
+    __tablename__ = "nominations"
+
+    num = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
+    user_id = Column(String, nullable=False)
+    question = Column(String, nullable=False)
+    answer = Column(String, nullable=False)
+    half = Column(Boolean, nullable=False, default=False)

@@ -39,10 +39,21 @@ class MarkovCorpus(Base):
     __tablename__ = "markov_corpus"
 
     id = Column(Integer, primary_key=True)
-    channel_id = Column(Integer, nullable=False)
+    channel_id = Column(Integer, nullable=False, index=True)
     guild_id = Column(Integer, nullable=False)
     content = Column(String, nullable=False)
-    message_id = Column(Integer, nullable=False)
+    message_id = Column(Integer, nullable=False, unique=True, index=True)
+
+
+class MarkovModelCache(Base):
+    """Serialized markovify model per channel, so restarts skip a full rebuild."""
+
+    __tablename__ = "markov_model_cache"
+
+    channel_id = Column(Integer, primary_key=True)
+    state_size = Column(Integer, nullable=False)
+    model_json = Column(String, nullable=False)
+    corpus_count = Column(Integer, nullable=False)
 
 
 class MarkovOptOut(Base):
