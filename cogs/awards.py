@@ -345,15 +345,15 @@ class Awards(commands.Cog):
         half = await self.__get_nominate_half()
 
         await ctx.send(
-            'I will ask you a question one at a time, please answer each one to the best of your ability. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you believe your response may be interpreted as "out there" or a joke, you may provide a brief explanation. All answers will be reviewed and kept confidential. If you have any questions, please dm Bobbyperson.'
+            'Please keep all answers to this year only. I will ask you a question one at a time, please answer each one to the best of your ability. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you believe your response may be interpreted as "out there" or a joke, you may provide a brief explanation. All answers will be reviewed and kept confidential. If you have any questions, please dm Bobbyperson.'
         )
         questions = [
+            "Most skilled gamer",
+            "E-Clown award (funniest person)",
             "Most likely to ragebait and succeed",
             "Most likely to ragebait and fail",
             "Most likely to fall for ragebait",
-            "Best server era (CS, Deadlock, Overwatch, OG Northstar, Minecraft 202X, etc.)",
             "Best event game (you may include games previously but not currently in the poll)",
-            "Most likely to gamble away their life savings",
             "The VC award: This award should go to the member who you think improves and contributes the most to a vc",
             "Most likely to hijack a vc",
             "Best clip (go to #clips and copy the message link and paste it here)",
