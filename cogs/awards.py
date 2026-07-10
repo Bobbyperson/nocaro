@@ -15,6 +15,10 @@ NOMINATE_HALF_KEY = "nominate_half"
 
 VOTING_STATE_KEY = "voting_state"
 
+NOMINATE_MESSAGE = "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 8th, 2027 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 1st, 2027. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
+
+HALF_NOMINATE_MESSAGE = "Hello.\n\nWe're about halfway through the year, and it's easy for great moments from earlier on to be forgotten by the time our annual awards ceremony rolls around. So we're doing a mid-year check-in: if there's anything memorable from the last few months you'd like to nominate someone for, now's a great time to jot it down. When you're ready, please type `,nominate` in this dm. Your nominations will be kept confidential, and you'll get another chance to add to or update them closer to the ceremony. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
+
 NOMINEES = {
     "Most likely to ragebait and succeed": ["Ping", "War", "Walm"],
     "Most likely to ragebait and fail": ["Bobbyperson", "Fuddge", "Spicy"],
@@ -295,9 +299,7 @@ class Awards(commands.Cog):
                     # get user from id
                     user = await self.client.fetch_user(int(user_id))
                     # send message to user
-                    await user.send(
-                        "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 8th, 2027 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 1st, 2027. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
-                    )
+                    await user.send(NOMINATE_MESSAGE)
                 except Exception as e:
                     log.error(f"Failed to send message to user {user_id}: {e}")
                     await ctx.send(f"Failed to send message to user {user_id}: {e}")
@@ -318,9 +320,7 @@ class Awards(commands.Cog):
                     # get user from id
                     user = await self.client.fetch_user(int(user_id))
                     # send message to user
-                    await user.send(
-                        "Hello.\n\nWe're about halfway through the year, and it's easy for great moments from earlier on to be forgotten by the time our annual awards ceremony rolls around. So we're doing a mid-year check-in: if there's anything memorable from the last few months you'd like to nominate someone for, now's a great time to jot it down. When you're ready, please type `,nominate` in this dm. Your nominations will be kept confidential, and you'll get another chance to add to or update them closer to the ceremony. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
-                    )
+                    await user.send(HALF_NOMINATE_MESSAGE)
                 except Exception as e:
                     log.error(f"Failed to send message to user {user_id}: {e}")
                     await ctx.send(f"Failed to send message to user {user_id}: {e}")
@@ -398,6 +398,7 @@ class Awards(commands.Cog):
     @commands.is_owner()
     async def addnominate(self, ctx, *users):
         """Add a user to the list of users who may nominate for awards."""
+        half = await self.__get_nominate_half()
         for user_id in users:
             async with self.client.session as session:
                 async with session.begin():
@@ -406,9 +407,10 @@ class Awards(commands.Cog):
             if await self.__get_nominate():
                 try:
                     user = await self.client.fetch_user(int(user_id))
-                    await user.send(
-                        "Hello.\n\nYou are considered an active or otherwise notable member of the awesome titanfall server. We will be hosting a fun server awards ceremony on our 4th anniversary, Friday, January 9th, 2026 at 8:00 PM EST. We need YOUR help in nominating other members for awards. Nominations will close January 2nd, 2026. When they close, I will dm you again asking you to pick your choice from the nominees. When you are ready, please type `,nominate` in this dm. Your nominations will be kept confidential. Joke nominations will be ignored (e.g. Clair Obscure: Expedition 33). Please do not nominate yourself for any award, it will be ignored. If you make a mistake or change your mind, you may re-run the command, which will overwrite your previous responses. If you have any questions, please dm Bobbyperson.\n\nThank you for your time and effort."
-                    )
+                    if half:
+                        await user.send(HALF_NOMINATE_MESSAGE)
+                    else:
+                        await user.send(NOMINATE_MESSAGE)
                 except Exception as e:
                     log.error(f"Failed to send message to user {user_id}: {e}")
                     await ctx.send(f"Failed to send message to user {user_id}: {e}")
