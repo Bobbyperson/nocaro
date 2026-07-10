@@ -429,6 +429,35 @@ class Awards(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
+    async def listnominate(self, ctx):
+        """List the users who may currently nominate for awards."""
+        async with self.client.session as session:
+            result = await session.execute(select(AwardUsers.user_id).distinct())
+            user_ids = result.scalars().all()
+
+        if not user_ids:
+            await ctx.send("No users currently have nomination access.")
+            return
+
+        lines = []
+        for user_id in user_ids:
+            try:
+                user = await self.client.fetch_user(int(user_id))
+                lines.append(f"{user} ({user_id})")
+            except Exception:
+                lines.append(f"Unknown user ({user_id})")
+
+        message = f"**Users with nomination access ({len(lines)}):**\n" + "\n".join(
+            lines
+        )
+        if len(message) > 2000:
+            for i in range(0, len(message), 1990):
+                await ctx.send(message[i : i + 1990])
+        else:
+            await ctx.send(message)
+
+    @commands.command()
+    @commands.is_owner()
     async def revote(self, ctx):
         async with self.client.session as session:
             result = await session.execute(select(AwardUsers.user_id).distinct())
