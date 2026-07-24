@@ -581,13 +581,20 @@ class Event(commands.Cog):
                 )
             ) > 0
 
-            has_global_records = (
+            # Only strip voting power from people who have swayed a poll and then
+            # no-showed. Someone with no history at all has done nothing wrong.
+            has_backed_winner = (
                 await session.scalar(
-                    select(func.count()).select_from(models.event.EventMultipliers)
+                    select(func.count())
+                    .select_from(models.event.EventMultipliers)
+                    .where(
+                        models.event.EventMultipliers.user_id == user.id,
+                        models.event.EventMultipliers.voted_for_winner.is_(True),
+                    )
                 )
             ) > 0
 
-            if not has_attended_once and has_global_records:
+            if not has_attended_once and has_backed_winner:
                 return 0
 
             # attended = sum(1 for r in recent_records if r.attended)
