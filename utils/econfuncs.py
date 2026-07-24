@@ -230,6 +230,20 @@ async def update_immunity(session, user, change=0):
     user_main.immunity = change
 
 
+# count how many times a user has been robbed within the last `days` days
+@session_decorator
+async def get_recent_theft_count(session, user, days=7):
+    cutoff = int(time.time()) - (days * 86400)
+    result = await session.execute(
+        select(models.economy.History).where(
+            models.economy.History.user_id == user.id,
+            models.economy.History.reason == "robbed",
+            models.economy.History.time > cutoff,
+        )
+    )
+    return len(result.scalars().all())
+
+
 # get user's inventory, returns array
 @session_decorator
 async def get_inv(session, user) -> list | None:

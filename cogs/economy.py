@@ -2069,17 +2069,27 @@ Example command: `,bougegram normal 100`"""
         else:
             if gunga == 1:
                 stealamnt = stealamnt * 10
+            # the more someone's been robbed in the last week, the longer their protection gets
+            recent_thefts = await econ.get_recent_theft_count(victim, days=7)
+            base_immunity = 1800  # 30 minutes
+            immunity_step = 600  # +10 minutes per prior theft this week
+            max_immunity = 43200  # cap at 12 hours
+            immunity_duration = min(
+                base_immunity + (recent_thefts * immunity_step), max_immunity
+            )
             await econ.update_amount(user, stealamnt, False, tracker_reason="stealing")
             await econ.update_amount(
                 victim, -1 * stealamnt, False, tracker_reason="robbed"
             )
-            await econ.update_immunity(victim, unix + 1800)
+            await econ.update_immunity(victim, unix + immunity_duration)
             await ctx.reply(
-                f"{ctx.author} just robbed {stealamnt} bouge bucks from {victim}!!!"
+                f"{ctx.author} just robbed {stealamnt} bouge bucks from {victim}!!! "
+                f"{victim} now has protection for {await misc.human_time_duration(immunity_duration)}."
             )
             try:
                 await member.send(
-                    f"{user} just stole {stealamnt} bouge bucks from you!!! {ctx.message.jump_url}"
+                    f"{user} just stole {stealamnt} bouge bucks from you!!! You now have protection for "
+                    f"{await misc.human_time_duration(immunity_duration)}. {ctx.message.jump_url}"
                 )
             except discord.Forbidden:
                 await ctx.send(f"could not dm {victim}")
