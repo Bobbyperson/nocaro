@@ -18,7 +18,7 @@ dependencies = [
     "matplotlib>=3.11.1",
     "emoji>=2.15.0",
     "yfinance>=1.5.1",
-    "pandas>=3.0.3",
+    "pandas>=3.0.5",
     "pandas_market_calendars>=5.4.0",
     "discord-ext-menus",
     "anyio>=4.14.2",
