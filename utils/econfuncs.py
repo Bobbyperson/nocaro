@@ -244,6 +244,20 @@ async def get_recent_theft_count(session, user, days=7):
     return len(result.scalars().all())
 
 
+# get user's opt-in state for escalating theft protection
+@session_decorator
+async def get_extended_protection(session, user):
+    user_main = await get_or_create_account(session, user)
+    return user_main.extended_protection
+
+
+# update user's opt-in state for escalating theft protection
+@session_decorator
+async def set_extended_protection(session, user, value: bool):
+    user_main = await get_or_create_account(session, user)
+    user_main.extended_protection = value
+
+
 # get user's inventory, returns array
 @session_decorator
 async def get_inv(session, user) -> list | None:

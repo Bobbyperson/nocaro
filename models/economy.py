@@ -16,6 +16,7 @@ class Main(Base):
     winloss = Column(String)
     invested = Column(String, nullable=False, default=0)
     api_consent = Column(Boolean, nullable=False, default=False)
+    extended_protection = Column(Boolean, nullable=False, default=False)
 
 
 class Prestiege(Base):

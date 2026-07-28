@@ -2069,14 +2069,17 @@ Example command: `,bougegram normal 100`"""
         else:
             if gunga == 1:
                 stealamnt = stealamnt * 10
-            # the more someone's been robbed in the last week, the longer their protection gets
-            recent_thefts = await econ.get_recent_theft_count(victim, days=7)
-            base_immunity = 1800  # 30 minutes
-            immunity_step = 600  # +10 minutes per prior theft this week
-            max_immunity = 43200  # cap at 12 hours
-            immunity_duration = min(
-                base_immunity + (recent_thefts * immunity_step), max_immunity
-            )
+            extended = await econ.get_extended_protection(victim)
+            immunity_duration = 1800  # 30 minutes
+            if extended:
+                # the more someone's been robbed in the last week, the longer their protection gets
+                recent_thefts = await econ.get_recent_theft_count(victim, days=7)
+                base_immunity = 1800  # 30 minutes
+                immunity_step = 600  # +10 minutes per prior theft this week
+                max_immunity = 43200  # cap at 12 hours
+                immunity_duration = min(
+                    base_immunity + (recent_thefts * immunity_step), max_immunity
+                )
             await econ.update_amount(user, stealamnt, False, tracker_reason="stealing")
             await econ.update_amount(
                 victim, -1 * stealamnt, False, tracker_reason="robbed"
@@ -2093,6 +2096,22 @@ Example command: `,bougegram normal 100`"""
                 )
             except discord.Forbidden:
                 await ctx.send(f"could not dm {victim}")
+
+            # nag repeat victims into opting into escalating protection
+            if not extended:
+                total_thefts_this_week = await econ.get_recent_theft_count(
+                    victim, days=7
+                )
+                if total_thefts_this_week == 10 and rd.randint(1, 4) == 1:
+                    await misc.send_webhook(
+                        ctx=ctx,
+                        name="Peppy",
+                        avatar="https://raw.githubusercontent.com/Bobbyperson/nocaro/refs/heads/main/templates/avatars/peppy.png",
+                        message=(
+                            f"hey {victim.mention}, buddy... looks like you're getting stolen from a LOT this week. "
+                            "run `,extendedprotection` if you want your immunity to get longer every time you get robbed, up to 12 hours."
+                        ),
+                    )
 
         # achievement logic
         # theres gotta be a better way to do this that i'm overlooking
@@ -2145,6 +2164,22 @@ Example command: `,bougegram normal 100`"""
             )
         else:
             await ctx.reply(f"{member} is not immune.")
+
+    @commands.hybrid_command(aliases=["extendedprotect"])
+    @misc.generic_checks()
+    async def extendedprotection(self, ctx):
+        """Opt in or out of escalating theft protection (repeat victims get longer immunity)."""
+        current = await econ.get_extended_protection(ctx.author)
+        new_value = not current
+        await econ.set_extended_protection(ctx.author, new_value)
+        if new_value:
+            await ctx.reply(
+                "Extended protection enabled! Getting robbed repeatedly in a week will now give you longer immunity each time. Run this command again to opt out."
+            )
+        else:
+            await ctx.reply(
+                "Extended protection disabled. You'll just get the standard immunity duration when robbed."
+            )
 
     # look i did the rewrite
     @commands.hybrid_command(aliases=["bj", "b", "blowjob", "bjrw", "blahaj"])
