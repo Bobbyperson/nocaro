@@ -42,6 +42,8 @@ assert len(EMOJIS) >= MAX_ENTRIES, (
 
 WINNING_OFFSET = -0.21
 LOSING_OFFSET = 0.1
+NEWCOMER_KARMA = 25
+KARMA_WINDOW = 4
 
 AUTOMATIC_STATE_KEY = "event_automatic_state"
 AUTOMATIC_LAST_START_KEY = "event_automatic_last_start"
@@ -566,41 +568,9 @@ class Event(commands.Cog):
                 select(models.event.EventMultipliers)
                 .where(models.event.EventMultipliers.user_id == user.id)
                 .order_by(models.event.EventMultipliers.timestamp.desc())
-                .limit(4)
+                .limit(KARMA_WINDOW)
             )
             recent_records = recent_records.scalars().all()
-
-            has_attended_once = (
-                await session.scalar(
-                    select(func.count())
-                    .select_from(models.event.EventMultipliers)
-                    .where(
-                        models.event.EventMultipliers.user_id == user.id,
-                        models.event.EventMultipliers.attended.is_(True),
-                    )
-                )
-            ) > 0
-
-            # Only strip voting power from people who have swayed a poll and then
-            # no-showed. Someone with no history at all has done nothing wrong.
-            has_backed_winner = (
-                await session.scalar(
-                    select(func.count())
-                    .select_from(models.event.EventMultipliers)
-                    .where(
-                        models.event.EventMultipliers.user_id == user.id,
-                        models.event.EventMultipliers.voted_for_winner.is_(True),
-                    )
-                )
-            ) > 0
-
-            if not has_attended_once and has_backed_winner:
-                return 0
-
-            # attended = sum(1 for r in recent_records if r.attended)
-            missed = sum(
-                1 for r in recent_records if r.voted_for_winner and not r.attended
-            )
 
             bonus = (
                 await session.scalar(
@@ -610,7 +580,16 @@ class Event(commands.Cog):
                 )
             ) or 0
 
-            karma = 100 - missed * 25
+            if not recent_records:
+                return NEWCOMER_KARMA + bonus
+
+            attended = sum(1 for r in recent_records if r.attended)
+            backed_winner = sum(1 for r in recent_records if r.voted_for_winner)
+
+            if backed_winner == 0:
+                return 100 + bonus
+
+            karma = round(attended / backed_winner * 100)
             return min(100, karma) + bonus
 
     # This is very slow, takes upwards of N seconds where N is the number of entries
@@ -1035,7 +1014,7 @@ class Event(commands.Cog):
                         select(models.event.EventMultipliers)
                         .where(models.event.EventMultipliers.user_id == user.id)
                         .order_by(models.event.EventMultipliers.timestamp.desc())
-                        .limit(4)
+                        .limit(KARMA_WINDOW)
                     )
                 )
                 .scalars()
@@ -1051,14 +1030,14 @@ class Event(commands.Cog):
             for i, r in enumerate(recent_records)
             if r.voted_for_winner and not r.attended
         ]
-        events_needed = (4 - min(miss_positions)) if miss_positions else 0
+        events_needed = (KARMA_WINDOW - min(miss_positions)) if miss_positions else 0
         forgiveness_msg = (
             f" They need to attend {events_needed} more event(s) to get 100 karma."
-            if events_needed > 0
+            if events_needed > 0 and karma < 100
             else ""
         )
         await ctx.send(
-            f"Out of the last 4 events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma.{forgiveness_msg}"
+            f"Out of the last {KARMA_WINDOW} events, {user.name} attended {attended_count} and missed {missed_count}. They have {karma} voting karma.{forgiveness_msg}"
         )
 
     @commands.command(hidden=True)

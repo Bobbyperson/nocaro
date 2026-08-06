@@ -14,7 +14,7 @@ class EventEntry(Base):
 
     @staticmethod
     def __clamp_weight(weight: float) -> float:
-        return max(0.6, min(1.0, weight))
+        return max(0.0, min(1.0, weight))
 
     @property
     def weight(self) -> float:
