@@ -44,6 +44,8 @@ WINNING_OFFSET = -0.21
 LOSING_OFFSET = 0.1
 NEWCOMER_KARMA = 25
 KARMA_WINDOW = 4
+# A full window of swayed no-shows drops you to 0.
+MISS_PENALTY = 100 // KARMA_WINDOW
 VOTE_REMOVAL_DM_DELAY = 20
 VOTE_REMOVAL_DM_MAX_DELAY = 60 * 30
 VOTE_REMOVAL_DM_RESET = datetime.timedelta(hours=1)
@@ -774,13 +776,13 @@ class Event(commands.Cog):
             if not recent_records:
                 return NEWCOMER_KARMA + bonus
 
-            attended = sum(1 for r in recent_records if r.attended)
-            backed_winner = sum(1 for r in recent_records if r.voted_for_winner)
+            # Only penalize no-shows that swayed the poll. Missing an event you
+            # didn't vote for the winner of costs nothing.
+            missed = sum(
+                1 for r in recent_records if r.voted_for_winner and not r.attended
+            )
 
-            if backed_winner == 0:
-                return 100 + bonus
-
-            karma = round(attended / backed_winner * 100)
+            karma = 100 - missed * MISS_PENALTY
             return min(100, karma) + bonus
 
     # This is very slow, takes upwards of N seconds where N is the number of entries
@@ -1394,7 +1396,7 @@ class Event(commands.Cog):
                                 .order_by(
                                     models.event.EventMultipliers.timestamp.desc()
                                 )
-                                .limit(4)
+                                .limit(KARMA_WINDOW)
                             )
                         )
                         .scalars()
