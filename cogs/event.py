@@ -44,6 +44,10 @@ WINNING_OFFSET = -0.21
 LOSING_OFFSET = 0.1
 NEWCOMER_KARMA = 25
 KARMA_WINDOW = 4
+VOTE_REMOVAL_DM_DELAY = 20
+VOTE_REMOVAL_DM_MAX_DELAY = 60 * 30
+VOTE_REMOVAL_DM_RESET = datetime.timedelta(hours=1)
+VOTE_REMOVAL_VIEW_TIMEOUT = 60 * 60 * 24
 
 AUTOMATIC_STATE_KEY = "event_automatic_state"
 AUTOMATIC_LAST_START_KEY = "event_automatic_last_start"
@@ -133,6 +137,74 @@ def get_prev_weekday(weekday: int) -> datetime.datetime:
     return today_clean - datetime.timedelta(((7 - weekday) + today_clean.weekday()) % 7)
 
 
+class VoteRemovalView(discord.ui.View):
+    """
+    Asks a user whether they were the one who removed their vote.
+    """
+
+    def __init__(self, bot, entry_names: list[str], jump_url: str):
+        super().__init__(timeout=VOTE_REMOVAL_VIEW_TIMEOUT)
+        self.bot = bot
+        self.entry_names = entry_names
+        self.jump_url = jump_url
+
+    def __disable_buttons(self) -> None:
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+
+    async def __answer(self, interaction: discord.Interaction, text: str) -> None:
+        self.__disable_buttons()
+        self.stop()
+
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(text, ephemeral=True)
+
+    @discord.ui.button(label="Yes, that was me", style=discord.ButtonStyle.secondary)
+    async def confirmed(self, interaction: discord.Interaction, button):
+        log.info(f"{interaction.user} confirmed removing their own vote")
+        await self.__answer(interaction, "Thanks, no action needed.")
+
+    @discord.ui.button(label="No, I didn't do that", style=discord.ButtonStyle.danger)
+    async def denied(self, interaction: discord.Interaction, button):
+        log.warning(f"{interaction.user} denies removing their vote")
+        await self.__answer(
+            interaction,
+            "Thanks for letting us know, this has been reported. "
+            "You can re-add your reaction to the poll to vote again.",
+        )
+        await self.__report(interaction.user)
+
+    async def __report(self, user: discord.User | discord.Member) -> None:
+        plural = "s" if len(self.entry_names) > 1 else ""
+        entries = ", ".join(f"**{name}**" for name in self.entry_names)
+
+        report = (
+            f"⚠️ {user.mention} (`{user.id}`) says they did **not** remove their "
+            f"vote{plural} for {entries} from the event poll. {self.jump_url}"
+        )
+
+        channel_id = self.bot.config["channels"]["error_reporting_channel"]
+        if channel_id:
+            with contextlib.suppress(discord.HTTPException):
+                channel = self.bot.get_channel(
+                    channel_id
+                ) or await self.bot.fetch_channel(channel_id)
+                await channel.send(report)
+                return
+
+        owner_id = self.bot.config["general"]["owner_id"]
+        if owner_id:
+            with contextlib.suppress(discord.HTTPException):
+                owner = self.bot.get_user(owner_id) or await self.bot.fetch_user(
+                    owner_id
+                )
+                await owner.send(report)
+
+    async def on_timeout(self) -> None:
+        self.__disable_buttons()
+
+
 class Event(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -153,6 +225,12 @@ class Event(commands.Cog):
         self.pending_attendance = {}  # user_id -> join_time
         self.showed_up = set()  # user_ids who were present >= 30min
         self.event_vcs = []  # voice channel being monitored
+
+        self.background_tasks = set()
+        self.last_vote_add = {}  # (user_id, index) -> time they last added that vote
+        self.last_removal_dm = {}  # user_id -> time we last asked about a removal
+        self.removal_dm_count = {}  # user_id -> questions asked in a row, for backoff
+        self.pending_removals = {}  # user_id -> removals waiting to be asked about
 
     async def cog_load(self):
         if not self.bot.is_ready():
@@ -191,9 +269,11 @@ class Event(commands.Cog):
         except ValueError:
             return
 
-        user = self.bot.get_user(payload.user_id)
+        user = await self.__resolve_user(payload.user_id)
         if not user or user.bot:
             return
+
+        self.last_vote_add[(user.id, index)] = datetime.datetime.now(InverseDstUtc)
 
         # This is inaccurate and only used for visuals
         # the real results get recalculated.
@@ -214,13 +294,15 @@ class Event(commands.Cog):
         except ValueError:
             return
 
-        user = self.bot.get_user(payload.user_id)
+        user = await self.__resolve_user(payload.user_id)
         if not user or user.bot:
             return
 
         # This is inaccurate and only used for visuals
         # the real results get recalculated.
         self.votes[index] -= await self.__get_vote_value(emoji, user)
+
+        self.__ask_about_removed_vote(user, index)
 
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionActionEvent):
@@ -250,6 +332,110 @@ class Event(commands.Cog):
             return
 
         self.votes[index] = 0
+
+    async def __resolve_user(self, user_id: int) -> discord.User | None:
+        user = self.bot.get_user(user_id)
+        if user:
+            return user
+
+        try:
+            return await self.bot.fetch_user(user_id)
+        except discord.HTTPException:
+            log.warning(f"Could not resolve user {user_id}")
+            return None
+
+    def __get_removal_delay(self, user_id: int) -> float:
+        """
+        How long to wait before asking. Doubles for every question we've
+        already asked, so someone spamming reactions gets asked less often.
+        """
+        last_dm = self.last_removal_dm.get(user_id)
+        now = datetime.datetime.now(InverseDstUtc)
+
+        if last_dm is not None and now - last_dm >= VOTE_REMOVAL_DM_RESET:
+            # They've been quiet for a while, start over
+            self.removal_dm_count.pop(user_id, None)
+
+        count = self.removal_dm_count.get(user_id, 0)
+
+        return min(VOTE_REMOVAL_DM_DELAY * 2**count, VOTE_REMOVAL_DM_MAX_DELAY)
+
+    def __voted_again(self, user_id: int, index: int, removed_at) -> bool:
+        last_add = self.last_vote_add.get((user_id, index))
+        return last_add is not None and last_add >= removed_at
+
+    def __ask_about_removed_vote(self, user: discord.User, index: int) -> None:
+        """
+        Queue a DM asking the user whether they removed their own vote.
+        """
+        try:
+            entry_name = str(self.entries[index].name)
+        except IndexError:
+            log.warning(f"Vote removed for unknown entry index {index}")
+            return
+
+        removed_at = datetime.datetime.now(InverseDstUtc)
+
+        pending = self.pending_removals.setdefault(user.id, [])
+        pending.append((index, entry_name, removed_at))
+
+        if len(pending) > 1:
+            # A question is already queued, this removal will be part of it
+            log.debug(f"Batched another removed vote from {user}")
+            return
+
+        delay = self.__get_removal_delay(user.id)
+        log.debug(f"Asking {user} about their removed vote in {delay}s")
+
+        task = asyncio.create_task(self.__send_removal_question(user, delay))
+        self.background_tasks.add(task)
+        task.add_done_callback(self.background_tasks.discard)
+
+    async def __send_removal_question(self, user: discord.User, delay: float) -> None:
+        # Wait a bit so switching votes doesn't trigger a DM, and so any
+        # other removals in the meantime end up in the same question
+        try:
+            await asyncio.sleep(delay)
+        except asyncio.CancelledError:
+            self.pending_removals.pop(user.id, None)
+            raise
+
+        removals = self.pending_removals.pop(user.id, [])
+
+        if not self.poll_active:
+            log.debug("Poll ended before we could ask about a removed vote")
+            return
+
+        # Don't ask about votes they've already put back
+        names = list(
+            dict.fromkeys(
+                name
+                for index, name, removed_at in removals
+                if not self.__voted_again(user.id, index, removed_at)
+            )
+        )
+
+        if not names:
+            log.debug(f"{user} voted again, not asking about their removed vote")
+            return
+
+        poll_message = await self.__get_poll_message()
+
+        self.last_removal_dm[user.id] = datetime.datetime.now(InverseDstUtc)
+        self.removal_dm_count[user.id] = self.removal_dm_count.get(user.id, 0) + 1
+
+        log.info(f"Asking {user} about {len(names)} removed vote(s)")
+
+        plural = "s" if len(names) > 1 else ""
+        entries = ", ".join(f"**{name}**" for name in names)
+
+        with contextlib.suppress(discord.Forbidden):
+            await user.send(
+                f"Your vote{plural} for {entries} {'were' if plural else 'was'} "
+                f"removed from the event poll. Did you do that? "
+                f"{poll_message.jump_url}",
+                view=VoteRemovalView(self.bot, names, poll_message.jump_url),
+            )
 
     def state_decorator(func):
         @functools.wraps(func)
@@ -362,6 +548,11 @@ class Event(commands.Cog):
         self.message = None
         self.end_timestamp = None
         self.warn_timestamp = None
+
+        self.last_vote_add.clear()
+        self.last_removal_dm.clear()
+        self.removal_dm_count.clear()
+        self.pending_removals.clear()
 
         entries = self.entries.copy()
         self.entries.clear()
