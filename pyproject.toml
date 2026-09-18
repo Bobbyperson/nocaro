@@ -41,11 +41,13 @@ dev = [
 
 [project.optional-dependencies]
 tts = [
-    "kittentts",
+    "kittentts>=0.8,<0.9",
 ]
+
 
 [tool.uv]
 package = false
+build-constraint-dependencies = ["cython<3.1"]
 
 [tool.uv.sources]
 discord-ext-menus = { git = "https://github.com/Rapptz/discord-ext-menus" }
@@ -71,6 +73,9 @@ extend-ignore = [
     "ASYNC110", # I don't care
     "ASYNC221",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [build-system]
 requires = ["hatchling"]

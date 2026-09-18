@@ -332,7 +332,7 @@ class Economy(commands.Cog):
         self.award_map.start()
 
         if KittenTTS is not None:
-            self.kitten = KittenTTS("KittenML/kitten-tts-nano-0.1")
+            self.kitten = KittenTTS(audio.KITTEN_MODEL)
 
     def cog_unload(self):
         self.award_map.cancel()
@@ -584,7 +584,7 @@ Example command: `,bougegram normal 100`"""
             src = await audio.kitten_tts_source(
                 self.kitten,
                 announce,
-                voice="expr-voice-3-m",
+                voice=audio.KITTEN_ANNOUNCER_VOICE,
                 concat_after_path="audio/madibanocaro.mp3",
             )
             vc.play(src)

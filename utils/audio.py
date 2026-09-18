@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import io
 import threading
 import time
@@ -15,6 +16,12 @@ try:
     from kittentts import KittenTTS
 except ImportError:
     KittenTTS = None
+
+
+_kitten_tts_lock = asyncio.Lock()
+KITTEN_MODEL = "KittenML/kitten-tts-mini-0.8"
+KITTEN_DEFAULT_VOICE = "Bella"
+KITTEN_ANNOUNCER_VOICE = "Jasper"
 
 
 class MixerAudioSource(discord.AudioSource):
@@ -291,14 +298,21 @@ async def kitten_tts_source(
     kitten: KittenTTS,
     text: str,
     *,
-    voice: str = "expr-voice-2-f",
+    voice: str = KITTEN_DEFAULT_VOICE,
+    speed: float = 1.0,
+    clean_text: bool = True,
     concat_after_path: str | None = None,  # e.g., "audio/madibanocaro.mp3"
 ) -> PCMBytesAudio:
     """Return a Discord AudioSource containing the spoken text, no temp files."""
 
     def build_bytes() -> bytes:
         # 1) TTS -> numpy float audio @24kHz (mono)
-        audio = kitten.generate(text, voice=voice)
+        audio = kitten.generate(
+            text,
+            voice=voice,
+            speed=speed,
+            clean_text=clean_text,
+        )
 
         # 2) Encode to a WAV in memory (so pydub can read reliably)
         wav_buf = io.BytesIO()
@@ -321,5 +335,16 @@ async def kitten_tts_source(
         # 6) Raw PCM bytes to stream
         return out.raw_data
 
-    pcm_bytes = await asyncio.to_thread(build_bytes)  # keep event loop snappy
+    # Economy and voice games share one model, whose inference session is not
+    # guaranteed to be safe when called from multiple worker threads.
+    async with _kitten_tts_lock:
+        worker = asyncio.create_task(asyncio.to_thread(build_bytes))
+        try:
+            pcm_bytes = await asyncio.shield(worker)
+        except asyncio.CancelledError:
+            # A worker thread cannot be cancelled. Keep the lock until it exits
+            # so another caller cannot use the same model concurrently.
+            with contextlib.suppress(Exception):
+                await worker
+            raise
     return PCMBytesAudio(pcm_bytes)
