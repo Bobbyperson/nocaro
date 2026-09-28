@@ -46,6 +46,7 @@ NEWCOMER_KARMA = 25
 KARMA_WINDOW = 4
 # A full window of swayed no-shows drops you to 0.
 MISS_PENALTY = 100 // KARMA_WINDOW
+VOTE_REMOVAL_MIN_AGE = datetime.timedelta(minutes=2)
 VOTE_REMOVAL_DM_DELAY = 20
 VOTE_REMOVAL_DM_MAX_DELAY = 60 * 30
 VOTE_REMOVAL_DM_RESET = datetime.timedelta(hours=1)
@@ -217,6 +218,7 @@ class Event(commands.Cog):
         self.recalc_timestamp: datetime.datetime | None = None
         self.entries: list[models.event.EventEntry] = []
         self.votes = Counter()
+        self.vote_events = 0
 
         self.poll_lock = asyncio.Lock()
 
@@ -275,11 +277,15 @@ class Event(commands.Cog):
         if not user or user.bot:
             return
 
+        self.vote_events += 1
         self.last_vote_add[(user.id, index)] = datetime.datetime.now(InverseDstUtc)
 
         # This is inaccurate and only used for visuals
         # the real results get recalculated.
-        self.votes[index] += await self.__get_vote_value(emoji, user)
+        # Await before touching self.votes, `a[i] += await x` reads a[i] before
+        # the await and would clobber anything that changed in the meantime
+        value = await self.__get_vote_value(emoji, user)
+        self.votes[index] += value
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
@@ -300,9 +306,12 @@ class Event(commands.Cog):
         if not user or user.bot:
             return
 
+        self.vote_events += 1
+
         # This is inaccurate and only used for visuals
         # the real results get recalculated.
-        self.votes[index] -= await self.__get_vote_value(emoji, user)
+        value = await self.__get_vote_value(emoji, user)
+        self.votes[index] -= value
 
         self.__ask_about_removed_vote(user, index)
 
@@ -316,6 +325,7 @@ class Event(commands.Cog):
             return
 
         self.votes.clear()
+        self.vote_events += 1
 
     @commands.Cog.listener()
     async def on_raw_reaction_clear_emoji(
@@ -329,11 +339,12 @@ class Event(commands.Cog):
             return
 
         try:
-            index = EMOJIS.index(payload.emoji)
+            index = EMOJIS.index(str(payload.emoji))
         except ValueError:
             return
 
         self.votes[index] = 0
+        self.vote_events += 1
 
     async def __resolve_user(self, user_id: int) -> discord.User | None:
         user = self.bot.get_user(user_id)
@@ -377,6 +388,12 @@ class Event(commands.Cog):
             return
 
         removed_at = datetime.datetime.now(InverseDstUtc)
+
+        last_add = self.last_vote_add.get((user.id, index))
+        if last_add is not None and removed_at - last_add < VOTE_REMOVAL_MIN_AGE:
+            # Votes that barely existed aren't worth asking about
+            log.debug(f"{user} removed a vote they just added, not asking")
+            return
 
         pending = self.pending_removals.setdefault(user.id, [])
         pending.append((index, entry_name, removed_at))
@@ -462,13 +479,9 @@ class Event(commands.Cog):
             self.message_id = result.message_id
             self.end_timestamp = result.end_timestamp.replace(tzinfo=InverseDstUtc)
             self.warn_timestamp = result.warn_timestamp.replace(tzinfo=InverseDstUtc)
-            self.recalc_timestamp = datetime.datetime.now(
-                InverseDstUtc
-            ) + datetime.timedelta(minutes=1)
             self.entries = await self.__load_entries()
 
-            poll_message = await self.__get_poll_message()
-            self.votes = await self.__get_votes(poll_message)
+            await self.__recalc_votes()
 
             log.info("Done restoring")
 
@@ -495,6 +508,8 @@ class Event(commands.Cog):
             await message.add_reaction(EMOJIS[i])
 
         self.message_id = message.id
+        self.votes = Counter()
+        self.recalc_timestamp = datetime.datetime.now(InverseDstUtc)
 
         async with self.bot.session as session:
             async with session.begin():
@@ -528,6 +543,7 @@ class Event(commands.Cog):
 
         # Updated the votes to have the real state incase inaccuracies were introduced
         self.votes = await self.__get_votes(poll_message)
+        self.recalc_timestamp = None
 
         # Update the poll one more time to reflect the last state
         await self.__update_poll()
@@ -558,6 +574,7 @@ class Event(commands.Cog):
 
         entries = self.entries.copy()
         self.entries.clear()
+        self.votes = Counter()
 
         return winning_index, entries
 
@@ -674,13 +691,7 @@ class Event(commands.Cog):
         log.debug(f"Checking if we should to recalc votes {self.recalc_timestamp}")
         if self.recalc_timestamp is not None and now >= self.recalc_timestamp:
             log.debug("Recalculating votes")
-
-            poll_message = await self.__get_poll_message()
-
-            self.recalc_timestamp = datetime.datetime.now(
-                InverseDstUtc
-            ) + datetime.timedelta(minutes=1)
-            self.votes = await self.__get_votes(poll_message)
+            await self.__recalc_votes()
 
         await self.__update_poll()
 
@@ -743,6 +754,19 @@ class Event(commands.Cog):
 
         log.debug("Updating poll")
         await poll_message.edit(content=msg)
+
+    async def __recalc_votes(self) -> None:
+        events_before = self.vote_events
+
+        poll_message = await self.__get_poll_message()
+        self.votes = await self.__get_votes(poll_message)
+
+        now = datetime.datetime.now(InverseDstUtc)
+        if self.vote_events != events_before:
+            log.debug("Votes changed during recalc, recalculating again soon")
+            self.recalc_timestamp = now
+        else:
+            self.recalc_timestamp = now + datetime.timedelta(minutes=1)
 
     async def __load_entries(self) -> list[models.event.EventEntry]:
         async with self.bot.session as session:
