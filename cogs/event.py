@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import dataclasses
 import datetime
 import functools
 import logging
@@ -9,7 +10,7 @@ from collections import Counter
 
 import discord
 from discord.ext import commands, tasks
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 
 import models
 from utils import config
@@ -54,6 +55,7 @@ VOTE_REMOVAL_VIEW_TIMEOUT = 60 * 60 * 24
 
 AUTOMATIC_STATE_KEY = "event_automatic_state"
 AUTOMATIC_LAST_START_KEY = "event_automatic_last_start"
+PENDING_WINNER_KEY = "event_pending_winner"
 
 log = logging.getLogger(__name__)
 # log.setLevel(logging.DEBUG)
@@ -138,6 +140,145 @@ def get_prev_weekday(weekday: int) -> datetime.datetime:
 
     # Gets the previous specified weekday including today
     return today_clean - datetime.timedelta(((7 - weekday) + today_clean.weekday()) % 7)
+
+
+@dataclasses.dataclass
+class EventSummary:
+    event_id: int
+    date: datetime.datetime
+    game: str | None = None
+    attendees: set[int] = dataclasses.field(default_factory=set)
+    no_shows: set[int] = dataclasses.field(default_factory=set)
+
+
+@dataclasses.dataclass
+class AttendanceStats:
+    attended: int
+    eligible: int
+    no_shows: int
+    current_streak: int
+    longest_streak: int
+    first_attended: datetime.datetime | None
+    last_attended: datetime.datetime | None
+    favorite_game: str | None
+    rank: int | None
+    ranked_users: int
+
+    @property
+    def rate(self) -> float:
+        return self.attended / self.eligible * 100 if self.eligible else 0.0
+
+
+def summarize_events(records) -> list[EventSummary]:
+    """
+    Group attendance records into one summary per event, oldest first.
+    """
+    events: dict[int, EventSummary] = {}
+    for r in records:
+        event = events.get(r.event_id)
+        if event is None:
+            event = events[r.event_id] = EventSummary(r.event_id, r.timestamp)
+        # Manual corrections get a later timestamp, the earliest is the real date
+        event.date = min(event.date, r.timestamp)
+        event.game = event.game or r.winning_game
+
+        if r.attended:
+            event.attendees.add(r.user_id)
+        elif r.voted_for_winner:
+            event.no_shows.add(r.user_id)
+
+    return sorted(events.values(), key=lambda e: e.event_id)
+
+
+def get_attendance_stats(
+    events: list[EventSummary], user_id: int
+) -> AttendanceStats | None:
+    """
+    Personal attendance stats, or None if the user has never shown up in an event.
+    """
+    first_index = next(
+        (
+            i
+            for i, e in enumerate(events)
+            if user_id in e.attendees or user_id in e.no_shows
+        ),
+        None,
+    )
+    if first_index is None:
+        return None
+
+    # Only count events from when they first got involved
+    relevant = events[first_index:]
+    attended = [e for e in relevant if user_id in e.attendees]
+
+    longest = streak = 0
+    for e in relevant:
+        streak = streak + 1 if user_id in e.attendees else 0
+        longest = max(longest, streak)
+
+    games = Counter(e.game.lower() for e in attended if e.game)
+    favorite = None
+    if games:
+        key = games.most_common(1)[0][0]
+        favorite = next(e.game for e in attended if e.game and e.game.lower() == key)
+
+    totals = Counter(uid for e in events for uid in e.attendees)
+    rank = None
+    if user_id in totals:
+        rank = 1 + sum(1 for count in totals.values() if count > totals[user_id])
+
+    return AttendanceStats(
+        attended=len(attended),
+        eligible=len(relevant),
+        no_shows=sum(1 for e in relevant if user_id in e.no_shows),
+        current_streak=streak,
+        longest_streak=longest,
+        first_attended=attended[0].date if attended else None,
+        last_attended=attended[-1].date if attended else None,
+        favorite_game=favorite,
+        rank=rank,
+        ranked_users=len(totals),
+    )
+
+
+@dataclasses.dataclass
+class GameSummary:
+    name: str
+    played: int
+    attendance: int
+    no_shows: int
+
+    @property
+    def average(self) -> float:
+        return self.attendance / self.played
+
+
+def summarize_games(events: list[EventSummary]) -> list[GameSummary]:
+    """
+    Attendance per winning game, most played first.
+    """
+    games: dict[str, GameSummary] = {}
+    for e in events:
+        if not e.game:
+            continue
+
+        # Entries can be re-added with different casing
+        key = e.game.lower()
+        game = games.get(key)
+        if game is None:
+            game = games[key] = GameSummary(e.game, 0, 0, 0)
+
+        game.played += 1
+        game.attendance += len(e.attendees)
+        game.no_shows += len(e.no_shows)
+
+    return sorted(games.values(), key=lambda g: (-g.played, -g.average))
+
+
+def make_bar(value: float, maximum: float, width: int = 16) -> str:
+    if maximum <= 0:
+        return ""
+    return "█" * round(value / maximum * width)
 
 
 class VoteRemovalView(discord.ui.View):
@@ -654,8 +795,10 @@ class Event(commands.Cog):
                     )
 
                     await self.__update_weights(winner)
+                    await self.__set_pending_winner(winner.name)
                 else:
                     await poll_channel.send("Poll closed! There is no winner")
+                    await self.__set_pending_winner(None)
 
                 return
 
@@ -936,6 +1079,15 @@ class Event(commands.Cog):
 
         return None
 
+    async def __set_pending_winner(self, name: str | None) -> None:
+        async with self.bot.session as session:
+            async with session.begin():
+                await config.set(session, PENDING_WINNER_KEY, name)
+
+    async def __get_pending_winner(self) -> str | None:
+        async with self.bot.session as session:
+            return await config.get(session, PENDING_WINNER_KEY)
+
     def __get_automatic_start_time(self) -> datetime.datetime:
         # UTC Monday
         return get_prev_weekday(0)
@@ -1002,8 +1154,10 @@ class Event(commands.Cog):
             )
 
             await self.__update_weights(winner)
+            await self.__set_pending_winner(winner.name)
         else:
             await ctx.send("Poll closed! There is no winner")
+            await self.__set_pending_winner(None)
 
         with contextlib.suppress(discord.Forbidden):
             await ctx.message.delete()
@@ -1023,6 +1177,7 @@ class Event(commands.Cog):
             await ctx.message.add_reaction("⏳")
 
         await self.finish_state()
+        await self.__set_pending_winner(None)
 
         with contextlib.suppress(discord.Forbidden):
             await ctx.message.remove_reaction("⏳", self.bot.user)
@@ -1217,6 +1372,182 @@ class Event(commands.Cog):
 
         await ctx.send(msg)
 
+    async def __load_event_summaries(self) -> list[EventSummary]:
+        async with self.bot.session as session:
+            records = (
+                await session.scalars(select(models.event.EventMultipliers))
+            ).all()
+
+        return summarize_events(records)
+
+    @event.command(name="history")
+    async def eventhistory(self, ctx, count: int = 15):
+        """
+        Show how many people attended each past event
+        """
+        events = await self.__load_event_summaries()
+
+        if not events:
+            await ctx.send("No events have been recorded yet")
+            return
+
+        count = max(1, min(count, 30))
+        shown = events[-count:]
+        most = max(len(e.attendees) for e in events)
+
+        lines = []
+        for e in shown:
+            attended = len(e.attendees)
+            game = (e.game or "?")[:14]
+            line = (
+                f"#{e.event_id:<3} {e.date:%Y-%m-%d} {game:<14} "
+                f"{make_bar(attended, most, width=12):<12} {attended:>2}"
+            )
+            if e.no_shows:
+                line += f" ({len(e.no_shows)} no-show)"
+            lines.append(line)
+
+        totals = [len(e.attendees) for e in events]
+        average = sum(totals) / len(totals)
+        best = max(events, key=lambda e: len(e.attendees))
+
+        msg = f"**Event attendance** (last {len(shown)} of {len(events)})\n"
+        msg += "```\n" + "\n".join(lines) + "\n```"
+        msg += f"Average attendance: **{average:.1f}**\n"
+        msg += (
+            f"Record: **{len(best.attendees)}** at event #{best.event_id} "
+            f"({best.game or 'unknown game'}, {best.date:%Y-%m-%d})\n"
+        )
+
+        window = 5
+        if len(totals) >= window * 2:
+            recent = sum(totals[-window:]) / window
+            previous = sum(totals[-window * 2 : -window]) / window
+            diff = recent - previous
+            arrow = "📈" if diff > 0 else "📉" if diff < 0 else "↔️"
+            msg += (
+                f"Trend: {arrow} last {window} events average **{recent:.1f}** "
+                f"({diff:+.1f} vs the {window} before)\n"
+            )
+
+        await ctx.send(msg)
+
+    @event.command(name="stats")
+    async def eventstats(self, ctx, user: discord.User = None):
+        """
+        Show your or someone else's event attendance stats
+        """
+        if user is None:
+            user = ctx.author
+
+        events = await self.__load_event_summaries()
+        stats = get_attendance_stats(events, user.id)
+
+        if stats is None:
+            await ctx.send(f"{user.display_name} hasn't been to any events yet")
+            return
+
+        msg = f"**Event stats for {user.display_name}**\n"
+        msg += (
+            f"Attended: **{stats.attended}** of {stats.eligible} events "
+            f"since their first ({stats.rate:.0f}%)\n"
+        )
+        msg += f"No-shows after voting for the winner: **{stats.no_shows}**\n"
+        msg += (
+            f"Current streak: **{stats.current_streak}** · "
+            f"Longest streak: **{stats.longest_streak}**\n"
+        )
+        if stats.first_attended and stats.last_attended:
+            msg += (
+                f"First attended: {stats.first_attended:%Y-%m-%d} · "
+                f"Last attended: {stats.last_attended:%Y-%m-%d}\n"
+            )
+        if stats.favorite_game:
+            msg += f"Most attended game: **{stats.favorite_game}**\n"
+        if stats.rank is not None:
+            msg += f"Rank: **#{stats.rank}** of {stats.ranked_users} attendees\n"
+
+        await ctx.send(msg)
+
+    @event.command(name="top")
+    async def eventtop(self, ctx, count: int = 10):
+        """
+        Show who has attended the most events
+        """
+        events = await self.__load_event_summaries()
+        totals = Counter(uid for e in events for uid in e.attendees)
+
+        if not totals:
+            await ctx.send("No one has attended an event yet")
+            return
+
+        count = max(1, min(count, 25))
+        msg = f"**Most events attended** ({len(events)} events total)\n"
+        rank = 0
+        previous = None
+        for i, (user_id, attended) in enumerate(totals.most_common(count)):
+            if attended != previous:
+                rank = i + 1
+                previous = attended
+
+            member = ctx.guild.get_member(user_id) if ctx.guild else None
+            name = member.display_name if member else f"<@{user_id}>"
+            msg += f"{rank}. {name} - **{attended}**\n"
+
+        await ctx.send(msg, allowed_mentions=discord.AllowedMentions.none())
+
+    @event.command(name="games")
+    async def eventgames(self, ctx):
+        """
+        Show attendance for each game that has won the poll
+        """
+        events = await self.__load_event_summaries()
+        games = summarize_games(events)
+
+        if not games:
+            await ctx.send("No winning games have been recorded yet")
+            return
+
+        best = max(g.average for g in games)
+
+        lines = []
+        for g in games[:25]:
+            lines.append(
+                f"{g.name[:16]:<16} {g.played:>2}x  "
+                f"{make_bar(g.average, best, width=10):<10} {g.average:>4.1f} avg"
+                + (f"  {g.no_shows} no-show" if g.no_shows else "")
+            )
+
+        msg = "**Attendance by game**\n"
+        msg += "```\n" + "\n".join(lines) + "\n```"
+
+        unknown = sum(1 for e in events if not e.game)
+        if unknown:
+            msg += f"-# {unknown} event(s) have no game recorded\n"
+
+        await ctx.send(msg)
+
+    @event.command(name="setgame")
+    @commands.is_owner()
+    async def seteventgame(self, ctx, event_id: int, *, name: str):
+        """
+        Set which game won a past event
+        """
+        async with self.bot.session as session:
+            async with session.begin():
+                result = await session.execute(
+                    update(models.event.EventMultipliers)
+                    .where(models.event.EventMultipliers.event_id == event_id)
+                    .values(winning_game=name)
+                )
+
+        if result.rowcount == 0:
+            await ctx.send(f"No event found with ID {event_id}")
+            return
+
+        with contextlib.suppress(discord.Forbidden):
+            await ctx.message.add_reaction("✅")
+
     @commands.command(hidden=True)
     async def checkkarma(self, ctx, user: discord.User = None):
         """Check your or another user's voting karma"""
@@ -1340,6 +1671,15 @@ class Event(commands.Cog):
                     existing_record.attended = attended
                     existing_record.voted_for_winner = voted_for_winner
                 else:
+                    winning_game = await session.scalar(
+                        select(models.event.EventMultipliers.winning_game)
+                        .where(
+                            models.event.EventMultipliers.event_id == event_id,
+                            models.event.EventMultipliers.winning_game.is_not(None),
+                        )
+                        .limit(1)
+                    )
+
                     # Create a new record
                     session.add(
                         models.event.EventMultipliers(
@@ -1348,6 +1688,7 @@ class Event(commands.Cog):
                             attended=attended,
                             voted_for_winner=voted_for_winner,
                             timestamp=datetime.datetime.now(datetime.UTC),
+                            winning_game=winning_game,
                         )
                     )
         karma = await self.__get_karma(user)
@@ -1375,6 +1716,7 @@ class Event(commands.Cog):
 
         # merge winners + showed_up
         attendees = set(self.winners) | self.showed_up
+        winning_game = await self.__get_pending_winner()
 
         async with self.bot.session as session:
             async with session.begin():
@@ -1398,8 +1740,11 @@ class Event(commands.Cog):
                             attended=attended,
                             voted_for_winner=voted_for_winner,
                             timestamp=timestamp,
+                            winning_game=winning_game,
                         )
                     )
+
+                await config.set(session, PENDING_WINNER_KEY, None)
 
             for member_id in attendees:
                 attended = member_id in self.showed_up

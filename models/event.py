@@ -45,6 +45,7 @@ class EventMultipliers(Base):
     attended = Column(Boolean, nullable=False)
     voted_for_winner = Column(Boolean, nullable=False)
     timestamp = Column(DateTime, nullable=False)
+    winning_game = Column(String)
 
 
 class EventBonus(Base):
