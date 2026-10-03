@@ -1629,21 +1629,41 @@ class Event(commands.Cog):
         if not results:
             return await ctx.send(f"No results found for event ID {event_id}.")
 
-        message = f"Results for event ID {event_id}:\n"
+        rows = []
         for result in results:
-            status = "Attended" if result.attended else "Did not attend"
-            voted_status = (
-                "Voted for winner"
-                if result.voted_for_winner
-                else "Did not vote for winner"
-            )
-            user = ctx.guild.get_member(result.user_id)
-            if user:
-                message += f"{user.name}: {status}, {voted_status}\n"
-            else:
-                message += f"User ID {result.user_id} (not in server): {status}, {voted_status}\n"
+            member = ctx.guild.get_member(result.user_id)
+            name = member.name if member else f"{result.user_id} (left)"
+            rows.append((name[:24], result.attended, result.voted_for_winner))
+        rows.sort(key=lambda r: (not r[1], not r[2], r[0].lower()))
 
-        await ctx.send(message)
+        header = f"{'User':<24} {'Attended':<8} {'Voted':<5}"
+        lines = [header, "-" * len(header)]
+        for name, attended, voted in rows:
+            lines.append(
+                f"{name:<24} {'yes' if attended else 'no':<8} "
+                f"{'yes' if voted else 'no':<5}"
+            )
+
+        attended_count = sum(1 for r in rows if r[1])
+        voted_count = sum(1 for r in rows if r[2])
+        summary = (
+            f"**{attended_count}** attended, **{len(rows) - attended_count}** "
+            f"no-show, **{voted_count}** voted for the winner"
+        )
+
+        # keep each message under discord's 2000 character limit
+        chunks = [[]]
+        for line in lines:
+            if sum(len(x) + 1 for x in chunks[-1]) + len(line) > 1800:
+                chunks.append(lines[:2])
+            chunks[-1].append(line)
+
+        for i, chunk in enumerate(chunks):
+            msg = f"**Results for event #{event_id}**\n" if i == 0 else ""
+            msg += "```\n" + "\n".join(chunk) + "\n```"
+            if i == len(chunks) - 1:
+                msg += summary
+            await ctx.send(msg)
 
     @commands.command(hidden=True)
     @commands.is_owner()
