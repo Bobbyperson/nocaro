@@ -18,11 +18,6 @@ fire = "🔥"
 log = logging.getLogger(__name__)
 
 
-def serialize_attachments(attachments: list[discord.Attachment]) -> str:
-    # semicolon-separated URLs
-    return ";".join(a.url for a in attachments) if attachments else ""
-
-
 def serialize_reactions(reactions: list[discord.Reaction]) -> str:
     # "emoji:count|emoji:count"
     if not reactions:
@@ -32,6 +27,83 @@ def serialize_reactions(reactions: list[discord.Reaction]) -> str:
         emoji = str(r.emoji)  # handles custom + unicode
         parts.append(f"{emoji}:{r.count}")
     return "|".join(parts)
+
+
+EXPORT_FIELDS = [
+    "messageid",
+    "channelid",
+    "channelname",
+    "threadid",
+    "timestamp",
+    "userid",
+    "username",
+    "displayname",
+    "is_bot",
+    "type",
+    "content",
+    "reply_to",
+    "mentions",
+    "attachments",
+    "stickers",
+    "embeds",
+    "reactions",
+    "edited",
+]
+
+
+def serialize_mentions(message: discord.Message) -> str:
+    # "id:name|id:name" so mentions of people who never post can still be resolved
+    return "|".join(f"{u.id}:{u.name}" for u in message.mentions)
+
+
+def serialize_attachment_types(attachments: list[discord.Attachment]) -> str:
+    # "image/png:file.png|video/mp4:clip.mp4" -- urls expire, types and names don't
+    return "|".join(f"{a.content_type or ''}:{a.filename}" for a in attachments)
+
+
+def serialize_embeds(embeds: list[discord.Embed]) -> str:
+    # gif/link previews: "type:title or url", e.g. "gifv:https://tenor.com/view/dread-gif-..."
+    return "|".join(f"{e.type}:{e.title or e.url or ''}" for e in embeds)
+
+
+def message_row(
+    message: discord.Message, channel: discord.TextChannel, thread_id: int | None
+) -> list[str]:
+    return [
+        str(message.id),
+        str(channel.id),
+        channel.name,
+        str(thread_id or ""),
+        message.created_at.isoformat(),
+        str(message.author.id),
+        message.author.name,
+        message.author.display_name,
+        "1" if message.author.bot else "0",
+        message.type.name,
+        message.content.replace("\r\n", "\n"),
+        str(message.reference.message_id)
+        if message.reference and message.reference.message_id
+        else "",
+        serialize_mentions(message),
+        serialize_attachment_types(message.attachments),
+        "|".join(s.name for s in message.stickers),
+        serialize_embeds(message.embeds),
+        serialize_reactions(message.reactions),
+        message.edited_at.isoformat() if message.edited_at else "",
+    ]
+
+
+def _last_ids(csvfile: str) -> dict[str, int]:
+    """Newest saved message id per thread ("" = the channel itself), for resuming."""
+    last: dict[str, int] = {}
+    try:
+        with open(csvfile, encoding="utf8", newline="") as f:
+            for row in csv.DictReader(f):
+                key = row["threadid"]
+                last[key] = max(last.get(key, 0), int(row["messageid"]))
+    except FileNotFoundError:
+        pass
+    return last
 
 
 async def _write_rows_async(csvf, rows: list[list[str]]):
@@ -58,6 +130,49 @@ async def _ensure_header(csvfile: str, fields: list[str]):
         writer = csv.writer(buf)
         writer.writerow(fields)
         await csvf.write(buf.getvalue())
+
+
+async def _export_channel(channel: discord.TextChannel) -> int:
+    """Append a channel and its threads to {id}.v2.csv, resuming where the file left off."""
+    csvfile = f"{channel.id}.v2.csv"
+    await _ensure_header(csvfile, EXPORT_FIELDS)
+    last = await anyio.to_thread.run_sync(_last_ids, csvfile)
+
+    threads = {t.id: t for t in channel.threads}
+    try:
+        async for t in channel.archived_threads(limit=None):
+            threads[t.id] = t
+    except discord.Forbidden:
+        log.debug(f"no access to archived threads in {channel.name}")
+    sources = [(channel, None)] + [(t, t.id) for t in threads.values()]
+
+    count = 0
+    BATCH_SIZE = 5000
+    async with await anyio.open_file(
+        csvfile, "a+", encoding="utf8", newline=""
+    ) as csvf:
+        for source, thread_id in sources:
+            after = last.get(str(thread_id or ""))
+            batch = []
+            async for message in source.history(
+                limit=None,
+                oldest_first=True,
+                after=discord.Object(after) if after else None,
+            ):
+                count += 1
+                if count % 10000 == 0:
+                    log.debug(count)
+                batch.append(message_row(message, channel, thread_id))
+
+                if len(batch) >= BATCH_SIZE:
+                    await _write_rows_async(csvf, batch)
+                    batch.clear()
+
+            # flush the last partial batch
+            if batch:
+                await _write_rows_async(csvf, batch)
+
+    return count
 
 
 class Fire(commands.Cog):
@@ -231,53 +346,16 @@ class Fire(commands.Cog):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def downloadserver(self, ctx):
-        fields = [
-            "userid",
-            "username",
-            "content",
-            "messageid",
-            "attachments",
-            "reactions",
-        ]
         await ctx.send("ok i am downloading, this will take an extremely long time")
 
         for channel in ctx.guild.text_channels:
-            csvfile = f"{channel.id}.csv"
-            await _ensure_header(csvfile, fields)
-
             await ctx.send(f"ok doing {channel.name}")
             log.debug(f"ok doing {channel.name}")
-
-            count = 0
-            batch = []
-            BATCH_SIZE = 5000
-
-            async with await anyio.open_file(
-                csvfile, "a+", encoding="utf8", newline=""
-            ) as csvf:
-                async for message in channel.history(limit=None, oldest_first=True):
-                    count += 1
-                    if count % 10000 == 0:
-                        log.debug(count)
-
-                    row = [
-                        str(message.author.id),
-                        message.author.name,
-                        message.content.replace("\r\n", "\n"),  # keep it tidy
-                        str(message.id),
-                        serialize_attachments(message.attachments),
-                        serialize_reactions(message.reactions),
-                    ]
-                    batch.append(row)
-
-                    if len(batch) >= BATCH_SIZE:
-                        await _write_rows_async(csvf, batch)
-                        batch.clear()
-
-                # flush the last partial batch
-                if batch:
-                    await _write_rows_async(csvf, batch)
-
+            try:
+                count = await _export_channel(channel)
+            except discord.Forbidden:
+                await ctx.send(f"no access to {channel.name}, skipping")
+                continue
             await ctx.send(
                 f"successfully downloaded {count} messages from {channel.name}"
             )
@@ -288,46 +366,9 @@ class Fire(commands.Cog):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def downloadchannel(self, ctx, channel: discord.TextChannel):
-        fields = [
-            "userid",
-            "username",
-            "content",
-            "messageid",
-            "attachments",
-            "reactions",
-        ]
-        csvfile = f"{channel.id}.csv"
-        await _ensure_header(csvfile, fields)
-
         await ctx.send(f"ok doing {channel.name}")
-
-        i = 0
-        batch = []
-        BATCH_SIZE = 5000
-
-        async with await anyio.open_file(
-            csvfile, "a+", encoding="utf8", newline=""
-        ) as csvf:
-            async for message in channel.history(limit=None, oldest_first=True):
-                i += 1
-                row = [
-                    str(message.author.id),
-                    message.author.name,
-                    message.content.replace("\r\n", "\n"),
-                    str(message.id),
-                    serialize_attachments(message.attachments),
-                    serialize_reactions(message.reactions),
-                ]
-                batch.append(row)
-
-                if len(batch) >= BATCH_SIZE:
-                    await _write_rows_async(csvf, batch)
-                    batch.clear()
-
-            if batch:
-                await _write_rows_async(csvf, batch)
-
-        await ctx.reply(f"ok done, found {i} messages")
+        count = await _export_channel(channel)
+        await ctx.reply(f"ok done, found {count} new messages")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
