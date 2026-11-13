@@ -5,8 +5,8 @@ import datetime
 import functools
 import logging
 import random
-import time
 from collections import Counter
+from zoneinfo import ZoneInfo
 
 import discord
 from discord.ext import commands, tasks
@@ -57,6 +57,8 @@ AUTOMATIC_STATE_KEY = "event_automatic_state"
 AUTOMATIC_LAST_START_KEY = "event_automatic_last_start"
 PENDING_WINNER_KEY = "event_pending_winner"
 
+EASTERN = ZoneInfo("America/New_York")
+
 log = logging.getLogger(__name__)
 # log.setLevel(logging.DEBUG)
 
@@ -82,20 +84,10 @@ class InverseDstUtcZone(datetime.tzinfo):
         return "InverseDstUtc"
 
     def _isdst(self, dt):
-        tt = (
-            dt.year,
-            dt.month,
-            dt.day,
-            dt.hour,
-            dt.minute,
-            dt.second,
-            dt.weekday(),
-            0,
-            0,
-        )
-        stamp = time.mktime(tt)
-        tt = time.localtime(stamp)
-        return tt.tm_isdst > 0
+        # Check DST against US Eastern explicitly rather than the host's local
+        # timezone, which may be UTC (and therefore never observe DST).
+        eastern = dt.replace(tzinfo=None).replace(tzinfo=EASTERN)
+        return bool(eastern.dst())
 
 
 InverseDstUtc = InverseDstUtcZone()
@@ -638,8 +630,8 @@ class Event(commands.Cog):
 
         next_friday = self.__get_automatic_end_time()
 
-        # End poll 2 hours before event
-        self.end_timestamp = next_friday - datetime.timedelta(hours=2)
+        # End poll 1 hour before event (8PM Eastern)
+        self.end_timestamp = next_friday - datetime.timedelta(hours=1)
 
         # Warn 1 hour before poll end
         self.warn_timestamp = self.end_timestamp - datetime.timedelta(hours=1)
