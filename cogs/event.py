@@ -56,6 +56,7 @@ VOTE_REMOVAL_VIEW_TIMEOUT = 60 * 60 * 24
 AUTOMATIC_STATE_KEY = "event_automatic_state"
 AUTOMATIC_LAST_START_KEY = "event_automatic_last_start"
 PENDING_WINNER_KEY = "event_pending_winner"
+PENDING_VOTERS_KEY = "event_pending_voters"
 
 EASTERN = ZoneInfo("America/New_York")
 
@@ -598,6 +599,9 @@ class Event(commands.Cog):
         return wrapper
 
     async def restore_state(self):
+        # voters for the last winner must survive restarts between poll close and endevent
+        self.winners = list(await self.__get_pending_voters())
+
         async with self.bot.session as session:
             result = (
                 await session.scalars(select(models.event.EventPollState))
@@ -695,6 +699,7 @@ class Event(commands.Cog):
             self.winners = [
                 user.id async for user in winner_reaction.users() if not user.bot
             ]
+            await self.__set_pending_voters(self.winners)
 
         self.message = None
         self.end_timestamp = None
@@ -1079,6 +1084,18 @@ class Event(commands.Cog):
     async def __get_pending_winner(self) -> str | None:
         async with self.bot.session as session:
             return await config.get(session, PENDING_WINNER_KEY)
+
+    async def __set_pending_voters(self, user_ids: list[int] | None) -> None:
+        async with self.bot.session as session:
+            async with session.begin():
+                # always store a fresh list so PickleType registers the change
+                await config.set(
+                    session, PENDING_VOTERS_KEY, list(user_ids) if user_ids else None
+                )
+
+    async def __get_pending_voters(self) -> list[int]:
+        async with self.bot.session as session:
+            return await config.get(session, PENDING_VOTERS_KEY) or []
 
     def __get_automatic_start_time(self) -> datetime.datetime:
         # UTC Monday
@@ -1585,6 +1602,7 @@ class Event(commands.Cog):
     async def addtoexpected(self, ctx, user: discord.User):
         if user.id not in self.winners:
             self.winners.append(user.id)
+            await self.__set_pending_voters(self.winners)
             await ctx.send(f"Added {user.name} to the expected attendees.")
         else:
             await ctx.send(f"{user.name} is already in the expected attendees list.")
@@ -1594,6 +1612,7 @@ class Event(commands.Cog):
     async def removefromexpected(self, ctx, user: discord.User):
         if user.id in self.winners:
             self.winners.remove(user.id)
+            await self.__set_pending_voters(self.winners)
             await ctx.send(f"Removed {user.name} from the expected attendees.")
         else:
             await ctx.send(f"{user.name} is not in the expected attendees list.")
@@ -1757,6 +1776,7 @@ class Event(commands.Cog):
                     )
 
                 await config.set(session, PENDING_WINNER_KEY, None)
+                await config.set(session, PENDING_VOTERS_KEY, None)
 
             for member_id in attendees:
                 attended = member_id in self.showed_up
