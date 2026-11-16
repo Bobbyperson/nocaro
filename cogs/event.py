@@ -143,6 +143,8 @@ class EventSummary:
     game: str | None = None
     attendees: set[int] = dataclasses.field(default_factory=set)
     no_shows: set[int] = dataclasses.field(default_factory=set)
+    # Everyone who voted for the winning game, whether or not they came
+    winning_voters: set[int] = dataclasses.field(default_factory=set)
 
 
 @dataclasses.dataclass
@@ -176,6 +178,8 @@ def summarize_events(records) -> list[EventSummary]:
         event.date = min(event.date, r.timestamp)
         event.game = event.game or r.winning_game
 
+        if r.voted_for_winner:
+            event.winning_voters.add(r.user_id)
         if r.attended:
             event.attendees.add(r.user_id)
         elif r.voted_for_winner:
@@ -1413,10 +1417,11 @@ class Event(commands.Cog):
             game = (e.game or "?")[:14]
             line = (
                 f"#{e.event_id:<3} {e.date:%Y-%m-%d} {game:<14} "
-                f"{make_bar(attended, most, width=12):<12} {attended:>2}"
+                f"{make_bar(attended, most, width=12):<12} {attended:>2} came"
             )
-            if e.no_shows:
-                line += f" ({len(e.no_shows)} no-show)"
+            if e.winning_voters:
+                voters = len(e.winning_voters)
+                line += f" | {voters - len(e.no_shows)}/{voters} voters"
             lines.append(line)
 
         totals = [len(e.attendees) for e in events]
@@ -1426,6 +1431,10 @@ class Event(commands.Cog):
         msg = f"**Event attendance** (last {len(shown)} of {len(events)})\n"
         if not as_file:
             msg += "```\n" + "\n".join(lines) + "\n```"
+        msg += (
+            "-# came = total attendance · voters = how many of the people "
+            "who voted for the winning game showed up\n"
+        )
         msg += f"Average attendance: **{average:.1f}**\n"
         msg += (
             f"Record: **{len(best.attendees)}** at event #{best.event_id} "
@@ -1445,9 +1454,7 @@ class Event(commands.Cog):
 
         if as_file:
             data = io.BytesIO(("\n".join(lines) + "\n").encode("utf-8"))
-            await ctx.send(
-                msg, file=discord.File(data, filename="event_history.txt")
-            )
+            await ctx.send(msg, file=discord.File(data, filename="event_history.txt"))
         else:
             await ctx.send(msg)
 
