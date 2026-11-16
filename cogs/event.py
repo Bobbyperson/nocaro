@@ -3,6 +3,7 @@ import contextlib
 import dataclasses
 import datetime
 import functools
+import io
 import logging
 import random
 from collections import Counter
@@ -1400,7 +1401,9 @@ class Event(commands.Cog):
             await ctx.send("No events have been recorded yet")
             return
 
-        count = max(1, min(count, 30))
+        max_inline = 30
+        count = max(1, count)
+        as_file = count > max_inline
         shown = events[-count:]
         most = max(len(e.attendees) for e in events)
 
@@ -1421,7 +1424,8 @@ class Event(commands.Cog):
         best = max(events, key=lambda e: len(e.attendees))
 
         msg = f"**Event attendance** (last {len(shown)} of {len(events)})\n"
-        msg += "```\n" + "\n".join(lines) + "\n```"
+        if not as_file:
+            msg += "```\n" + "\n".join(lines) + "\n```"
         msg += f"Average attendance: **{average:.1f}**\n"
         msg += (
             f"Record: **{len(best.attendees)}** at event #{best.event_id} "
@@ -1439,7 +1443,13 @@ class Event(commands.Cog):
                 f"({diff:+.1f} vs the {window} before)\n"
             )
 
-        await ctx.send(msg)
+        if as_file:
+            data = io.BytesIO(("\n".join(lines) + "\n").encode("utf-8"))
+            await ctx.send(
+                msg, file=discord.File(data, filename="event_history.txt")
+            )
+        else:
+            await ctx.send(msg)
 
     @event.command(name="stats")
     async def eventstats(self, ctx, user: discord.User = None):
